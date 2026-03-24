@@ -1,13 +1,9 @@
-# FastAPI Project - Backend
+# Findog Ledger - Backend
 
 ## Requirements
 
 * [Docker](https://www.docker.com/).
 * [uv](https://docs.astral.sh/uv/) for Python package and environment management.
-
-## Docker Compose
-
-Start the local development environment with Docker Compose following the guide in [../development.md](../development.md).
 
 ## General Workflow
 
@@ -27,7 +23,32 @@ $ source .venv/bin/activate
 
 Make sure your editor is using the correct Python virtual environment, with the interpreter at `backend/.venv/bin/python`.
 
-Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
+## Current Backend Structure
+
+- `app/api` for route modules
+- `app/core` for configuration, security, and DB bootstrap
+- `app/models` for SQLModel tables
+- `app/schemas` for request/response schemas
+- `app/repositories` for persistence helpers
+- `app/services` for orchestration and future domain logic
+
+## Current Product Rules
+
+- Public registration is disabled.
+- Users are provisioned by a superuser only.
+- Admin-only user management remains available under `/api/v1/users`.
+- Demo `Item` endpoints have been removed.
+- Future payment-obligation modules currently exist only as placeholders.
+
+## Database
+
+- Use Alembic migrations for schema changes.
+- Internal database primary keys remain UUIDs and are intentionally separate from future business/public identifiers.
+- The backend is expected to run against the external PostgreSQL configuration from `.env`.
+
+## Docker Compose
+
+Start the local development environment with Docker Compose following the guide in [../development.md](../development.md).
 
 ## VS Code
 
@@ -133,7 +154,7 @@ Make sure you create a "revision" of your models and that you "upgrade" your dat
 $ docker compose exec backend bash
 ```
 
-* Alembic is already configured to import your SQLModel models from `./backend/app/models.py`.
+* Alembic is configured against the SQLModel modules under `./backend/app/models/`.
 
 * After changing a model (for example, adding a column), inside the container, create a revision, e.g.:
 

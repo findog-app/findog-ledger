@@ -46,7 +46,7 @@ test("Log in with valid email and password ", async ({ page }) => {
   await page.waitForURL("/")
 
   await expect(
-    page.getByText("Welcome back, nice to see you again!"),
+    page.getByText("Private payment-obligation repository foundation."),
   ).toBeVisible()
 })
 
@@ -78,7 +78,7 @@ test("Successful log out", async ({ page }) => {
   await page.waitForURL("/")
 
   await expect(
-    page.getByText("Welcome back, nice to see you again!"),
+    page.getByText("Private payment-obligation repository foundation."),
   ).toBeVisible()
 
   await page.getByTestId("user-menu").click()

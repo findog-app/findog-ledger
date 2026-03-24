@@ -44,7 +44,7 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       {
-        title: "Log In - FastAPI Cloud",
+        title: "Log In - Findog Ledger",
       },
     ],
   }),
@@ -76,6 +76,9 @@ function Login() {
         >
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-2xl font-bold">Login to your account</h1>
+            <p className="text-sm text-muted-foreground">
+              Access is limited to users provisioned by an administrator.
+            </p>
           </div>
 
           <div className="grid gap-4">
@@ -127,13 +130,6 @@ function Login() {
             <LoadingButton type="submit" loading={loginMutation.isPending}>
               Log In
             </LoadingButton>
-          </div>
-
-          <div className="text-center text-sm">
-            Don't have an account yet?{" "}
-            <RouterLink to="/signup" className="underline underline-offset-4">
-              Sign up
-            </RouterLink>
           </div>
         </form>
       </Form>

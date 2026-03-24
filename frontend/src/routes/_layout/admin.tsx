@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_layout/admin")({
   head: () => ({
     meta: [
       {
-        title: "Admin - FastAPI Cloud",
+        title: "Admin - Findog Ledger",
       },
     ],
   }),
@@ -62,10 +62,15 @@ function Admin() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Users</h1>
           <p className="text-muted-foreground">
-            Manage user accounts and permissions
+            Manage administrator-provisioned user accounts and permissions
           </p>
         </div>
         <AddUser />
+      </div>
+      <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        Future payment-obligation domains and integration endpoints are not
+        implemented yet. This admin area currently covers private user
+        management only.
       </div>
       <UsersTable />
     </div>
