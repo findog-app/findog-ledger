@@ -1,8 +1,11 @@
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, create_engine, select
 
 from app import crud
 from app.core.config import settings
-from app.models import User, UserCreate
+from app.core.security import verify_password
+from app.models import User
+from app.schemas import UserCreate, UserUpdate
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
@@ -29,5 +32,32 @@ def init_db(session: Session) -> None:
             email=settings.FIRST_SUPERUSER,
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
+            is_active=True,
         )
-        user = crud.create_user(session=session, user_create=user_in)
+        try:
+            user = crud.create_user(session=session, user_create=user_in)
+        except IntegrityError:
+            session.rollback()
+            user = session.exec(
+                select(User).where(User.email == settings.FIRST_SUPERUSER)
+            ).first()
+
+    if not user:
+        return
+
+    verified, _ = verify_password(
+        settings.FIRST_SUPERUSER_PASSWORD, user.hashed_password
+    )
+    if user.is_superuser and user.is_active and verified:
+        return
+
+    crud.update_user(
+        session=session,
+        db_user=user,
+        user_in=UserUpdate(
+            password=settings.FIRST_SUPERUSER_PASSWORD,
+            is_superuser=True,
+            is_active=True,
+            full_name=user.full_name,
+        ),
+    )

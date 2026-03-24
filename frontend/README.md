@@ -1,16 +1,16 @@
-# FastAPI Project - Frontend
+# Findog Ledger - Frontend
 
 The frontend is built with [Vite](https://vitejs.dev/), [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/), [TanStack Query](https://tanstack.com/query), [TanStack Router](https://tanstack.com/router) and [Tailwind CSS](https://tailwindcss.com/).
 
 ## Requirements
 
-- [Bun](https://bun.sh/) (recommended) or [Node.js](https://nodejs.org/)
+- [Node.js](https://nodejs.org/)
 
 ## Quick Start
 
 ```bash
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
 * Then open your browser at http://localhost:5173/.
@@ -62,12 +62,19 @@ bash ./scripts/generate-client.sh
 * To generate the frontend client, run:
 
 ```bash
-bun run generate-client
+npm run generate-client
 ```
 
 * Commit the changes.
 
-Notice that everytime the backend changes (changing the OpenAPI schema), you should follow these steps again to update the frontend client.
+Notice that every time the backend OpenAPI schema changes, you should regenerate the frontend client.
+
+## Current Frontend Scope
+
+- No public signup flow.
+- No demo item pages or navigation.
+- Admin user-management page is available only to superusers.
+- Dashboard copy reflects the current repository-preparation phase, not the final product.
 
 ## Using a Remote API
 
@@ -101,13 +108,13 @@ docker compose up -d --wait backend
 Then, you can run the tests with the following command:
 
 ```bash
-bunx playwright test
+npm run test
 ```
 
 You can also run your tests in UI mode to see the browser and interact with it running:
 
 ```bash
-bunx playwright test --ui
+npm run test:ui
 ```
 
 To stop and remove the Docker Compose stack and clean the data created in tests, use the following command:

@@ -1,4 +1,13 @@
-# FastAPI Project - Development
+# Findog Ledger - Development
+
+## Current Assumptions
+
+- This is a private application.
+- Public signup is disabled.
+- Users are admin-managed only.
+- The repository is being prepared for payment-obligation work; the final business domain is not implemented yet.
+- Local backend workflow is based on `uv`.
+- The application is expected to connect to the external PostgreSQL configuration from `.env`.
 
 ## Docker Compose
 
@@ -63,7 +72,7 @@ docker compose stop frontend
 And then start the local frontend development server:
 
 ```bash
-bun run dev
+npm run dev
 ```
 
 Or you could stop the `backend` Docker Compose service:

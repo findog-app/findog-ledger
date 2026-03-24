@@ -1,8 +1,10 @@
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
+from pydantic import EmailStr, TypeAdapter, ValidationError
+from sqlalchemy import desc
+from sqlmodel import select
 
 from app import crud
 from app.api.deps import (
@@ -13,13 +15,13 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
-    Item,
+    User,
+)
+from app.schemas import (
     Message,
     UpdatePassword,
-    User,
     UserCreate,
     UserPublic,
-    UserRegister,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -27,6 +29,15 @@ from app.models import (
 from app.utils import generate_new_account_email, send_email
 
 router = APIRouter(prefix="/users", tags=["users"])
+email_adapter = TypeAdapter(EmailStr)
+
+
+def _has_valid_user_email(user: User) -> bool:
+    try:
+        email_adapter.validate_python(user.email)
+    except ValidationError:
+        return False
+    return True
 
 
 @router.get(
@@ -38,14 +49,13 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
     Retrieve users.
     """
+    created_at_column = cast(Any, User.created_at)
+    statement = select(User).order_by(desc(created_at_column)).offset(skip).limit(limit)
+    users = [
+        user for user in session.exec(statement).all() if _has_valid_user_email(user)
+    ]
 
-    count_statement = select(func.count()).select_from(User)
-    count = session.exec(count_statement).one()
-
-    statement = select(User).order_by(User.created_at.desc()).offset(skip).limit(limit)
-    users = session.exec(statement).all()
-
-    return UsersPublic(data=users, count=count)
+    return UsersPublic(data=users, count=len(users))
 
 
 @router.post(
@@ -140,20 +150,9 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     return Message(message="User deleted successfully")
 
 
-@router.post("/signup", response_model=UserPublic)
-def register_user(session: SessionDep, user_in: UserRegister) -> Any:
-    """
-    Create new user without the need to be logged in.
-    """
-    user = crud.get_user_by_email(session=session, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=400,
-            detail="The user with this email already exists in the system",
-        )
-    user_create = UserCreate.model_validate(user_in)
-    user = crud.create_user(session=session, user_create=user_create)
-    return user
+@router.post("/signup", include_in_schema=False)
+def signup_disabled() -> None:
+    raise HTTPException(status_code=404, detail="Not found")
 
 
 @router.get("/{user_id}", response_model=UserPublic)
@@ -222,8 +221,6 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(Item).where(col(Item.owner_id) == user_id)
-    session.exec(statement)  # type: ignore
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
