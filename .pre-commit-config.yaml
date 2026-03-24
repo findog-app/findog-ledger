@@ -19,6 +19,12 @@ repos:
         exclude: ^frontend/src/client/.*
   - repo: local
     hooks:
+      - id: commitizen-check
+        name: commitizen check
+        entry: bash -lc 'cd backend && uv run cz check --allow-abort --commit-msg-file "$1"' --
+        language: system
+        stages: [commit-msg]
+
       - id: local-biome-check
         name: biome check
         entry: npm run lint
@@ -39,6 +45,14 @@ repos:
         require_serial: true
         language: unsupported
         types: [python]
+
+      - id: local-mypy
+        name: mypy
+        entry: bash -lc 'cd backend && uv run mypy app'
+        pass_filenames: false
+        require_serial: true
+        language: system
+        files: ^backend/.*\.py$
 
       - id: generate-frontend-sdk
         name: Generate Frontend SDK

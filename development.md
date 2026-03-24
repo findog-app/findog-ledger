@@ -140,53 +140,54 @@ Depending on your workflow, you could want to exclude it from Git, for example i
 
 One way to do it could be to add each environment variable to your CI/CD system, and updating the `compose.yml` file to read that specific env var instead of reading the `.env` file.
 
-## Pre-commits and code linting
+## Pre-commit and Commitizen
 
-we are using a tool called [prek](https://prek.j178.dev/) (modern alternative to [Pre-commit](https://pre-commit.com/)) for code linting and formatting.
+The repository uses `.pre-commit-config.yaml` for local git hooks and `commitizen`
+for conventional commits.
 
-When you install it, it runs right before making a commit in git. This way it ensures that the code is consistent and formatted even before it is committed.
+Configured hooks currently cover:
 
-You can find a file `.pre-commit-config.yaml` with configurations at the root of the project.
+- frontend `biome check`
+- backend `ruff check`
+- backend `ruff format`
+- backend `mypy`
+- frontend SDK regeneration when backend API files change
+- `commitizen` commit message validation on the `commit-msg` hook
 
-#### Install prek to run automatically
+#### Install hooks
 
-`prek` is already part of the dependencies of the project.
+The backend dev dependencies include both `pre-commit` and `commitizen`.
 
-After having the `prek` tool installed and available, you need to "install" it in the local repository, so that it runs automatically before each commit.
-
-Using `uv`, you could do it with (make sure you are inside `backend` folder):
+After syncing backend dependencies, install the hooks from `backend/`:
 
 ```bash
-❯ uv run prek install -f
-prek installed at `../.git/hooks/pre-commit`
+uv sync
+uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
 
-The `-f` flag forces the installation, in case there was already a `pre-commit` hook previously installed.
+Now normal `git commit` runs the pre-commit hooks, and the final commit message is
+validated by `commitizen`.
 
-Now whenever you try to commit, e.g. with:
+#### Running hooks manually
+
+To run all hooks on the current repository:
 
 ```bash
-git commit
+uv run pre-commit run --all-files
 ```
 
-...prek will run and check and format the code you are about to commit, and will ask you to add that code (stage it) with git again before committing.
-
-Then you can `git add` the modified/fixed files again and now you can commit.
-
-#### Running prek hooks manually
-
-you can also run `prek` manually on all the files, you can do it using `uv` with:
+To validate or create conventional commit messages manually:
 
 ```bash
-❯ uv run prek run --all-files
-check for added large files..............................................Passed
-check toml...............................................................Passed
-check yaml...............................................................Passed
-fix end of files.........................................................Passed
-trim trailing whitespace.................................................Passed
-ruff.....................................................................Passed
-ruff-format..............................................................Passed
-biome check..............................................................Passed
+uv run cz check --message "feat: add example"
+uv run cz commit
+```
+
+From the repository root you can use the helper wrapper:
+
+```bash
+bash ./scripts/cz.sh check --message "feat: add example"
+bash ./scripts/cz.sh commit
 ```
 
 ## URLs
