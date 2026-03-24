@@ -12,3 +12,8 @@ frontend/.env
 frontend/.env.*
 
 zzz.patch
+
+.env
+.env.*
+frontend/.env
+frontend/.env.*

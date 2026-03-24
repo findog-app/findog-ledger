@@ -190,6 +190,17 @@ bash ./scripts/cz.sh check --message "feat: add example"
 bash ./scripts/cz.sh commit
 ```
 
+There is also a root `Makefile` for common shortcuts:
+
+```bash
+make cmt
+make dev-b
+make dev-f
+make pre
+make test
+make cov
+```
+
 ## URLs
 
 The production or staging URLs would use these same paths, but with your own domain.

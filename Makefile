@@ -1,0 +1,42 @@
+SHELL := /bin/bash
+
+.PHONY: help cmt dev-b dev-f pre test cov lint fmt hooks
+
+help:
+	@echo "Available targets:"
+	@echo "  make cmt    - run commitizen commit flow"
+	@echo "  make dev-b  - start backend with fastapi dev"
+	@echo "  make dev-f  - start frontend dev server"
+	@echo "  make pre    - run pre-commit hooks on all files"
+	@echo "  make test   - run backend tests"
+	@echo "  make cov    - run backend coverage report"
+	@echo "  make lint   - run backend mypy + ruff checks"
+	@echo "  make fmt    - format backend code with ruff"
+	@echo "  make hooks  - install git pre-commit and commit-msg hooks"
+
+cmt:
+	bash ./scripts/cz.sh commit
+
+dev-b:
+	cd backend && uv run fastapi dev app/main.py
+
+dev-f:
+	npm --workspace frontend run dev
+
+pre:
+	cd backend && uv run pre-commit run --all-files
+
+test:
+	cd backend && uv run pytest tests/
+
+cov:
+	cd backend && uv run bash ./scripts/test.sh
+
+lint:
+	cd backend && uv run bash ./scripts/lint.sh
+
+fmt:
+	cd backend && uv run bash ./scripts/format.sh
+
+hooks:
+	cd backend && uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
