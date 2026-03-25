@@ -46,7 +46,7 @@ export type UserPublic = {
     is_superuser?: boolean;
     full_name?: (string | null);
     id: string;
-    created_at?: (string | null);
+    created_at: string;
 };
 
 export type UsersPublic = {
@@ -56,8 +56,8 @@ export type UsersPublic = {
 
 export type UserUpdate = {
     email?: (string | null);
-    is_active?: boolean;
-    is_superuser?: boolean;
+    is_active?: (boolean | null);
+    is_superuser?: (boolean | null);
     full_name?: (string | null);
     password?: (string | null);
 };

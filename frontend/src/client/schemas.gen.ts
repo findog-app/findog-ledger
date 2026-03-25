@@ -91,6 +91,8 @@ export const NewPasswordSchema = {
         },
         new_password: {
             type: 'string',
+            maxLength: 128,
+            minLength: 8,
             title: 'New Password'
         }
     },
@@ -183,6 +185,7 @@ export const UserPublicSchema = {
         email: {
             type: 'string',
             maxLength: 255,
+            format: 'email',
             title: 'Email'
         },
         is_active: {
@@ -213,20 +216,13 @@ export const UserPublicSchema = {
             title: 'Id'
         },
         created_at: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'date-time'
-                },
-                {
-                    type: 'null'
-                }
-            ],
+            type: 'string',
+            format: 'date-time',
             title: 'Created At'
         }
     },
     type: 'object',
-    required: ['email', 'id'],
+    required: ['email', 'id', 'created_at'],
     title: 'UserPublic'
 } as const;
 
@@ -246,14 +242,26 @@ export const UserUpdateSchema = {
             title: 'Email'
         },
         is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
         },
         is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Superuser'
         },
         full_name: {
             anyOf: [

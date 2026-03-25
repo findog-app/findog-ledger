@@ -1,24 +1,24 @@
 from typing import Annotated
 
-from sqlmodel import Field, SQLModel
+from pydantic import BaseModel, Field
 
 
-class Message(SQLModel):
+class Message(BaseModel):
     message: str
 
 
-class Token(SQLModel):
+class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
 
-class TokenPayload(SQLModel):
+class TokenPayload(BaseModel):
     sub: str | None = None
 
 
 PasswordStr = Annotated[str, Field(min_length=8, max_length=128)]
 
 
-class NewPassword(SQLModel):
+class NewPassword(BaseModel):
     token: str
     new_password: PasswordStr

@@ -2,13 +2,14 @@ import uuid
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from sqlmodel import Session, select
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app import crud
 from app.core.config import settings
 from app.core.security import verify_password
 from app.models import User
 from app.schemas import UserCreate
+from app.services import users as user_service
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_email, random_lower_string
 
@@ -53,7 +54,8 @@ def test_create_user_new_email(
         )
         assert 200 <= r.status_code < 300
         created_user = r.json()
-        user = crud.get_user_by_email(session=db, email=username)
+        assert created_user["created_at"] is not None
+        user = user_service.get_user_by_email(session=db, email=username)
         assert user
         assert user.email == created_user["email"]
 
@@ -64,7 +66,7 @@ def test_get_existing_user_as_superuser(
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
     user_id = user.id
     r = client.get(
         f"{settings.API_V1_STR}/users/{user_id}",
@@ -72,7 +74,7 @@ def test_get_existing_user_as_superuser(
     )
     assert 200 <= r.status_code < 300
     api_user = r.json()
-    existing_user = crud.get_user_by_email(session=db, email=username)
+    existing_user = user_service.get_user_by_email(session=db, email=username)
     assert existing_user
     assert existing_user.email == api_user["email"]
 
@@ -92,7 +94,7 @@ def test_get_existing_user_current_user(client: TestClient, db: Session) -> None
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
     user_id = user.id
 
     login_data = {
@@ -110,7 +112,7 @@ def test_get_existing_user_current_user(client: TestClient, db: Session) -> None
     )
     assert 200 <= r.status_code < 300
     api_user = r.json()
-    existing_user = crud.get_user_by_email(session=db, email=username)
+    existing_user = user_service.get_user_by_email(session=db, email=username)
     assert existing_user
     assert existing_user.email == api_user["email"]
 
@@ -151,7 +153,7 @@ def test_create_user_existing_username(
     # username = email
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    crud.create_user(session=db, user_create=user_in)
+    user_service.create_user(session=db, user_in=user_in)
     data = {"email": username, "password": password}
     r = client.post(
         f"{settings.API_V1_STR}/users/",
@@ -196,12 +198,12 @@ def test_retrieve_users(
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    crud.create_user(session=db, user_create=user_in)
+    user_service.create_user(session=db, user_in=user_in)
 
     username2 = random_email()
     password2 = random_lower_string()
     user_in2 = UserCreate(email=username2, password=password2)
-    crud.create_user(session=db, user_create=user_in2)
+    user_service.create_user(session=db, user_in=user_in2)
 
     r = client.get(f"{settings.API_V1_STR}/users/", headers=superuser_token_headers)
     all_users = r.json()
@@ -229,7 +231,7 @@ def test_update_user_me(
     assert updated_user["full_name"] == full_name
 
     user_query = select(User).where(User.email == email)
-    user_db = db.exec(user_query).first()
+    user_db = db.scalars(user_query).first()
     assert user_db
     assert user_db.email == email
     assert user_db.full_name == full_name
@@ -253,7 +255,7 @@ def test_update_password_me(
     assert updated_user["message"] == "Password updated successfully"
 
     user_query = select(User).where(User.email == settings.FIRST_SUPERUSER)
-    user_db = db.exec(user_query).first()
+    user_db = db.scalars(user_query).first()
     assert user_db
     assert user_db.email == settings.FIRST_SUPERUSER
     verified, _ = verify_password(new_password, user_db.hashed_password)
@@ -299,7 +301,7 @@ def test_update_user_me_email_exists(
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
 
     data = {"email": user.email}
     r = client.patch(
@@ -336,7 +338,7 @@ def test_update_user(
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
 
     data = {"full_name": "Updated_full_name"}
     r = client.patch(
@@ -350,10 +352,173 @@ def test_update_user(
     assert updated_user["full_name"] == "Updated_full_name"
 
     user_query = select(User).where(User.email == username)
-    user_db = db.exec(user_query).first()
+    user_db = db.scalars(user_query).first()
     db.refresh(user_db)
     assert user_db
     assert user_db.full_name == "Updated_full_name"
+
+
+def test_update_user_partial_full_name_preserves_other_fields(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    user = user_service.create_user(
+        session=db,
+        user_in=UserCreate(
+            email=random_email(),
+            password=random_lower_string(),
+            full_name="Original Name",
+            is_active=False,
+            is_superuser=True,
+        ),
+    )
+    original_hash = user.hashed_password
+
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{user.id}",
+        headers=superuser_token_headers,
+        json={"full_name": "Updated Name"},
+    )
+
+    assert r.status_code == 200
+    db.expire_all()
+    updated = db.get(User, user.id)
+    assert updated
+    assert updated.full_name == "Updated Name"
+    assert updated.email == user.email
+    assert updated.is_active is False
+    assert updated.is_superuser is True
+    assert updated.hashed_password == original_hash
+
+
+def test_update_user_partial_email_preserves_flags_and_name(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    user = user_service.create_user(
+        session=db,
+        user_in=UserCreate(
+            email=random_email(),
+            password=random_lower_string(),
+            full_name="Stable Name",
+            is_active=False,
+            is_superuser=True,
+        ),
+    )
+
+    new_email = random_email()
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{user.id}",
+        headers=superuser_token_headers,
+        json={"email": new_email},
+    )
+
+    assert r.status_code == 200
+    db.expire_all()
+    updated = db.get(User, user.id)
+    assert updated
+    assert updated.email == new_email
+    assert updated.full_name == "Stable Name"
+    assert updated.is_active is False
+    assert updated.is_superuser is True
+
+
+def test_update_user_partial_password_preserves_other_fields(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    original_password = random_lower_string()
+    user = user_service.create_user(
+        session=db,
+        user_in=UserCreate(
+            email=random_email(),
+            password=original_password,
+            full_name="Stable Name",
+            is_active=False,
+            is_superuser=True,
+        ),
+    )
+    original_hash = user.hashed_password
+    new_password = random_lower_string()
+
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{user.id}",
+        headers=superuser_token_headers,
+        json={"password": new_password},
+    )
+
+    assert r.status_code == 200
+    db.expire_all()
+    updated = db.get(User, user.id)
+    assert updated
+    assert updated.email == user.email
+    assert updated.full_name == "Stable Name"
+    assert updated.is_active is False
+    assert updated.is_superuser is True
+    assert updated.hashed_password != original_hash
+    verified, _ = verify_password(new_password, updated.hashed_password)
+    assert verified
+
+
+def test_update_user_partial_flags_preserve_omitted_fields(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    user = user_service.create_user(
+        session=db,
+        user_in=UserCreate(
+            email=random_email(),
+            password=random_lower_string(),
+            full_name="Stable Name",
+            is_active=True,
+            is_superuser=False,
+        ),
+    )
+    original_hash = user.hashed_password
+
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{user.id}",
+        headers=superuser_token_headers,
+        json={"is_active": False},
+    )
+
+    assert r.status_code == 200
+    db.expire_all()
+    updated = db.get(User, user.id)
+    assert updated
+    assert updated.is_active is False
+    assert updated.is_superuser is False
+    assert updated.full_name == "Stable Name"
+    assert updated.email == user.email
+    assert updated.hashed_password == original_hash
+
+
+def test_update_user_partial_superuser_preserves_omitted_fields(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    user = user_service.create_user(
+        session=db,
+        user_in=UserCreate(
+            email=random_email(),
+            password=random_lower_string(),
+            full_name="Stable Name",
+            is_active=False,
+            is_superuser=False,
+        ),
+    )
+    original_hash = user.hashed_password
+
+    r = client.patch(
+        f"{settings.API_V1_STR}/users/{user.id}",
+        headers=superuser_token_headers,
+        json={"is_superuser": True},
+    )
+
+    assert r.status_code == 200
+    db.expire_all()
+    updated = db.get(User, user.id)
+    assert updated
+    assert updated.is_superuser is True
+    assert updated.is_active is False
+    assert updated.full_name == "Stable Name"
+    assert updated.email == user.email
+    assert updated.hashed_password == original_hash
 
 
 def test_update_user_not_exists(
@@ -375,12 +540,12 @@ def test_update_user_email_exists(
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
 
     username2 = random_email()
     password2 = random_lower_string()
     user_in2 = UserCreate(email=username2, password=password2)
-    user2 = crud.create_user(session=db, user_create=user_in2)
+    user2 = user_service.create_user(session=db, user_in=user_in2)
 
     data = {"email": user2.email}
     r = client.patch(
@@ -396,7 +561,7 @@ def test_delete_user_me(client: TestClient, db: Session) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
     user_id = user.id
 
     login_data = {
@@ -415,7 +580,7 @@ def test_delete_user_me(client: TestClient, db: Session) -> None:
     assert r.status_code == 200
     deleted_user = r.json()
     assert deleted_user["message"] == "User deleted successfully"
-    result = db.exec(select(User).where(User.id == user_id)).first()
+    result = db.scalars(select(User).where(User.id == user_id)).first()
     assert result is None
 
     user_query = select(User).where(User.id == user_id)
@@ -441,7 +606,7 @@ def test_delete_user_super_user(
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
     user_id = user.id
     r = client.delete(
         f"{settings.API_V1_STR}/users/{user_id}",
@@ -450,7 +615,7 @@ def test_delete_user_super_user(
     assert r.status_code == 200
     deleted_user = r.json()
     assert deleted_user["message"] == "User deleted successfully"
-    result = db.exec(select(User).where(User.id == user_id)).first()
+    result = db.scalars(select(User).where(User.id == user_id)).first()
     assert result is None
 
 
@@ -468,7 +633,9 @@ def test_delete_user_not_found(
 def test_delete_user_current_super_user_error(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
-    super_user = crud.get_user_by_email(session=db, email=settings.FIRST_SUPERUSER)
+    super_user = user_service.get_user_by_email(
+        session=db, email=settings.FIRST_SUPERUSER
+    )
     assert super_user
     user_id = super_user.id
 
@@ -486,7 +653,7 @@ def test_delete_user_without_privileges(
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = user_service.create_user(session=db, user_in=user_in)
 
     r = client.delete(
         f"{settings.API_V1_STR}/users/{user.id}",
