@@ -7,12 +7,14 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.core import security
 from app.core.config import settings
 from app.core.db import SessionLocal
-from app.models import User
+from app.domain import LedgerAccessRole
+from app.models import Ledger, LedgerMembership, User
 from app.schemas import TokenPayload
 from app.services import users as user_service
 
@@ -61,3 +63,58 @@ def get_current_active_superuser(current_user: CurrentUser) -> User:
             status_code=403, detail="The user doesn't have enough privileges"
         )
     return current_user
+
+
+def require_ledger_view_access(
+    ledger_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+) -> Ledger:
+    ledger = session.scalar(
+        select(Ledger).where(
+            Ledger.id == ledger_id,
+            or_(
+                Ledger.owner_user_id == current_user.id,
+                Ledger.memberships.any(LedgerMembership.user_id == current_user.id),
+            ),
+        )
+    )
+    if ledger is None:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+    return ledger
+
+
+def require_ledger_owner_access(
+    ledger_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+) -> Ledger:
+    ledger = session.scalar(
+        select(Ledger).where(
+            Ledger.id == ledger_id,
+            Ledger.owner_user_id == current_user.id,
+        )
+    )
+    if ledger is None:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+    return ledger
+
+
+def require_ledger_edit_access(
+    ledger_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+) -> Ledger:
+    ledger = session.scalar(
+        select(Ledger).where(
+            Ledger.id == ledger_id,
+            or_(
+                Ledger.owner_user_id == current_user.id,
+                Ledger.memberships.any(
+                    and_(
+                        LedgerMembership.user_id == current_user.id,
+                        LedgerMembership.role.in_(
+                            [LedgerAccessRole.OWNER, LedgerAccessRole.EDITOR]
+                        ),
+                    )
+                ),
+            ),
+        )
+    )
+    if ledger is None:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+    return ledger

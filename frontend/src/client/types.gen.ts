@@ -9,8 +9,86 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type CategoriesPublic = {
+    data: Array<CategoryPublic>;
+    count: number;
+};
+
+export type CategoryCreate = {
+    category_group_id: string;
+    name: string;
+    description?: (string | null);
+};
+
+export type CategoryGroupCreate = {
+    name: string;
+    description?: (string | null);
+};
+
+export type CategoryGroupPublic = {
+    id: string;
+    ledger_id: string;
+    name: string;
+    description: (string | null);
+    is_active: boolean;
+    archived_at: (string | null);
+};
+
+export type CategoryGroupsPublic = {
+    data: Array<CategoryGroupPublic>;
+    count: number;
+};
+
+export type CategoryPublic = {
+    id: string;
+    ledger_id: string;
+    category_group_id: string;
+    name: string;
+    description: (string | null);
+    is_active: boolean;
+    archived_at: (string | null);
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
+};
+
+export type LedgerAccessRole = 'owner' | 'editor' | 'viewer';
+
+export type LedgerCreate = {
+    name: string;
+    description?: (string | null);
+};
+
+export type LedgerMemberPublic = {
+    ledger_id: string;
+    user_id: string;
+    role: LedgerAccessRole;
+    created_at: string;
+};
+
+export type LedgerMembersPublic = {
+    data: Array<LedgerMemberPublic>;
+    count: number;
+};
+
+export type LedgerPublic = {
+    id: string;
+    owner_user_id: string;
+    name: string;
+    description: (string | null);
+    created_at: string;
+    updated_at: string;
+};
+
+export type LedgerShare = {
+    user_id: string;
+    role: LedgerAccessRole;
+};
+
+export type LedgersPublic = {
+    data: Array<LedgerPublic>;
+    count: number;
 };
 
 export type Message = {
@@ -72,6 +150,76 @@ export type ValidationError = {
     msg: string;
     type: string;
 };
+
+export type CategoriesReadCategoryGroupsData = {
+    includeArchived?: boolean;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoryGroupsResponse = (CategoryGroupsPublic);
+
+export type CategoriesCreateCategoryGroupData = {
+    ledgerId: string;
+    requestBody: CategoryGroupCreate;
+};
+
+export type CategoriesCreateCategoryGroupResponse = (CategoryGroupPublic);
+
+export type CategoriesArchiveCategoryGroupData = {
+    categoryGroupId: string;
+    ledgerId: string;
+};
+
+export type CategoriesArchiveCategoryGroupResponse = (CategoryGroupPublic);
+
+export type CategoriesReadCategoriesData = {
+    categoryGroupId?: (string | null);
+    includeArchived?: boolean;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoriesResponse = (CategoriesPublic);
+
+export type CategoriesCreateCategoryData = {
+    ledgerId: string;
+    requestBody: CategoryCreate;
+};
+
+export type CategoriesCreateCategoryResponse = (CategoryPublic);
+
+export type CategoriesArchiveCategoryData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesArchiveCategoryResponse = (CategoryPublic);
+
+export type LedgersReadLedgersResponse = (LedgersPublic);
+
+export type LedgersCreateLedgerData = {
+    requestBody: LedgerCreate;
+};
+
+export type LedgersCreateLedgerResponse = (LedgerPublic);
+
+export type LedgersReadLedgerData = {
+    ledgerId: string;
+};
+
+export type LedgersReadLedgerResponse = (LedgerPublic);
+
+export type LedgersReadLedgerMembersData = {
+    ledgerId: string;
+};
+
+export type LedgersReadLedgerMembersResponse = (LedgerMembersPublic);
+
+export type LedgersShareLedgerData = {
+    ledgerId: string;
+    requestBody: LedgerShare;
+};
+
+export type LedgersShareLedgerResponse = (LedgerMemberPublic);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;
