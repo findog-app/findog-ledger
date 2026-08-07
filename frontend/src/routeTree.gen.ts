@@ -15,7 +15,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutLedgersRouteImport } from './routes/_layout/ledgers'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutLedgersIndexRouteImport } from './routes/_layout/ledgers.index'
+import { Route as LayoutLedgersLedgerIdRouteImport } from './routes/_layout/ledgers.$ledgerId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -46,10 +49,25 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutLedgersRoute = LayoutLedgersRouteImport.update({
+  id: '/ledgers',
+  path: '/ledgers',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutLedgersIndexRoute = LayoutLedgersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutLedgersRoute,
+} as any)
+const LayoutLedgersLedgerIdRoute = LayoutLedgersLedgerIdRouteImport.update({
+  id: '/$ledgerId',
+  path: '/$ledgerId',
+  getParentRoute: () => LayoutLedgersRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -58,7 +76,10 @@ export interface FileRoutesByFullPath {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof LayoutAdminRoute
+  '/ledgers': typeof LayoutLedgersRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
+  '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRoute
+  '/ledgers/': typeof LayoutLedgersIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -67,6 +88,8 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
+  '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRoute
+  '/ledgers': typeof LayoutLedgersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -75,8 +98,11 @@ export interface FileRoutesById {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_layout/admin': typeof LayoutAdminRoute
+  '/_layout/ledgers': typeof LayoutLedgersRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRoute
+  '/_layout/ledgers/': typeof LayoutLedgersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -86,7 +112,10 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/admin'
+    | '/ledgers'
     | '/settings'
+    | '/ledgers/$ledgerId'
+    | '/ledgers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -95,6 +124,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/settings'
     | '/'
+    | '/ledgers/$ledgerId'
+    | '/ledgers'
   id:
     | '__root__'
     | '/_layout'
@@ -102,8 +133,11 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/_layout/admin'
+    | '/_layout/ledgers'
     | '/_layout/settings'
     | '/_layout/'
+    | '/_layout/ledgers/$ledgerId'
+    | '/_layout/ledgers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/ledgers': {
+      id: '/_layout/ledgers'
+      path: '/ledgers'
+      fullPath: '/ledgers'
+      preLoaderRoute: typeof LayoutLedgersRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/admin': {
       id: '/_layout/admin'
       path: '/admin'
@@ -164,17 +205,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/ledgers/': {
+      id: '/_layout/ledgers/'
+      path: '/'
+      fullPath: '/ledgers/'
+      preLoaderRoute: typeof LayoutLedgersIndexRouteImport
+      parentRoute: typeof LayoutLedgersRoute
+    }
+    '/_layout/ledgers/$ledgerId': {
+      id: '/_layout/ledgers/$ledgerId'
+      path: '/$ledgerId'
+      fullPath: '/ledgers/$ledgerId'
+      preLoaderRoute: typeof LayoutLedgersLedgerIdRouteImport
+      parentRoute: typeof LayoutLedgersRoute
+    }
   }
 }
 
+interface LayoutLedgersRouteChildren {
+  LayoutLedgersLedgerIdRoute: typeof LayoutLedgersLedgerIdRoute
+  LayoutLedgersIndexRoute: typeof LayoutLedgersIndexRoute
+}
+
+const LayoutLedgersRouteChildren: LayoutLedgersRouteChildren = {
+  LayoutLedgersLedgerIdRoute: LayoutLedgersLedgerIdRoute,
+  LayoutLedgersIndexRoute: LayoutLedgersIndexRoute,
+}
+
+const LayoutLedgersRouteWithChildren = LayoutLedgersRoute._addFileChildren(
+  LayoutLedgersRouteChildren,
+)
+
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
+  LayoutLedgersRoute: typeof LayoutLedgersRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
+  LayoutLedgersRoute: LayoutLedgersRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
