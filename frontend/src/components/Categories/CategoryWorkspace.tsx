@@ -26,6 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
 import {
   Select,
@@ -81,22 +83,22 @@ const categorySchema = z.object({
 type GroupFormData = z.infer<typeof groupSchema>
 type CategoryFormData = z.infer<typeof categorySchema>
 
-function useCategoryQueries(ledgerId: string) {
+function useCategoryQueries(ledgerId: string, includeArchived: boolean) {
   const groups = useSuspenseQuery({
     queryFn: () =>
       CategoriesService.readCategoryGroups({
         ledgerId,
-        includeArchived: true,
+        includeArchived,
       }),
-    queryKey: ["category-groups", ledgerId],
+    queryKey: ["category-groups", ledgerId, includeArchived],
   })
   const categories = useSuspenseQuery({
     queryFn: () =>
       CategoriesService.readCategories({
         ledgerId,
-        includeArchived: true,
+        includeArchived,
       }),
-    queryKey: ["categories", ledgerId],
+    queryKey: ["categories", ledgerId, includeArchived],
   })
 
   return { categories: categories.data.data, groups: groups.data.data }
@@ -781,7 +783,21 @@ function ArchiveButton({
 }
 
 export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
-  const { categories, groups } = useCategoryQueries(ledgerId)
+  const [includeArchived, setIncludeArchived] = useState(() => {
+    if (typeof window === "undefined") return false
+    return (
+      window.localStorage.getItem(`show-archived-categories:${ledgerId}`) ===
+      "true"
+    )
+  })
+  useEffect(() => {
+    window.localStorage.setItem(
+      `show-archived-categories:${ledgerId}`,
+      String(includeArchived),
+    )
+  }, [includeArchived, ledgerId])
+
+  const { categories, groups } = useCategoryQueries(ledgerId, includeArchived)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const archiveGroup = useMutation({
@@ -807,152 +823,173 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
   })
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader className="flex-row items-start justify-between gap-4">
-          <div>
-            <CardTitle>Category groups</CardTitle>
-            <CardDescription>Organize categories by purpose.</CardDescription>
-          </div>
-          <CreateGroupDialog ledgerId={ledgerId} />
-        </CardHeader>
-        <CardContent>
-          {groups.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No groups yet.
-            </p>
-          ) : (
-            <div className="divide-y rounded-lg border">
-              {groups.map((group) => (
-                <div
-                  key={group.id}
-                  className="flex items-center justify-between gap-3 p-4"
-                >
-                  <div className="min-w-0">
-                    <p
-                      className={
-                        group.is_active
-                          ? "font-medium"
-                          : "font-medium text-muted-foreground line-through"
-                      }
-                    >
-                      {group.name}
-                    </p>
-                    {group.description && (
-                      <p className="truncate text-sm text-muted-foreground">
-                        {group.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <EditGroupDialog ledgerId={ledgerId} group={group} />
-                    {!group.is_active && (
-                      <Badge variant="secondary">Archived</Badge>
-                    )}
-                    {group.is_active && (
-                      <ArchiveButton
-                        label={group.name}
-                        onArchive={() => archiveGroup.mutate(group.id)}
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3">
+        <div>
+          <p className="text-sm font-medium">Category visibility</p>
+          <p className="text-sm text-muted-foreground">
+            Show archived groups and categories
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="show-archived-categories"
+            checked={includeArchived}
+            onCheckedChange={(checked) => setIncludeArchived(checked === true)}
+          />
+          <Label htmlFor="show-archived-categories">Show archived</Label>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader className="flex-row items-start justify-between gap-4">
-          <div>
-            <CardTitle>Categories</CardTitle>
-            <CardDescription>
-              Use categories to classify obligations.
-            </CardDescription>
-          </div>
-          <CreateCategoryDialog ledgerId={ledgerId} groups={groups} />
-        </CardHeader>
-        <CardContent>
-          {categories.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No categories yet.
-            </p>
-          ) : (
-            <div className="divide-y rounded-lg border">
-              {categories.map((category) => {
-                const group = groups.find(
-                  (item) => item.id === category.category_group_id,
-                )
-                return (
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>Category groups</CardTitle>
+              <CardDescription>Organize categories by purpose.</CardDescription>
+            </div>
+            <CreateGroupDialog ledgerId={ledgerId} />
+          </CardHeader>
+          <CardContent>
+            {groups.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No groups yet.
+              </p>
+            ) : (
+              <div className="divide-y rounded-lg border">
+                {groups.map((group) => (
                   <div
-                    key={category.id}
+                    key={group.id}
                     className="flex items-center justify-between gap-3 p-4"
                   >
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p
-                          className={
-                            category.is_active
-                              ? "font-medium"
-                              : "font-medium text-muted-foreground line-through"
-                          }
-                        >
-                          {category.name}
-                        </p>
-                        <Badge variant="outline">
-                          {group?.name || "Unknown group"}
-                        </Badge>
-                      </div>
-                      {category.description && (
+                      <p
+                        className={
+                          group.is_active
+                            ? "font-medium"
+                            : "font-medium text-muted-foreground line-through"
+                        }
+                      >
+                        {group.name}
+                      </p>
+                      {group.description && (
                         <p className="truncate text-sm text-muted-foreground">
-                          {category.description}
+                          {group.description}
                         </p>
                       )}
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {category.code && (
-                          <Badge variant="secondary">{category.code}</Badge>
-                        )}
-                        <Badge variant="outline">
-                          {category.creation_policy.replace("_", " ")}
-                        </Badge>
-                        <Badge variant="outline">
-                          {category.period_generation_policy === "precreate"
-                            ? "pre-create"
-                            : "on demand"}
-                        </Badge>
-                        {category.currency && (
-                          <Badge variant="outline">{category.currency}</Badge>
-                        )}
-                        {category.due_day && (
-                          <Badge variant="outline">
-                            due day {category.due_day}
-                          </Badge>
-                        )}
-                      </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <EditCategoryDialog
-                        ledgerId={ledgerId}
-                        category={category}
-                      />
-                      {!category.is_active && (
+                      <EditGroupDialog ledgerId={ledgerId} group={group} />
+                      {!group.is_active && (
                         <Badge variant="secondary">Archived</Badge>
                       )}
-                      {category.is_active && (
+                      {group.is_active && (
                         <ArchiveButton
-                          label={category.name}
-                          onArchive={() => archiveCategory.mutate(category.id)}
+                          label={group.name}
+                          onArchive={() => archiveGroup.mutate(group.id)}
                         />
                       )}
                     </div>
                   </div>
-                )
-              })}
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>Categories</CardTitle>
+              <CardDescription>
+                Use categories to classify obligations.
+              </CardDescription>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <CreateCategoryDialog ledgerId={ledgerId} groups={groups} />
+          </CardHeader>
+          <CardContent>
+            {categories.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No categories yet.
+              </p>
+            ) : (
+              <div className="divide-y rounded-lg border">
+                {categories.map((category) => {
+                  const group = groups.find(
+                    (item) => item.id === category.category_group_id,
+                  )
+                  return (
+                    <div
+                      key={category.id}
+                      className="flex items-center justify-between gap-3 p-4"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={
+                              category.is_active
+                                ? "font-medium"
+                                : "font-medium text-muted-foreground line-through"
+                            }
+                          >
+                            {category.name}
+                          </p>
+                          <Badge variant="outline">
+                            {group?.name || "Unknown group"}
+                          </Badge>
+                        </div>
+                        {category.description && (
+                          <p className="truncate text-sm text-muted-foreground">
+                            {category.description}
+                          </p>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {category.code && (
+                            <Badge variant="secondary">{category.code}</Badge>
+                          )}
+                          <Badge variant="outline">
+                            {category.creation_policy.replace("_", " ")}
+                          </Badge>
+                          <Badge variant="outline">
+                            {category.period_generation_policy === "precreate"
+                              ? "pre-create"
+                              : "on demand"}
+                          </Badge>
+                          {category.currency && (
+                            <Badge variant="outline">{category.currency}</Badge>
+                          )}
+                          {category.due_day && (
+                            <Badge variant="outline">
+                              due day {category.due_day}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <EditCategoryDialog
+                          ledgerId={ledgerId}
+                          category={category}
+                        />
+                        {!category.is_active && (
+                          <Badge variant="secondary">Archived</Badge>
+                        )}
+                        {category.is_active && (
+                          <ArchiveButton
+                            label={category.name}
+                            onArchive={() =>
+                              archiveCategory.mutate(category.id)
+                            }
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
