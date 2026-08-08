@@ -17,6 +17,7 @@ from app.schemas import (
     CategoryGroupsPublic,
     CategoryGroupUpdate,
     CategoryPublic,
+    CategoryUpdate,
 )
 from app.use_cases import categories as category_use_cases
 from app.use_cases.exceptions import (
@@ -186,6 +187,44 @@ def create_category(
         raise HTTPException(status_code=422, detail="Due day must be between 1 and 31")
     except CategoryGroupArchivedError:
         raise HTTPException(status_code=409, detail="Category group is archived")
+
+    return _to_category_public(category)
+
+
+@router.patch(
+    "/ledgers/{ledger_id}/categories/{category_id}",
+    response_model=CategoryPublic,
+)
+def update_category(
+    *,
+    session: SessionDep,
+    category_id: uuid.UUID,
+    category_in: CategoryUpdate,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        category = category_use_cases.update_category(
+            session=session,
+            ledger_id=ledger.id,
+            category_id=category_id,
+            name=category_in.name,
+            description=category_in.description,
+            code=category_in.code,
+            creation_policy=category_in.creation_policy,
+            period_generation_policy=category_in.period_generation_policy,
+            currency=category_in.currency,
+            due_day=category_in.due_day,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except DuplicateCategoryError:
+        raise HTTPException(status_code=409, detail="Category already exists")
+    except DuplicateCategoryCodeError:
+        raise HTTPException(status_code=409, detail="Category code already exists")
+    except InvalidCategoryDueDayError:
+        raise HTTPException(status_code=422, detail="Due day must be between 1 and 31")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
     return _to_category_public(category)
 

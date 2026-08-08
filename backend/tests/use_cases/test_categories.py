@@ -9,6 +9,7 @@ from app.use_cases.exceptions import (
     CategoryGroupHasActiveChildrenError,
     CategoryGroupNotFoundError,
     CrossLedgerReferenceError,
+    DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
 )
@@ -165,6 +166,55 @@ def test_create_category_rejects_duplicate_name_in_same_group(db: Session) -> No
             ledger_id=ledger.id,
             category_group_id=category_group.id,
             name=name,
+        )
+
+
+def test_update_category_changes_details_and_obligation_configuration(
+    db: Session,
+) -> None:
+    from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
+
+    ledger, _, category = create_category_tree(db)
+
+    updated = category_use_cases.update_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        name="Updated category",
+        description="Updated description",
+        code="updated-code",
+        creation_policy=ObligationCreationPolicy.AUTO_ONLY,
+        period_generation_policy=PeriodGenerationPolicy.ON_DEMAND,
+        currency="EUR",
+        due_day=20,
+    )
+
+    assert updated.name == "Updated category"
+    assert updated.description == "Updated description"
+    assert updated.code == "updated-code"
+    assert updated.creation_policy == ObligationCreationPolicy.AUTO_ONLY
+    assert updated.period_generation_policy == PeriodGenerationPolicy.ON_DEMAND
+    assert updated.currency == "EUR"
+    assert updated.due_day == 20
+
+
+def test_update_category_rejects_duplicate_code(db: Session) -> None:
+    ledger, group, category = create_category_tree(db)
+    other = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=group.id,
+        name="Other category",
+        code="other-code",
+    )
+
+    with pytest.raises(DuplicateCategoryCodeError):
+        category_use_cases.update_category(
+            session=db,
+            ledger_id=ledger.id,
+            category_id=category.id,
+            name=category.name,
+            code=other.code,
         )
 
 

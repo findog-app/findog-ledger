@@ -198,6 +198,69 @@ def create_category(
     return category
 
 
+def update_category(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    name: str,
+    description: str | None = None,
+    code: str | None = None,
+    creation_policy: ObligationCreationPolicy = ObligationCreationPolicy.HYBRID,
+    period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE,
+    currency: str | None = None,
+    due_day: int | None = None,
+) -> Category:
+    _require_ledger(session=session, ledger_id=ledger_id)
+    category = session.scalar(
+        select(Category).where(
+            Category.id == category_id,
+            Category.ledger_id == ledger_id,
+        )
+    )
+    if category is None:
+        raise CategoryNotFoundError
+
+    normalized_name = _normalize_name(name)
+    existing_name = session.scalar(
+        select(Category.id).where(
+            Category.ledger_id == ledger_id,
+            Category.category_group_id == category.category_group_id,
+            Category.name == normalized_name,
+            Category.id != category_id,
+        )
+    )
+    if existing_name is not None:
+        raise DuplicateCategoryError
+
+    normalized_code = code.strip() if code is not None else None
+    if normalized_code == "":
+        normalized_code = None
+    if due_day is not None and not 1 <= due_day <= 31:
+        raise InvalidCategoryDueDayError
+    if normalized_code is not None:
+        existing_code = session.scalar(
+            select(Category.id).where(
+                Category.ledger_id == ledger_id,
+                Category.code == normalized_code,
+                Category.id != category_id,
+            )
+        )
+        if existing_code is not None:
+            raise DuplicateCategoryCodeError
+
+    category.name = normalized_name
+    category.description = description
+    category.code = normalized_code
+    category.creation_policy = creation_policy
+    category.period_generation_policy = period_generation_policy
+    category.currency = currency
+    category.due_day = due_day
+    session.commit()
+    session.refresh(category)
+    return category
+
+
 def list_categories_for_ledger(
     *,
     session: Session,

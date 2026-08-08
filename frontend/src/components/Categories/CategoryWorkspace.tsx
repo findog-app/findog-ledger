@@ -14,6 +14,8 @@ import {
   type CategoryCreate,
   type CategoryGroupCreate,
   type CategoryGroupUpdate,
+  type CategoryPublic,
+  type CategoryUpdate,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -513,6 +515,235 @@ function CreateCategoryDialog({
   )
 }
 
+function EditCategoryDialog({
+  ledgerId,
+  category,
+}: {
+  ledgerId: string
+  category: CategoryPublic
+}) {
+  const [open, setOpen] = useState(false)
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const form = useForm<CategoryFormData>({
+    resolver: zodResolver(categorySchema),
+    defaultValues: {
+      category_group_id: category.category_group_id,
+      name: category.name,
+      description: category.description ?? "",
+      code: category.code ?? "",
+      creation_policy: category.creation_policy,
+      period_generation_policy: category.period_generation_policy,
+      currency: category.currency ?? "",
+      due_day: category.due_day ?? undefined,
+    },
+  })
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        category_group_id: category.category_group_id,
+        name: category.name,
+        description: category.description ?? "",
+        code: category.code ?? "",
+        creation_policy: category.creation_policy,
+        period_generation_policy: category.period_generation_policy,
+        currency: category.currency ?? "",
+        due_day: category.due_day ?? undefined,
+      })
+    }
+  }, [category, form, open])
+
+  const mutation = useMutation({
+    mutationFn: (data: CategoryUpdate) =>
+      CategoriesService.updateCategory({
+        ledgerId,
+        categoryId: category.id,
+        requestBody: data,
+      }),
+    onSuccess: () => {
+      showSuccessToast("Category updated")
+      setOpen(false)
+    },
+    onError: handleError.bind(showErrorToast),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ["categories", ledgerId] }),
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          <Pencil />
+          <span className="sr-only">Edit {category.name}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit category</DialogTitle>
+          <DialogDescription>
+            Update the category and its obligation configuration.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((data) =>
+              mutation.mutate({
+                name: data.name,
+                description: data.description || null,
+                code: data.code || null,
+                creation_policy: data.creation_policy,
+                period_generation_policy: data.period_generation_policy,
+                currency: data.currency ? data.currency.toUpperCase() : null,
+                due_day: data.due_day,
+              }),
+            )}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Optional description" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="electricity" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="creation_policy"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Creation policy</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="manual_only">Manual only</SelectItem>
+                        <SelectItem value="auto_only">
+                          Automatic only
+                        </SelectItem>
+                        <SelectItem value="hybrid">
+                          Manual and automatic
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="period_generation_policy"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Period generation</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="precreate">
+                          Pre-create periods
+                        </SelectItem>
+                        <SelectItem value="on_demand">On demand</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <FormControl>
+                      <Input placeholder="PLN" maxLength={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="due_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Due day</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        placeholder="Optional"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <DialogFooter>
+              <LoadingButton type="submit" loading={mutation.isPending}>
+                Save changes
+              </LoadingButton>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function ArchiveButton({
   label,
   onArchive,
@@ -680,6 +911,10 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <EditCategoryDialog
+                        ledgerId={ledgerId}
+                        category={category}
+                      />
                       {!category.is_active && (
                         <Badge variant="secondary">Archived</Badge>
                       )}

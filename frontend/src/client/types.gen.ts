@@ -64,6 +64,16 @@ export type CategoryPublic = {
     archived_at: (string | null);
 };
 
+export type CategoryUpdate = {
+    name: string;
+    description?: (string | null);
+    code?: (string | null);
+    creation_policy: ObligationCreationPolicy;
+    period_generation_policy: PeriodGenerationPolicy;
+    currency?: (string | null);
+    due_day?: (number | null);
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -213,6 +223,14 @@ export type CategoriesCreateCategoryData = {
 };
 
 export type CategoriesCreateCategoryResponse = (CategoryPublic);
+
+export type CategoriesUpdateCategoryData = {
+    categoryId: string;
+    ledgerId: string;
+    requestBody: CategoryUpdate;
+};
+
+export type CategoriesUpdateCategoryResponse = (CategoryPublic);
 
 export type CategoriesArchiveCategoryData = {
     categoryId: string;

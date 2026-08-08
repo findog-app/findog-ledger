@@ -27,6 +27,16 @@ class CategoryCreate(BaseModel):
     due_day: int | None = Field(default=None, ge=1, le=31)
 
 
+class CategoryUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    code: str | None = Field(default=None, max_length=100)
+    creation_policy: ObligationCreationPolicy
+    period_generation_policy: PeriodGenerationPolicy
+    currency: str | None = Field(default=None, min_length=3, max_length=3)
+    due_day: int | None = Field(default=None, ge=1, le=31)
+
+
 class CategoryGroupPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

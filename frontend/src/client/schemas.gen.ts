@@ -363,6 +363,75 @@ export const CategoryPublicSchema = {
     title: 'CategoryPublic'
 } as const;
 
+export const CategoryUpdateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        code: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Code'
+        },
+        creation_policy: {
+            '$ref': '#/components/schemas/ObligationCreationPolicy'
+        },
+        period_generation_policy: {
+            '$ref': '#/components/schemas/PeriodGenerationPolicy'
+        },
+        currency: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 3,
+                    minLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        due_day: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    maximum: 31,
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Day'
+        }
+    },
+    type: 'object',
+    required: ['name', 'creation_policy', 'period_generation_policy'],
+    title: 'CategoryUpdate'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
