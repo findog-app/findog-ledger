@@ -226,6 +226,31 @@ export const CategoryGroupPublicSchema = {
     title: 'CategoryGroupPublic'
 } as const;
 
+export const CategoryGroupUpdateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'CategoryGroupUpdate'
+} as const;
+
 export const CategoryGroupsPublicSchema = {
     properties: {
         data: {

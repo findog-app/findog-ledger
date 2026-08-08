@@ -86,6 +86,42 @@ def list_category_groups_for_ledger(
     )
 
 
+def update_category_group(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_group_id: uuid.UUID,
+    name: str,
+    description: str | None = None,
+) -> CategoryGroup:
+    _require_ledger(session=session, ledger_id=ledger_id)
+    category_group = session.scalar(
+        select(CategoryGroup).where(
+            CategoryGroup.id == category_group_id,
+            CategoryGroup.ledger_id == ledger_id,
+        )
+    )
+    if category_group is None:
+        raise CategoryGroupNotFoundError
+
+    normalized_name = _normalize_name(name)
+    existing = session.scalar(
+        select(CategoryGroup.id).where(
+            CategoryGroup.ledger_id == ledger_id,
+            CategoryGroup.name == normalized_name,
+            CategoryGroup.id != category_group_id,
+        )
+    )
+    if existing is not None:
+        raise DuplicateCategoryGroupError
+
+    category_group.name = normalized_name
+    category_group.description = description
+    session.commit()
+    session.refresh(category_group)
+    return category_group
+
+
 def create_category(
     *,
     session: Session,

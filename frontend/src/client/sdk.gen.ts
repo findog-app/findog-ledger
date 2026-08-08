@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class CategoriesService {
     /**
@@ -43,6 +43,31 @@ export class CategoriesService {
             method: 'POST',
             url: '/api/v1/ledgers/{ledger_id}/category-groups',
             path: {
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Category Group
+     * @param data The data for the request.
+     * @param data.categoryGroupId
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns CategoryGroupPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateCategoryGroup(data: CategoriesUpdateCategoryGroupData): CancelablePromise<CategoriesUpdateCategoryGroupResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}/category-groups/{category_group_id}',
+            path: {
+                category_group_id: data.categoryGroupId,
                 ledger_id: data.ledgerId
             },
             body: data.requestBody,

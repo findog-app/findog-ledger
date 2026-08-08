@@ -7,6 +7,7 @@ from app.use_cases import categories as category_use_cases
 from app.use_cases.exceptions import (
     CategoryGroupArchivedError,
     CategoryGroupHasActiveChildrenError,
+    CategoryGroupNotFoundError,
     CrossLedgerReferenceError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
@@ -86,6 +87,60 @@ def test_create_category_group_rejects_duplicate_name_in_same_ledger(
             session=db,
             ledger_id=ledger.id,
             name=name,
+        )
+
+
+def test_update_category_group_changes_name_and_description(db: Session) -> None:
+    ledger = create_test_ledger(db)
+    category_group = category_use_cases.create_category_group(
+        session=db,
+        ledger_id=ledger.id,
+        name=f"group-{random_lower_string()}",
+    )
+
+    updated = category_use_cases.update_category_group(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Updated group",
+        description="Updated description",
+    )
+
+    assert updated.name == "Updated group"
+    assert updated.description == "Updated description"
+
+
+def test_update_category_group_rejects_duplicate_name(db: Session) -> None:
+    ledger = create_test_ledger(db)
+    first = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="First"
+    )
+    second = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="Second"
+    )
+
+    with pytest.raises(DuplicateCategoryGroupError):
+        category_use_cases.update_category_group(
+            session=db,
+            ledger_id=ledger.id,
+            category_group_id=second.id,
+            name=first.name,
+        )
+
+
+def test_update_category_group_rejects_group_from_another_ledger(db: Session) -> None:
+    ledger_one = create_test_ledger(db)
+    ledger_two = create_test_ledger(db)
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger_two.id, name="Other ledger group"
+    )
+
+    with pytest.raises(CategoryGroupNotFoundError):
+        category_use_cases.update_category_group(
+            session=db,
+            ledger_id=ledger_one.id,
+            category_group_id=category_group.id,
+            name="Renamed",
         )
 
 

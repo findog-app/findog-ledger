@@ -44,6 +44,11 @@ export type CategoryGroupsPublic = {
     count: number;
 };
 
+export type CategoryGroupUpdate = {
+    name: string;
+    description?: (string | null);
+};
+
 export type CategoryPublic = {
     id: string;
     ledger_id: string;
@@ -178,6 +183,14 @@ export type CategoriesCreateCategoryGroupData = {
 };
 
 export type CategoriesCreateCategoryGroupResponse = (CategoryGroupPublic);
+
+export type CategoriesUpdateCategoryGroupData = {
+    categoryGroupId: string;
+    ledgerId: string;
+    requestBody: CategoryGroupUpdate;
+};
+
+export type CategoriesUpdateCategoryGroupResponse = (CategoryGroupPublic);
 
 export type CategoriesArchiveCategoryGroupData = {
     categoryGroupId: string;

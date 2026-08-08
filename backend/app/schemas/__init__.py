@@ -4,6 +4,7 @@ from app.schemas.categories import (
     CategoryGroupCreate,
     CategoryGroupPublic,
     CategoryGroupsPublic,
+    CategoryGroupUpdate,
     CategoryPublic,
 )
 from app.schemas.common import Message, NewPassword, PasswordStr, Token, TokenPayload
@@ -33,6 +34,7 @@ __all__ = [
     "CategoriesPublic",
     "CategoryCreate",
     "CategoryGroupCreate",
+    "CategoryGroupUpdate",
     "CategoryGroupPublic",
     "CategoryGroupsPublic",
     "CategoryPublic",

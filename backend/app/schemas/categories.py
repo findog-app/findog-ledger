@@ -11,6 +11,11 @@ class CategoryGroupCreate(BaseModel):
     description: str | None = None
 
 
+class CategoryGroupUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+
+
 class CategoryCreate(BaseModel):
     category_group_id: uuid.UUID
     name: str = Field(min_length=1, max_length=255)

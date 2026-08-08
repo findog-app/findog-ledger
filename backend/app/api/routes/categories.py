@@ -15,6 +15,7 @@ from app.schemas import (
     CategoryGroupCreate,
     CategoryGroupPublic,
     CategoryGroupsPublic,
+    CategoryGroupUpdate,
     CategoryPublic,
 )
 from app.use_cases import categories as category_use_cases
@@ -74,6 +75,35 @@ def create_category_group(
         )
     except DuplicateCategoryGroupError:
         raise HTTPException(status_code=409, detail="Category group already exists")
+
+    return _to_category_group_public(category_group)
+
+
+@router.patch(
+    "/ledgers/{ledger_id}/category-groups/{category_group_id}",
+    response_model=CategoryGroupPublic,
+)
+def update_category_group(
+    *,
+    session: SessionDep,
+    category_group_id: uuid.UUID,
+    category_group_in: CategoryGroupUpdate,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        category_group = category_use_cases.update_category_group(
+            session=session,
+            ledger_id=ledger.id,
+            category_group_id=category_group_id,
+            name=category_group_in.name,
+            description=category_group_in.description,
+        )
+    except CategoryGroupNotFoundError:
+        raise HTTPException(status_code=404, detail="Category group not found")
+    except DuplicateCategoryGroupError:
+        raise HTTPException(status_code=409, detail="Category group already exists")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
     return _to_category_group_public(category_group)
 
