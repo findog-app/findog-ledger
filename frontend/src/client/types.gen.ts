@@ -88,6 +88,8 @@ export type LedgerCreate = {
 export type LedgerMemberPublic = {
     ledger_id: string;
     user_id: string;
+    email: string;
+    full_name: (string | null);
     role: LedgerAccessRole;
     created_at: string;
 };
@@ -107,7 +109,8 @@ export type LedgerPublic = {
 };
 
 export type LedgerShare = {
-    user_id: string;
+    user_id?: (string | null);
+    email?: (string | null);
     role: LedgerAccessRole;
 };
 

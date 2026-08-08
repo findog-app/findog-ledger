@@ -493,6 +493,22 @@ export const LedgerMemberPublicSchema = {
             format: 'uuid',
             title: 'User Id'
         },
+        email: {
+            type: 'string',
+            format: 'email',
+            title: 'Email'
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        },
         role: {
             '$ref': '#/components/schemas/LedgerAccessRole'
         },
@@ -503,7 +519,7 @@ export const LedgerMemberPublicSchema = {
         }
     },
     type: 'object',
-    required: ['ledger_id', 'user_id', 'role', 'created_at'],
+    required: ['ledger_id', 'user_id', 'email', 'full_name', 'role', 'created_at'],
     title: 'LedgerMemberPublic'
 } as const;
 
@@ -572,16 +588,35 @@ export const LedgerPublicSchema = {
 export const LedgerShareSchema = {
     properties: {
         user_id: {
-            type: 'string',
-            format: 'uuid',
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'User Id'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
         },
         role: {
             '$ref': '#/components/schemas/LedgerAccessRole'
         }
     },
     type: 'object',
-    required: ['user_id', 'role'],
+    required: ['role'],
     title: 'LedgerShare'
 } as const;
 

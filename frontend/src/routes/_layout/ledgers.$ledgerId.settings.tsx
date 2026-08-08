@@ -4,6 +4,7 @@ import { Archive, ArrowLeft, BookOpen } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { LedgersService } from "@/client"
+import LedgerSharing from "@/components/LedgerSettings/LedgerSharing"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -87,6 +88,7 @@ function LedgerSettings() {
           </div>
         </CardContent>
       </Card>
+      <LedgerSharing ledgerId={ledgerId} />
     </div>
   )
 }
