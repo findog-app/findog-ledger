@@ -4,6 +4,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
+from app.domain.obligations import ObligationCreationPolicy, PeriodGenerationPolicy
+
 
 @dataclass(slots=True)
 class CategoryGroup:
@@ -28,6 +30,11 @@ class Category:
     name: str
     description: str | None
     is_active: bool
+    code: str | None
+    creation_policy: ObligationCreationPolicy
+    period_generation_policy: PeriodGenerationPolicy
+    currency: str | None
+    due_day: int | None
     archived_at: datetime | None
     created_at: datetime
     updated_at: datetime

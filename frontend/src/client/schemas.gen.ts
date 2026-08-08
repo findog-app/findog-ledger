@@ -99,6 +99,52 @@ export const CategoryCreateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        code: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Code'
+        },
+        creation_policy: {
+            '$ref': '#/components/schemas/ObligationCreationPolicy',
+            default: 'hybrid'
+        },
+        period_generation_policy: {
+            '$ref': '#/components/schemas/PeriodGenerationPolicy',
+            default: 'precreate'
+        },
+        currency: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 3,
+                    minLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        due_day: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    maximum: 31,
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Day'
         }
     },
     type: 'object',
@@ -235,6 +281,45 @@ export const CategoryPublicSchema = {
             type: 'boolean',
             title: 'Is Active'
         },
+        code: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Code'
+        },
+        creation_policy: {
+            '$ref': '#/components/schemas/ObligationCreationPolicy'
+        },
+        period_generation_policy: {
+            '$ref': '#/components/schemas/PeriodGenerationPolicy'
+        },
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        due_day: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Day'
+        },
         archived_at: {
             anyOf: [
                 {
@@ -249,7 +334,7 @@ export const CategoryPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'archived_at'],
+    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'creation_policy', 'period_generation_policy', 'currency', 'due_day', 'archived_at'],
     title: 'CategoryPublic'
 } as const;
 
@@ -449,6 +534,18 @@ export const NewPasswordSchema = {
     type: 'object',
     required: ['token', 'new_password'],
     title: 'NewPassword'
+} as const;
+
+export const ObligationCreationPolicySchema = {
+    type: 'string',
+    enum: ['manual_only', 'auto_only', 'hybrid'],
+    title: 'ObligationCreationPolicy'
+} as const;
+
+export const PeriodGenerationPolicySchema = {
+    type: 'string',
+    enum: ['precreate', 'on_demand'],
+    title: 'PeriodGenerationPolicy'
 } as const;
 
 export const TokenSchema = {

@@ -7,7 +7,6 @@ This repository is currently in the foundation phase. The template demo domain h
 - auth and user administration
 - categories
 - counterparties
-- obligation templates
 - obligations
 - integration status and sync event handling
 

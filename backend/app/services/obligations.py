@@ -14,19 +14,19 @@ from app.domain import (
     PeriodGenerationPolicy,
     ValueState,
 )
-from app.models import Obligation, ObligationTemplate
+from app.models import Category, Obligation
 
 
 def get_or_create_obligation(
     *,
     session: Session,
-    template: ObligationTemplate,
+    category: Category,
     period: BillingPeriod,
 ) -> tuple[Obligation, bool]:
     obligation = session.scalar(
         select(Obligation).where(
-            Obligation.ledger_id == template.ledger_id,
-            Obligation.template_id == template.id,
+            Obligation.ledger_id == category.ledger_id,
+            Obligation.category_id == category.id,
             Obligation.period_year == period.year,
             Obligation.period_month == period.month,
         )
@@ -35,10 +35,9 @@ def get_or_create_obligation(
         return obligation, False
 
     obligation = Obligation(
-        ledger_id=template.ledger_id,
-        template_id=template.id,
-        category_id=template.category_id,
-        name=template.name,
+        ledger_id=category.ledger_id,
+        category_id=category.id,
+        name=category.name,
         lifecycle=ObligationLifecycle.DRAFT,
         period_year=period.year,
         period_month=period.month,
@@ -52,7 +51,7 @@ def get_or_create_obligation(
         due_date=None,
         due_date_state=ValueState.UNKNOWN,
         due_date_source=CurrentValueSource.UNKNOWN,
-        currency=template.currency,
+        currency=category.currency,
     )
     try:
         with session.begin_nested():
@@ -61,8 +60,8 @@ def get_or_create_obligation(
     except IntegrityError:
         obligation = session.scalar(
             select(Obligation).where(
-                Obligation.ledger_id == template.ledger_id,
-                Obligation.template_id == template.id,
+                Obligation.ledger_id == category.ledger_id,
+                Obligation.category_id == category.id,
                 Obligation.period_year == period.year,
                 Obligation.period_month == period.month,
             )
@@ -80,21 +79,20 @@ def ensure_obligations_for_period(
     ledger_id: uuid.UUID,
     current_period: BillingPeriod,
 ) -> list[Obligation]:
-    templates = session.scalars(
-        select(ObligationTemplate).where(
-            ObligationTemplate.ledger_id == ledger_id,
-            ObligationTemplate.is_active.is_(True),
-            ObligationTemplate.period_generation_policy
-            == PeriodGenerationPolicy.PRECREATE,
+    categories = session.scalars(
+        select(Category).where(
+            Category.ledger_id == ledger_id,
+            Category.is_active.is_(True),
+            Category.period_generation_policy == PeriodGenerationPolicy.PRECREATE,
         )
     ).all()
 
     created: list[Obligation] = []
-    for template in templates:
+    for category in categories:
         for period in (current_period, current_period.next()):
             obligation, was_created = get_or_create_obligation(
                 session=session,
-                template=template,
+                category=category,
                 period=period,
             )
             if was_created:

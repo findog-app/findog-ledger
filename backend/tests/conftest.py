@@ -18,7 +18,6 @@ from app.models import (
     Ledger,
     LedgerMembership,
     Obligation,
-    ObligationTemplate,
     User,
 )
 from tests.utils.user import authentication_token_from_email
@@ -64,7 +63,6 @@ def db() -> Generator[Session, None, None]:
     run_test_migrations()
     with TestingSessionLocal() as session:
         session.execute(delete(Obligation))
-        session.execute(delete(ObligationTemplate))
         session.execute(delete(Category))
         session.execute(delete(CategoryGroup))
         session.execute(delete(LedgerMembership))
@@ -74,7 +72,6 @@ def db() -> Generator[Session, None, None]:
         init_db(session)
         yield session
         session.execute(delete(Obligation))
-        session.execute(delete(ObligationTemplate))
         session.execute(delete(Category))
         session.execute(delete(CategoryGroup))
         session.execute(delete(LedgerMembership))

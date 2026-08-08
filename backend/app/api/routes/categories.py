@@ -24,8 +24,10 @@ from app.use_cases.exceptions import (
     CategoryGroupNotFoundError,
     CategoryNotFoundError,
     CrossLedgerReferenceError,
+    DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
+    InvalidCategoryDueDayError,
 )
 
 router = APIRouter(tags=["categories"])
@@ -136,6 +138,11 @@ def create_category(
             category_group_id=category_in.category_group_id,
             name=category_in.name,
             description=category_in.description,
+            code=category_in.code,
+            creation_policy=category_in.creation_policy,
+            period_generation_policy=category_in.period_generation_policy,
+            currency=category_in.currency,
+            due_day=category_in.due_day,
         )
     except CategoryGroupNotFoundError:
         raise HTTPException(status_code=404, detail="Category group not found")
@@ -143,6 +150,10 @@ def create_category(
         raise HTTPException(status_code=404, detail="Category group not found")
     except DuplicateCategoryError:
         raise HTTPException(status_code=409, detail="Category already exists")
+    except DuplicateCategoryCodeError:
+        raise HTTPException(status_code=409, detail="Category code already exists")
+    except InvalidCategoryDueDayError:
+        raise HTTPException(status_code=422, detail="Due day must be between 1 and 31")
     except CategoryGroupArchivedError:
         raise HTTPException(status_code=409, detail="Category group is archived")
 

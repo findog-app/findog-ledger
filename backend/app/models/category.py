@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -15,12 +16,12 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
 from app.models.base import Base, get_datetime_utc
 
 if TYPE_CHECKING:
     from app.models.ledger import Ledger
     from app.models.obligation import Obligation
-    from app.models.obligation_template import ObligationTemplate
 
 
 class CategoryGroup(Base):
@@ -73,6 +74,8 @@ class Category(Base):
         ),
         UniqueConstraint("ledger_id", "id"),
         UniqueConstraint("ledger_id", "category_group_id", "name"),
+        UniqueConstraint("ledger_id", "code"),
+        CheckConstraint("due_day IS NULL OR (due_day >= 1 AND due_day <= 31)"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -90,6 +93,13 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    creation_policy: Mapped[ObligationCreationPolicy] = mapped_column(nullable=False)
+    period_generation_policy: Mapped[PeriodGenerationPolicy] = mapped_column(
+        nullable=False
+    )
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    due_day: Mapped[int | None] = mapped_column(nullable=True)
     archived_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -111,11 +121,7 @@ class Category(Base):
         back_populates="categories",
         overlaps="ledger,categories",
     )
-    obligation_templates: Mapped[list[ObligationTemplate]] = relationship(
-        back_populates="category",
-        overlaps="ledger,obligation_templates",
-    )
     obligations: Mapped[list[Obligation]] = relationship(
         back_populates="category",
-        overlaps="ledger,template,obligations",
+        overlaps="ledger,obligations",
     )

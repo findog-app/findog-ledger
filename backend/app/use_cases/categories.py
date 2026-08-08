@@ -5,6 +5,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
 from app.models import Category, CategoryGroup, Ledger
 from app.services import categories as category_service
 from app.use_cases.exceptions import (
@@ -13,8 +14,10 @@ from app.use_cases.exceptions import (
     CategoryGroupNotFoundError,
     CategoryNotFoundError,
     CrossLedgerReferenceError,
+    DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
+    InvalidCategoryDueDayError,
     LedgerNotFoundError,
 )
 
@@ -90,6 +93,11 @@ def create_category(
     category_group_id: uuid.UUID,
     name: str,
     description: str | None = None,
+    code: str | None = None,
+    creation_policy: ObligationCreationPolicy = ObligationCreationPolicy.HYBRID,
+    period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE,
+    currency: str | None = None,
+    due_day: int | None = None,
 ) -> Category:
     _require_ledger(session=session, ledger_id=ledger_id)
     normalized_name = _normalize_name(name)
@@ -120,12 +128,33 @@ def create_category(
     if existing is not None:
         raise DuplicateCategoryError
 
+    normalized_code = code.strip() if code is not None else None
+    if normalized_code == "":
+        normalized_code = None
+    if due_day is not None and not 1 <= due_day <= 31:
+        raise InvalidCategoryDueDayError
+    if (
+        normalized_code is not None
+        and session.scalar(
+            select(Category.id).where(
+                Category.ledger_id == ledger_id, Category.code == normalized_code
+            )
+        )
+        is not None
+    ):
+        raise DuplicateCategoryCodeError
+
     category = Category(
         ledger_id=ledger_id,
         category_group_id=category_group_id,
         name=normalized_name,
         description=description,
         is_active=True,
+        code=normalized_code,
+        creation_policy=creation_policy,
+        period_generation_policy=period_generation_policy,
+        currency=currency,
+        due_day=due_day,
     )
     session.add(category)
     session.commit()

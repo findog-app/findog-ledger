@@ -34,6 +34,10 @@ class DuplicateCategoryError(ApplicationError):
     pass
 
 
+class DuplicateCategoryCodeError(ApplicationError):
+    pass
+
+
 class CategoryGroupArchivedError(ApplicationError):
     pass
 
@@ -46,9 +50,5 @@ class CrossLedgerReferenceError(ApplicationError):
     pass
 
 
-class DuplicateTemplateCodeError(ApplicationError):
-    pass
-
-
-class InvalidDefaultDueDayError(ApplicationError):
+class InvalidCategoryDueDayError(ApplicationError):
     pass

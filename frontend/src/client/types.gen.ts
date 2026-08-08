@@ -18,6 +18,11 @@ export type CategoryCreate = {
     category_group_id: string;
     name: string;
     description?: (string | null);
+    code?: (string | null);
+    creation_policy?: ObligationCreationPolicy;
+    period_generation_policy?: PeriodGenerationPolicy;
+    currency?: (string | null);
+    due_day?: (number | null);
 };
 
 export type CategoryGroupCreate = {
@@ -46,6 +51,11 @@ export type CategoryPublic = {
     name: string;
     description: (string | null);
     is_active: boolean;
+    code: (string | null);
+    creation_policy: ObligationCreationPolicy;
+    period_generation_policy: PeriodGenerationPolicy;
+    currency: (string | null);
+    due_day: (number | null);
     archived_at: (string | null);
 };
 
@@ -99,6 +109,10 @@ export type NewPassword = {
     token: string;
     new_password: string;
 };
+
+export type ObligationCreationPolicy = 'manual_only' | 'auto_only' | 'hybrid';
+
+export type PeriodGenerationPolicy = 'precreate' | 'on_demand';
 
 export type Token = {
     access_token: string;

@@ -43,7 +43,7 @@ def list_obligations_for_period(
     ledger_id: uuid.UUID,
     period: BillingPeriod,
     lifecycle: ObligationLifecycle | None = None,
-    template_id: uuid.UUID | None = None,
+    category_id: uuid.UUID | None = None,
 ) -> list[Obligation]:
     _require_ledger(session=session, ledger_id=ledger_id)
 
@@ -54,14 +54,14 @@ def list_obligations_for_period(
     )
     if lifecycle is not None:
         statement = statement.where(Obligation.lifecycle == lifecycle)
-    if template_id is not None:
-        statement = statement.where(Obligation.template_id == template_id)
+    if category_id is not None:
+        statement = statement.where(Obligation.category_id == category_id)
 
     return list(
         session.scalars(
             statement.order_by(
                 Obligation.name.asc(),
-                Obligation.template_id.asc(),
+                Obligation.category_id.asc(),
                 Obligation.id.asc(),
             )
         ).all()

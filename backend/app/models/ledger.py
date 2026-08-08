@@ -14,7 +14,6 @@ from app.models.base import Base, get_datetime_utc
 if TYPE_CHECKING:
     from app.models.category import Category, CategoryGroup
     from app.models.obligation import Obligation
-    from app.models.obligation_template import ObligationTemplate
     from app.models.user import User
 
 
@@ -56,15 +55,10 @@ class Ledger(Base):
         cascade="all, delete-orphan",
         overlaps="category_group,categories",
     )
-    obligation_templates: Mapped[list[ObligationTemplate]] = relationship(
-        back_populates="ledger",
-        cascade="all, delete-orphan",
-        overlaps="category,obligation_templates",
-    )
     obligations: Mapped[list[Obligation]] = relationship(
         back_populates="ledger",
         cascade="all, delete-orphan",
-        overlaps="category,template,obligations",
+        overlaps="category,obligations",
     )
 
 

@@ -29,7 +29,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Create Category Group
      * @param data The data for the request.
@@ -52,7 +52,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Archive Category Group
      * @param data The data for the request.
@@ -74,7 +74,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Read Categories
      * @param data The data for the request.
@@ -100,7 +100,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Create Category
      * @param data The data for the request.
@@ -123,7 +123,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Archive Category
      * @param data The data for the request.
@@ -159,7 +159,7 @@ export class LedgersService {
             url: '/api/v1/ledgers/'
         });
     }
-
+    
     /**
      * Create Ledger
      * @param data The data for the request.
@@ -178,7 +178,7 @@ export class LedgersService {
             }
         });
     }
-
+    
     /**
      * Read Ledger
      * @param data The data for the request.
@@ -198,7 +198,7 @@ export class LedgersService {
             }
         });
     }
-
+    
     /**
      * Read Ledger Members
      * @param data The data for the request.
@@ -218,7 +218,7 @@ export class LedgersService {
             }
         });
     }
-
+    
     /**
      * Share Ledger
      * @param data The data for the request.
@@ -263,7 +263,7 @@ export class LoginService {
             }
         });
     }
-
+    
     /**
      * Test Token
      * Test access token
@@ -276,7 +276,7 @@ export class LoginService {
             url: '/api/v1/login/test-token'
         });
     }
-
+    
     /**
      * Recover Password
      * Password Recovery
@@ -297,7 +297,7 @@ export class LoginService {
             }
         });
     }
-
+    
     /**
      * Reset Password
      * Reset password
@@ -317,7 +317,7 @@ export class LoginService {
             }
         });
     }
-
+    
     /**
      * Recover Password Html Content
      * HTML Content for Password Recovery
@@ -363,7 +363,7 @@ export class UsersService {
             }
         });
     }
-
+    
     /**
      * Create User
      * Create new user.
@@ -383,7 +383,7 @@ export class UsersService {
             }
         });
     }
-
+    
     /**
      * Read User Me
      * Get current user.
@@ -396,7 +396,7 @@ export class UsersService {
             url: '/api/v1/users/me'
         });
     }
-
+    
     /**
      * Delete User Me
      * Delete own user.
@@ -409,7 +409,7 @@ export class UsersService {
             url: '/api/v1/users/me'
         });
     }
-
+    
     /**
      * Update User Me
      * Update own user.
@@ -429,7 +429,7 @@ export class UsersService {
             }
         });
     }
-
+    
     /**
      * Update Password Me
      * Update own password.
@@ -449,7 +449,7 @@ export class UsersService {
             }
         });
     }
-
+    
     /**
      * Read User By Id
      * Get a specific user by id.
@@ -470,7 +470,7 @@ export class UsersService {
             }
         });
     }
-
+    
     /**
      * Update User
      * Update a user.
@@ -494,7 +494,7 @@ export class UsersService {
             }
         });
     }
-
+    
     /**
      * Delete User
      * Delete a user.
@@ -538,7 +538,7 @@ export class UtilsService {
             }
         });
     }
-
+    
     /**
      * Health Check
      * @returns boolean Successful Response

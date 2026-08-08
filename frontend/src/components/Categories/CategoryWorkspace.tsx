@@ -61,6 +61,11 @@ const categorySchema = z.object({
   category_group_id: z.string().min(1, "Choose a group"),
   name: z.string().trim().min(1, "Name is required").max(255),
   description: z.string().optional(),
+  code: z.string().trim().max(100).optional(),
+  creation_policy: z.enum(["manual_only", "auto_only", "hybrid"]),
+  period_generation_policy: z.enum(["precreate", "on_demand"]),
+  currency: z.string().trim().length(3).optional(),
+  due_day: z.number().int().min(1).max(31).optional(),
 })
 
 type GroupFormData = z.infer<typeof groupSchema>
@@ -186,7 +191,16 @@ function CreateCategoryDialog({
   const activeGroups = groups.filter((group) => group.is_active)
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
-    defaultValues: { category_group_id: "", name: "", description: "" },
+    defaultValues: {
+      category_group_id: "",
+      name: "",
+      description: "",
+      code: "",
+      creation_policy: "hybrid",
+      period_generation_policy: "precreate",
+      currency: "",
+      due_day: undefined,
+    },
   })
   const mutation = useMutation({
     mutationFn: (data: CategoryCreate) =>
@@ -222,6 +236,8 @@ function CreateCategoryDialog({
               mutation.mutate({
                 ...data,
                 description: data.description || null,
+                code: data.code || null,
+                currency: data.currency ? data.currency.toUpperCase() : null,
               }),
             )}
             className="space-y-4"
@@ -276,6 +292,112 @@ function CreateCategoryDialog({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="electricity" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="creation_policy"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Creation policy</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="manual_only">Manual only</SelectItem>
+                        <SelectItem value="auto_only">
+                          Automatic only
+                        </SelectItem>
+                        <SelectItem value="hybrid">
+                          Manual and automatic
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="period_generation_policy"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Period generation</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="precreate">
+                          Pre-create periods
+                        </SelectItem>
+                        <SelectItem value="on_demand">On demand</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <FormControl>
+                      <Input placeholder="PLN" maxLength={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="due_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Due day</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        placeholder="Optional"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <DialogFooter>
               <LoadingButton type="submit" loading={mutation.isPending}>
                 Create category
@@ -431,6 +553,27 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
                           {category.description}
                         </p>
                       )}
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {category.code && (
+                          <Badge variant="secondary">{category.code}</Badge>
+                        )}
+                        <Badge variant="outline">
+                          {category.creation_policy.replace("_", " ")}
+                        </Badge>
+                        <Badge variant="outline">
+                          {category.period_generation_policy === "precreate"
+                            ? "pre-create"
+                            : "on demand"}
+                        </Badge>
+                        {category.currency && (
+                          <Badge variant="outline">{category.currency}</Badge>
+                        )}
+                        {category.due_day && (
+                          <Badge variant="outline">
+                            due day {category.due_day}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {!category.is_active && (

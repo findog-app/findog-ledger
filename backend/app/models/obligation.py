@@ -30,17 +30,11 @@ from app.models.base import Base, get_datetime_utc
 if TYPE_CHECKING:
     from app.models.category import Category
     from app.models.ledger import Ledger
-    from app.models.obligation_template import ObligationTemplate
 
 
 class Obligation(Base):
     __tablename__ = "obligation"
     __table_args__ = (
-        ForeignKeyConstraint(
-            ["ledger_id", "template_id"],
-            ["obligation_template.ledger_id", "obligation_template.id"],
-            ondelete="RESTRICT",
-        ),
         ForeignKeyConstraint(
             ["ledger_id", "category_id"],
             ["category.ledger_id", "category.id"],
@@ -49,10 +43,10 @@ class Obligation(Base):
         UniqueConstraint("ledger_id", "id"),
         UniqueConstraint(
             "ledger_id",
-            "template_id",
+            "category_id",
             "period_year",
             "period_month",
-            name="uq_obligation_ledger_template_period",
+            name="uq_obligation_ledger_category_period",
         ),
         CheckConstraint("period_month >= 1 AND period_month <= 12"),
     )
@@ -65,9 +59,6 @@ class Obligation(Base):
         ForeignKey("ledger.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-    )
-    template_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
     )
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False, index=True
@@ -107,13 +98,9 @@ class Obligation(Base):
 
     ledger: Mapped[Ledger] = relationship(
         back_populates="obligations",
-        overlaps="category,template,obligations",
-    )
-    template: Mapped[ObligationTemplate] = relationship(
-        back_populates="obligations",
-        overlaps="category,ledger,obligations",
+        overlaps="category,obligations",
     )
     category: Mapped[Category] = relationship(
         back_populates="obligations",
-        overlaps="ledger,template,obligations",
+        overlaps="ledger,obligations",
     )

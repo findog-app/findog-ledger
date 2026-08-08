@@ -3,10 +3,9 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
-from app.models import Category, CategoryGroup, Ledger, ObligationTemplate
+from app.models import Category, CategoryGroup, Ledger
 from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
-from app.use_cases import obligation_templates as template_use_cases
 from tests.utils.user import create_random_user
 from tests.utils.utils import random_lower_string
 
@@ -36,21 +35,17 @@ def create_category_tree(db: Session) -> tuple[Ledger, CategoryGroup, Category]:
     return ledger, category_group, category
 
 
-def create_template(
+def create_category_with_obligation_policy(
     db: Session,
     *,
     period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE,
-) -> tuple[Ledger, CategoryGroup, Category, ObligationTemplate]:
+) -> tuple[Ledger, CategoryGroup, Category]:
     ledger, category_group, category = create_category_tree(db)
-    template = template_use_cases.create_obligation_template(
-        session=db,
-        ledger_id=ledger.id,
-        category_id=category.id,
-        name=f"template-{random_lower_string()}",
-        code=f"code-{random_lower_string()}",
-        creation_policy=ObligationCreationPolicy.HYBRID,
-        period_generation_policy=period_generation_policy,
-        currency="PLN",
-        due_day=10,
-    )
-    return ledger, category_group, category, template
+    category.creation_policy = ObligationCreationPolicy.HYBRID
+    category.period_generation_policy = period_generation_policy
+    category.currency = "PLN"
+    category.due_day = 10
+    category.code = f"code-{random_lower_string()}"
+    db.commit()
+    db.refresh(category)
+    return ledger, category_group, category

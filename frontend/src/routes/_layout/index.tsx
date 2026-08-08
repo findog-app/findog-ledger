@@ -30,7 +30,7 @@ function Dashboard() {
         <h2 className="text-lg font-medium">Current Scope</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Authentication, admin-managed users, ledgers, and category management
-          are available. Counterparties, obligation templates, obligations, and
+          are available. Counterparties, categories, obligations, and
           integration sync are next in the business workflow.
         </p>
       </section>

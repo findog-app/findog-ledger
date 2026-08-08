@@ -1,6 +1,12 @@
 from fastapi import APIRouter
 
-from app.api.routes import categories, ledgers, login, users, utils
+from app.api.routes import (
+    categories,
+    ledgers,
+    login,
+    users,
+    utils,
+)
 
 api_router = APIRouter()
 api_router.include_router(login.router)

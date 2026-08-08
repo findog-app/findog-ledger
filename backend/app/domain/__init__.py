@@ -7,7 +7,6 @@ from app.domain.obligations import (
     Obligation,
     ObligationCreationPolicy,
     ObligationLifecycle,
-    ObligationTemplate,
     PeriodGenerationPolicy,
     ValueState,
 )
@@ -24,7 +23,6 @@ __all__ = [
     "Obligation",
     "ObligationCreationPolicy",
     "ObligationLifecycle",
-    "ObligationTemplate",
     "PeriodGenerationPolicy",
     "ValueState",
 ]

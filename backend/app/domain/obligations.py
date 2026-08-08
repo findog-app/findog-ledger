@@ -67,26 +67,9 @@ class BillingPeriod:
 
 
 @dataclass(slots=True)
-class ObligationTemplate:
-    id: uuid.UUID
-    ledger_id: uuid.UUID
-    category_id: uuid.UUID
-    name: str
-    code: str | None
-    is_active: bool
-    creation_policy: ObligationCreationPolicy
-    period_generation_policy: PeriodGenerationPolicy
-    currency: str | None
-    due_day: int | None
-    created_at: datetime
-    updated_at: datetime
-
-
-@dataclass(slots=True)
 class Obligation:
     id: uuid.UUID
     ledger_id: uuid.UUID
-    template_id: uuid.UUID
     category_id: uuid.UUID
     period: BillingPeriod
     name: str
