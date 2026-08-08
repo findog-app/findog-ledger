@@ -75,6 +75,7 @@ class Category(Base):
         UniqueConstraint("ledger_id", "id"),
         UniqueConstraint("ledger_id", "category_group_id", "name"),
         UniqueConstraint("ledger_id", "code"),
+        CheckConstraint("code IS NULL OR code ~ '^[A-Z]{4}$'"),
         CheckConstraint("due_day IS NULL OR (due_day >= 1 AND due_day <= 31)"),
     )
 
@@ -93,7 +94,7 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    code: Mapped[str | None] = mapped_column(String(4), nullable=True)
     creation_policy: Mapped[ObligationCreationPolicy] = mapped_column(nullable=False)
     period_generation_policy: Mapped[PeriodGenerationPolicy] = mapped_column(
         nullable=False

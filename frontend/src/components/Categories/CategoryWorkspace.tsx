@@ -64,7 +64,14 @@ const categorySchema = z.object({
   category_group_id: z.string().min(1, "Choose a group"),
   name: z.string().trim().min(1, "Name is required").max(255),
   description: z.string().optional(),
-  code: z.string().trim().max(100).optional(),
+  code: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^[A-Z]{4}$/.test(value),
+      "Code must contain exactly 4 uppercase letters",
+    )
+    .optional(),
   creation_policy: z.enum(["manual_only", "auto_only", "hybrid"]),
   period_generation_policy: z.enum(["precreate", "on_demand"]),
   currency: z.string().trim().length(3).optional(),
@@ -404,7 +411,14 @@ function CreateCategoryDialog({
                 <FormItem>
                   <FormLabel>Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="electricity" {...field} />
+                    <Input
+                      placeholder="ELEC"
+                      maxLength={4}
+                      {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -633,7 +647,14 @@ function EditCategoryDialog({
                 <FormItem>
                   <FormLabel>Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="electricity" {...field} />
+                    <Input
+                      placeholder="ELEC"
+                      maxLength={4}
+                      {...field}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toUpperCase())
+                      }
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

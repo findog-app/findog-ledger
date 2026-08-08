@@ -20,7 +20,9 @@ class CategoryCreate(BaseModel):
     category_group_id: uuid.UUID
     name: str = Field(min_length=1, max_length=255)
     description: str | None = None
-    code: str | None = Field(default=None, max_length=100)
+    code: str | None = Field(
+        default=None, min_length=4, max_length=4, pattern=r"^[A-Z]{4}$"
+    )
     creation_policy: ObligationCreationPolicy = ObligationCreationPolicy.HYBRID
     period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE
     currency: str | None = Field(default=None, min_length=3, max_length=3)
@@ -30,7 +32,9 @@ class CategoryCreate(BaseModel):
 class CategoryUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     description: str | None = None
-    code: str | None = Field(default=None, max_length=100)
+    code: str | None = Field(
+        default=None, min_length=4, max_length=4, pattern=r"^[A-Z]{4}$"
+    )
     creation_policy: ObligationCreationPolicy
     period_generation_policy: PeriodGenerationPolicy
     currency: str | None = Field(default=None, min_length=3, max_length=3)

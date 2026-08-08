@@ -29,6 +29,7 @@ from app.use_cases.exceptions import (
     DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
+    InvalidCategoryCodeError,
     InvalidCategoryDueDayError,
 )
 
@@ -183,6 +184,11 @@ def create_category(
         raise HTTPException(status_code=409, detail="Category already exists")
     except DuplicateCategoryCodeError:
         raise HTTPException(status_code=409, detail="Category code already exists")
+    except InvalidCategoryCodeError:
+        raise HTTPException(
+            status_code=422,
+            detail="Category code must contain exactly four uppercase English letters",
+        )
     except InvalidCategoryDueDayError:
         raise HTTPException(status_code=422, detail="Due day must be between 1 and 31")
     except CategoryGroupArchivedError:
@@ -221,6 +227,11 @@ def update_category(
         raise HTTPException(status_code=409, detail="Category already exists")
     except DuplicateCategoryCodeError:
         raise HTTPException(status_code=409, detail="Category code already exists")
+    except InvalidCategoryCodeError:
+        raise HTTPException(
+            status_code=422,
+            detail="Category code must contain exactly four uppercase English letters",
+        )
     except InvalidCategoryDueDayError:
         raise HTTPException(status_code=422, detail="Due day must be between 1 and 31")
     except ValueError as exc:

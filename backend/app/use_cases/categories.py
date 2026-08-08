@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import uuid
 
 from sqlalchemy import select
@@ -17,6 +18,7 @@ from app.use_cases.exceptions import (
     DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
+    InvalidCategoryCodeError,
     InvalidCategoryDueDayError,
     LedgerNotFoundError,
 )
@@ -33,6 +35,15 @@ def _normalize_name(value: str) -> str:
     normalized = value.strip()
     if not normalized:
         raise ValueError("name must not be empty")
+    return normalized
+
+
+def _normalize_code(value: str | None) -> str | None:
+    if value is None or value.strip() == "":
+        return None
+    normalized = value.strip()
+    if re.fullmatch(r"[A-Z]{4}", normalized) is None:
+        raise InvalidCategoryCodeError
     return normalized
 
 
@@ -164,9 +175,7 @@ def create_category(
     if existing is not None:
         raise DuplicateCategoryError
 
-    normalized_code = code.strip() if code is not None else None
-    if normalized_code == "":
-        normalized_code = None
+    normalized_code = _normalize_code(code)
     if due_day is not None and not 1 <= due_day <= 31:
         raise InvalidCategoryDueDayError
     if (
@@ -233,9 +242,7 @@ def update_category(
     if existing_name is not None:
         raise DuplicateCategoryError
 
-    normalized_code = code.strip() if code is not None else None
-    if normalized_code == "":
-        normalized_code = None
+    normalized_code = _normalize_code(code)
     if due_day is not None and not 1 <= due_day <= 31:
         raise InvalidCategoryDueDayError
     if normalized_code is not None:

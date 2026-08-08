@@ -38,6 +38,10 @@ class DuplicateCategoryCodeError(ApplicationError):
     pass
 
 
+class InvalidCategoryCodeError(ApplicationError):
+    pass
+
+
 class CategoryGroupArchivedError(ApplicationError):
     pass
 

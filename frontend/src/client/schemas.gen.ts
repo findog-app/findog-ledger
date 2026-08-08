@@ -104,7 +104,9 @@ export const CategoryCreateSchema = {
             anyOf: [
                 {
                     type: 'string',
-                    maxLength: 100
+                    maxLength: 4,
+                    minLength: 4,
+                    pattern: '^[A-Z]{4}$'
                 },
                 {
                     type: 'null'
@@ -386,7 +388,9 @@ export const CategoryUpdateSchema = {
             anyOf: [
                 {
                     type: 'string',
-                    maxLength: 100
+                    maxLength: 4,
+                    minLength: 4,
+                    pattern: '^[A-Z]{4}$'
                 },
                 {
                     type: 'null'

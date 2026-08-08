@@ -45,7 +45,7 @@ def create_category_with_obligation_policy(
     category.period_generation_policy = period_generation_policy
     category.currency = "PLN"
     category.due_day = 10
-    category.code = f"code-{random_lower_string()}"
+    category.code = "TEST"
     db.commit()
     db.refresh(category)
     return ledger, category_group, category

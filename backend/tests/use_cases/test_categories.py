@@ -12,6 +12,7 @@ from app.use_cases.exceptions import (
     DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
+    InvalidCategoryCodeError,
 )
 from tests.utils.ledger_domain import create_category_tree, create_test_ledger
 from tests.utils.utils import random_lower_string
@@ -182,7 +183,7 @@ def test_update_category_changes_details_and_obligation_configuration(
         category_id=category.id,
         name="Updated category",
         description="Updated description",
-        code="updated-code",
+        code="UPDT",
         creation_policy=ObligationCreationPolicy.AUTO_ONLY,
         period_generation_policy=PeriodGenerationPolicy.ON_DEMAND,
         currency="EUR",
@@ -191,7 +192,7 @@ def test_update_category_changes_details_and_obligation_configuration(
 
     assert updated.name == "Updated category"
     assert updated.description == "Updated description"
-    assert updated.code == "updated-code"
+    assert updated.code == "UPDT"
     assert updated.creation_policy == ObligationCreationPolicy.AUTO_ONLY
     assert updated.period_generation_policy == PeriodGenerationPolicy.ON_DEMAND
     assert updated.currency == "EUR"
@@ -205,7 +206,7 @@ def test_update_category_rejects_duplicate_code(db: Session) -> None:
         ledger_id=ledger.id,
         category_group_id=group.id,
         name="Other category",
-        code="other-code",
+        code="OTHR",
     )
 
     with pytest.raises(DuplicateCategoryCodeError):
@@ -215,6 +216,19 @@ def test_update_category_rejects_duplicate_code(db: Session) -> None:
             category_id=category.id,
             name=category.name,
             code=other.code,
+        )
+
+
+def test_update_category_rejects_invalid_code(db: Session) -> None:
+    ledger, _, category = create_category_tree(db)
+
+    with pytest.raises(InvalidCategoryCodeError):
+        category_use_cases.update_category(
+            session=db,
+            ledger_id=ledger.id,
+            category_id=category.id,
+            name=category.name,
+            code="abc1",
         )
 
 
