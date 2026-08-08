@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.domain import LedgerAccessRole
 
@@ -12,8 +12,17 @@ class LedgerCreate(BaseModel):
 
 
 class LedgerShare(BaseModel):
-    user_id: uuid.UUID
+    user_id: uuid.UUID | None = None
+    email: EmailStr | None = None
     role: LedgerAccessRole
+
+    @model_validator(mode="after")
+    def validate_target(self) -> "LedgerShare":
+        if self.user_id is not None and self.email is not None:
+            raise ValueError("Provide only one share target")
+        if self.user_id is None and self.email is None:
+            raise ValueError("Either user_id or email is required")
+        return self
 
 
 class LedgerPublic(BaseModel):
@@ -37,6 +46,8 @@ class LedgerMemberPublic(BaseModel):
 
     ledger_id: uuid.UUID
     user_id: uuid.UUID
+    email: EmailStr
+    full_name: str | None
     role: LedgerAccessRole
     created_at: datetime
 

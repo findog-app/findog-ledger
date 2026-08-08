@@ -125,6 +125,9 @@ def test_get_ledger_members_returns_members_for_authorized_user(
     roles = {item["user_id"]: item["role"] for item in payload["data"]}
     assert roles[str(owner.id)] == "owner"
     assert roles[str(viewer.id)] == "viewer"
+    members_by_id = {item["user_id"]: item for item in payload["data"]}
+    assert members_by_id[str(owner.id)]["email"] == owner.email
+    assert members_by_id[str(viewer.id)]["email"] == viewer.email
 
 
 def test_post_ledger_members_allows_owner_to_share(
@@ -157,6 +160,56 @@ def test_post_ledger_members_allows_owner_to_share(
     assert payload["user_id"] == str(target.id)
     assert payload["role"] == "viewer"
     assert membership is not None
+
+
+def test_post_ledger_members_allows_owner_to_share_by_email(
+    client: TestClient,
+    db: Session,
+) -> None:
+    owner = create_random_user(db)
+    target = create_random_user(db)
+    owner_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name=f"ledger-{random_lower_string()}",
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/members",
+        headers=owner_headers,
+        json={"email": target.email, "role": "editor"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["user_id"] == str(target.id)
+    assert response.json()["role"] == "editor"
+
+
+def test_post_ledger_members_returns_404_for_unknown_email(
+    client: TestClient,
+    db: Session,
+) -> None:
+    owner = create_random_user(db)
+    owner_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name=f"ledger-{random_lower_string()}",
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/members",
+        headers=owner_headers,
+        json={"email": "missing@example.com", "role": "viewer"},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "User not found"}
 
 
 def test_post_ledger_members_rejects_non_owner(

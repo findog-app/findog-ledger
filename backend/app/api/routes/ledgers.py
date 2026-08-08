@@ -18,6 +18,7 @@ from app.schemas import (
     LedgerShare,
     LedgersPublic,
 )
+from app.services import users as user_service
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases.exceptions import (
     LedgerAccessConflictError,
@@ -33,7 +34,14 @@ def _to_ledger_public(ledger: Ledger) -> LedgerPublic:
 
 
 def _to_ledger_member_public(membership: LedgerMembership) -> LedgerMemberPublic:
-    return LedgerMemberPublic.model_validate(membership)
+    return LedgerMemberPublic(
+        ledger_id=membership.ledger_id,
+        user_id=membership.user_id,
+        email=membership.user.email,
+        full_name=membership.user.full_name,
+        role=membership.role,
+        created_at=membership.created_at,
+    )
 
 
 @router.get("/", response_model=LedgersPublic)
@@ -89,11 +97,22 @@ def share_ledger(
     share_in: LedgerShare,
     ledger: Ledger = Depends(require_ledger_owner_access),
 ) -> Any:
+    target_user_id = share_in.user_id
+    if share_in.email is not None:
+        target_user = user_service.get_user_by_email(
+            session=session,
+            email=str(share_in.email),
+        )
+        if target_user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        target_user_id = target_user.id
+
+    assert target_user_id is not None
     try:
         membership = ledger_use_cases.share_ledger(
             session=session,
             ledger_id=ledger.id,
-            target_user_id=share_in.user_id,
+            target_user_id=target_user_id,
             role=share_in.role,
         )
     except LedgerNotFoundError:
