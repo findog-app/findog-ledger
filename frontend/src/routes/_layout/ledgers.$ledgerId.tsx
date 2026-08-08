@@ -5,12 +5,11 @@ import {
   Outlet,
   useLocation,
 } from "@tanstack/react-router"
-import { ArrowLeft, BookOpen, Settings } from "lucide-react"
+import { Settings } from "lucide-react"
 import { Suspense } from "react"
 
 import { LedgersService } from "@/client"
 import CategoryWorkspace from "@/components/Categories/CategoryWorkspace"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -35,18 +34,8 @@ function LedgerDetails() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <Button variant="ghost" size="sm" className="w-fit" asChild>
-          <Link to="/ledgers">
-            <ArrowLeft />
-            Back to ledgers
-          </Link>
-        </Button>
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <div className="mb-2 flex items-center gap-2">
-              <BookOpen className="size-5 text-primary" />
-              <Badge variant="outline">Ledger</Badge>
-            </div>
             <h1 className="text-2xl font-bold tracking-tight">{ledger.name}</h1>
             <p className="mt-1 text-muted-foreground">
               {ledger.description ||
@@ -56,7 +45,6 @@ function LedgerDetails() {
           <Button variant="outline" asChild>
             <Link to="/ledgers/$ledgerId/settings" params={{ ledgerId }}>
               <Settings />
-              Ledger settings
             </Link>
           </Button>
         </div>
