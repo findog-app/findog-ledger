@@ -26,7 +26,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -45,7 +44,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
 import {
   Select,
@@ -783,20 +781,13 @@ function ArchiveButton({
 }
 
 export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
-  const [includeArchived, setIncludeArchived] = useState(() => {
+  const [includeArchived] = useState(() => {
     if (typeof window === "undefined") return false
     return (
       window.localStorage.getItem(`show-archived-categories:${ledgerId}`) ===
       "true"
     )
   })
-  useEffect(() => {
-    window.localStorage.setItem(
-      `show-archived-categories:${ledgerId}`,
-      String(includeArchived),
-    )
-  }, [includeArchived, ledgerId])
-
   const { categories, groups } = useCategoryQueries(ledgerId, includeArchived)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -824,23 +815,6 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3">
-        <div>
-          <p className="text-sm font-medium">Category visibility</p>
-          <p className="text-sm text-muted-foreground">
-            Show archived groups and categories
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="show-archived-categories"
-            checked={includeArchived}
-            onCheckedChange={(checked) => setIncludeArchived(checked === true)}
-          />
-          <Label htmlFor="show-archived-categories">Show archived</Label>
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-start justify-between gap-4">

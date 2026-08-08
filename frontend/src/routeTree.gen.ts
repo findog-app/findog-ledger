@@ -19,6 +19,7 @@ import { Route as LayoutLedgersRouteImport } from './routes/_layout/ledgers'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutLedgersIndexRouteImport } from './routes/_layout/ledgers.index'
 import { Route as LayoutLedgersLedgerIdRouteImport } from './routes/_layout/ledgers.$ledgerId'
+import { Route as LayoutLedgersLedgerIdSettingsRouteImport } from './routes/_layout/ledgers.$ledgerId.settings'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -69,6 +70,12 @@ const LayoutLedgersLedgerIdRoute = LayoutLedgersLedgerIdRouteImport.update({
   path: '/$ledgerId',
   getParentRoute: () => LayoutLedgersRoute,
 } as any)
+const LayoutLedgersLedgerIdSettingsRoute =
+  LayoutLedgersLedgerIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => LayoutLedgersLedgerIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -78,8 +85,9 @@ export interface FileRoutesByFullPath {
   '/admin': typeof LayoutAdminRoute
   '/ledgers': typeof LayoutLedgersRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
-  '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRoute
+  '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/ledgers/': typeof LayoutLedgersIndexRoute
+  '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -88,8 +96,9 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
-  '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRoute
+  '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/ledgers': typeof LayoutLedgersIndexRoute
+  '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,8 +110,9 @@ export interface FileRoutesById {
   '/_layout/ledgers': typeof LayoutLedgersRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
-  '/_layout/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRoute
+  '/_layout/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/_layout/ledgers/': typeof LayoutLedgersIndexRoute
+  '/_layout/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/ledgers/$ledgerId'
     | '/ledgers/'
+    | '/ledgers/$ledgerId/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ledgers/$ledgerId'
     | '/ledgers'
+    | '/ledgers/$ledgerId/settings'
   id:
     | '__root__'
     | '/_layout'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/ledgers/$ledgerId'
     | '/_layout/ledgers/'
+    | '/_layout/ledgers/$ledgerId/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -219,16 +232,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLedgersLedgerIdRouteImport
       parentRoute: typeof LayoutLedgersRoute
     }
+    '/_layout/ledgers/$ledgerId/settings': {
+      id: '/_layout/ledgers/$ledgerId/settings'
+      path: '/settings'
+      fullPath: '/ledgers/$ledgerId/settings'
+      preLoaderRoute: typeof LayoutLedgersLedgerIdSettingsRouteImport
+      parentRoute: typeof LayoutLedgersLedgerIdRoute
+    }
   }
 }
 
+interface LayoutLedgersLedgerIdRouteChildren {
+  LayoutLedgersLedgerIdSettingsRoute: typeof LayoutLedgersLedgerIdSettingsRoute
+}
+
+const LayoutLedgersLedgerIdRouteChildren: LayoutLedgersLedgerIdRouteChildren = {
+  LayoutLedgersLedgerIdSettingsRoute: LayoutLedgersLedgerIdSettingsRoute,
+}
+
+const LayoutLedgersLedgerIdRouteWithChildren =
+  LayoutLedgersLedgerIdRoute._addFileChildren(
+    LayoutLedgersLedgerIdRouteChildren,
+  )
+
 interface LayoutLedgersRouteChildren {
-  LayoutLedgersLedgerIdRoute: typeof LayoutLedgersLedgerIdRoute
+  LayoutLedgersLedgerIdRoute: typeof LayoutLedgersLedgerIdRouteWithChildren
   LayoutLedgersIndexRoute: typeof LayoutLedgersIndexRoute
 }
 
 const LayoutLedgersRouteChildren: LayoutLedgersRouteChildren = {
-  LayoutLedgersLedgerIdRoute: LayoutLedgersLedgerIdRoute,
+  LayoutLedgersLedgerIdRoute: LayoutLedgersLedgerIdRouteWithChildren,
   LayoutLedgersIndexRoute: LayoutLedgersIndexRoute,
 }
 

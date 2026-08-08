@@ -1,7 +1,8 @@
-import { BookOpen, Home, Users } from "lucide-react"
+import { Home, Users } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
+import LedgerSwitcher from "@/components/Sidebar/LedgerSwitcher"
 import {
   Sidebar,
   SidebarContent,
@@ -12,10 +13,7 @@ import useAuth from "@/hooks/useAuth"
 import { type Item, Main } from "./Main"
 import { User } from "./User"
 
-const baseItems: Item[] = [
-  { icon: Home, title: "Dashboard", path: "/" },
-  { icon: BookOpen, title: "Ledgers", path: "/ledgers" },
-]
+const baseItems: Item[] = [{ icon: Home, title: "Dashboard", path: "/" }]
 
 export function AppSidebar() {
   const { user: currentUser } = useAuth()
@@ -30,6 +28,7 @@ export function AppSidebar() {
         <Logo variant="responsive" />
       </SidebarHeader>
       <SidebarContent>
+        <LedgerSwitcher />
         <Main items={items} />
       </SidebarContent>
       <SidebarFooter>

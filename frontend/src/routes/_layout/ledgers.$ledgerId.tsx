@@ -1,6 +1,11 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, BookOpen } from "lucide-react"
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useLocation,
+} from "@tanstack/react-router"
+import { ArrowLeft, BookOpen, Settings } from "lucide-react"
 import { Suspense } from "react"
 
 import { LedgersService } from "@/client"
@@ -17,10 +22,15 @@ export const Route = createFileRoute("/_layout/ledgers/$ledgerId")({
 
 function LedgerDetails() {
   const { ledgerId } = Route.useParams()
+  const location = useLocation()
   const { data: ledger } = useSuspenseQuery({
     queryFn: () => LedgersService.readLedger({ ledgerId }),
     queryKey: ["ledger", ledgerId],
   })
+
+  if (location.pathname.endsWith("/settings")) {
+    return <Outlet />
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,6 +53,12 @@ function LedgerDetails() {
                 "Manage groups and categories for this ledger."}
             </p>
           </div>
+          <Button variant="outline" asChild>
+            <Link to="/ledgers/$ledgerId/settings" params={{ ledgerId }}>
+              <Settings />
+              Ledger settings
+            </Link>
+          </Button>
         </div>
       </div>
       <Suspense fallback={<CategoryWorkspaceSkeleton />}>
