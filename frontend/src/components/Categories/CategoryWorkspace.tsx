@@ -4,8 +4,8 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query"
-import { Archive, FolderPlus, Plus } from "lucide-react"
-import { useState } from "react"
+import { Archive, FolderPlus, Pencil, Plus } from "lucide-react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -13,6 +13,7 @@ import {
   CategoriesService,
   type CategoryCreate,
   type CategoryGroupCreate,
+  type CategoryGroupUpdate,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -169,6 +170,108 @@ function CreateGroupDialog({ ledgerId }: { ledgerId: string }) {
             <DialogFooter>
               <LoadingButton type="submit" loading={mutation.isPending}>
                 Create group
+              </LoadingButton>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function EditGroupDialog({
+  ledgerId,
+  group,
+}: {
+  ledgerId: string
+  group: { id: string; name: string; description: string | null }
+}) {
+  const [open, setOpen] = useState(false)
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const form = useForm<GroupFormData>({
+    resolver: zodResolver(groupSchema),
+    defaultValues: { name: group.name, description: group.description ?? "" },
+  })
+
+  useEffect(() => {
+    if (open) {
+      form.reset({ name: group.name, description: group.description ?? "" })
+    }
+  }, [form, group.description, group.name, open])
+
+  const mutation = useMutation({
+    mutationFn: (data: CategoryGroupUpdate) =>
+      CategoriesService.updateCategoryGroup({
+        ledgerId,
+        categoryGroupId: group.id,
+        requestBody: data,
+      }),
+    onSuccess: () => {
+      showSuccessToast("Category group updated")
+      setOpen(false)
+    },
+    onError: handleError.bind(showErrorToast),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["category-groups", ledgerId],
+      }),
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          <Pencil />
+          <span className="sr-only">Edit {group.name}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit category group</DialogTitle>
+          <DialogDescription>
+            Update the name or description of this group.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((data) =>
+              mutation.mutate({
+                ...data,
+                description: data.description || null,
+              }),
+            )}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Optional description" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <LoadingButton type="submit" loading={mutation.isPending}>
+                Save changes
               </LoadingButton>
             </DialogFooter>
           </form>
@@ -490,6 +593,7 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <EditGroupDialog ledgerId={ledgerId} group={group} />
                     {!group.is_active && (
                       <Badge variant="secondary">Archived</Badge>
                     )}
