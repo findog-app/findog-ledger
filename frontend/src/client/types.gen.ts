@@ -99,6 +99,10 @@ export type LedgerMembersPublic = {
     count: number;
 };
 
+export type LedgerMemberUpdate = {
+    role: LedgerAccessRole;
+};
+
 export type LedgerPublic = {
     id: string;
     owner_user_id: string;
@@ -268,6 +272,21 @@ export type LedgersShareLedgerData = {
 };
 
 export type LedgersShareLedgerResponse = (LedgerMemberPublic);
+
+export type LedgersUpdateLedgerMemberData = {
+    ledgerId: string;
+    requestBody: LedgerMemberUpdate;
+    userId: string;
+};
+
+export type LedgersUpdateLedgerMemberResponse = (LedgerMemberPublic);
+
+export type LedgersRemoveLedgerMemberData = {
+    ledgerId: string;
+    userId: string;
+};
+
+export type LedgersRemoveLedgerMemberResponse = (Message);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;

@@ -3,7 +3,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query"
-import { Check, UserPlus } from "lucide-react"
+import { Check, Trash2, UserPlus } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -20,7 +20,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { LoadingButton } from "@/components/ui/loading-button"
 import {
   Select,
   SelectContent,
@@ -51,6 +62,38 @@ export function LedgerSharing({ ledgerId }: { ledgerId: string }) {
     onSuccess: () => {
       showSuccessToast("Ledger shared successfully")
       setEmail("")
+      void queryClient.invalidateQueries({
+        queryKey: ["ledger-members", ledgerId],
+      })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+  const updateMutation = useMutation({
+    mutationFn: ({
+      userId,
+      role,
+    }: {
+      userId: string
+      role: LedgerAccessRole
+    }) =>
+      LedgersService.updateLedgerMember({
+        ledgerId,
+        userId,
+        requestBody: { role },
+      }),
+    onSuccess: () => {
+      showSuccessToast("Ledger access updated")
+      void queryClient.invalidateQueries({
+        queryKey: ["ledger-members", ledgerId],
+      })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+  const removeMutation = useMutation({
+    mutationFn: (userId: string) =>
+      LedgersService.removeLedgerMember({ ledgerId, userId }),
+    onSuccess: () => {
+      showSuccessToast("Ledger access removed")
       void queryClient.invalidateQueries({
         queryKey: ["ledger-members", ledgerId],
       })
@@ -131,10 +174,44 @@ export function LedgerSharing({ ledgerId }: { ledgerId: string }) {
                       </p>
                     )}
                   </div>
-                  <Badge variant="outline" className="shrink-0">
-                    {member.role === "owner" && <Check />}
-                    {member.role}
-                  </Badge>
+                  {member.role === "owner" ? (
+                    <Badge variant="outline" className="shrink-0">
+                      <Check />
+                      owner
+                    </Badge>
+                  ) : (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Select
+                        value={member.role}
+                        onValueChange={(value) =>
+                          updateMutation.mutate({
+                            userId: member.user_id,
+                            role: value as LedgerAccessRole,
+                          })
+                        }
+                        disabled={updateMutation.isPending}
+                      >
+                        <SelectTrigger className="w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {shareRoles.map((shareRole) => (
+                            <SelectItem
+                              key={shareRole.value}
+                              value={shareRole.value}
+                            >
+                              {shareRole.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <RemoveMemberDialog
+                        email={member.email}
+                        isPending={removeMutation.isPending}
+                        onConfirm={() => removeMutation.mutate(member.user_id)}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -142,6 +219,53 @@ export function LedgerSharing({ ledgerId }: { ledgerId: string }) {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function RemoveMemberDialog({
+  email,
+  isPending,
+  onConfirm,
+}: {
+  email: string
+  isPending: boolean
+  onConfirm: () => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label={`Remove ${email}`}>
+          <Trash2 />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Remove ledger access?</DialogTitle>
+          <DialogDescription>
+            {email} will no longer be able to access this ledger.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={isPending}>
+              Cancel
+            </Button>
+          </DialogClose>
+          <LoadingButton
+            variant="destructive"
+            loading={isPending}
+            onClick={() => {
+              onConfirm()
+              setOpen(false)
+            }}
+          >
+            Remove access
+          </LoadingButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

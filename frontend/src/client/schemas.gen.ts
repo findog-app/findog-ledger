@@ -523,6 +523,17 @@ export const LedgerMemberPublicSchema = {
     title: 'LedgerMemberPublic'
 } as const;
 
+export const LedgerMemberUpdateSchema = {
+    properties: {
+        role: {
+            '$ref': '#/components/schemas/LedgerAccessRole'
+        }
+    },
+    type: 'object',
+    required: ['role'],
+    title: 'LedgerMemberUpdate'
+} as const;
+
 export const LedgerMembersPublicSchema = {
     properties: {
         data: {
