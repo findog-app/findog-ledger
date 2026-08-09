@@ -631,6 +631,31 @@ export const LedgerShareSchema = {
     title: 'LedgerShare'
 } as const;
 
+export const LedgerUpdateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'LedgerUpdate'
+} as const;
+
 export const LedgersPublicSchema = {
     properties: {
         data: {

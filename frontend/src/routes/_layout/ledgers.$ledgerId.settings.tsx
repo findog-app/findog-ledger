@@ -1,6 +1,10 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Archive, ArrowLeft, BookOpen } from "lucide-react"
+import { Archive, ArrowLeft, BookOpen, Trash2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { LedgersService } from "@/client"
@@ -15,7 +19,20 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import useCustomToast from "@/hooks/useCustomToast"
+import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/ledgers/$ledgerId/settings")({
   component: LedgerSettings,
@@ -27,6 +44,40 @@ function LedgerSettings() {
   const { data: ledger } = useSuspenseQuery({
     queryFn: () => LedgersService.readLedger({ ledgerId }),
     queryKey: ["ledger", ledgerId],
+  })
+  const [name, setName] = useState(ledger.name)
+  const [description, setDescription] = useState(ledger.description ?? "")
+  const queryClient = useQueryClient()
+  const { showErrorToast, showSuccessToast } = useCustomToast()
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      LedgersService.updateLedger({
+        ledgerId,
+        requestBody: { name, description: description || null },
+      }),
+    onSuccess: (updatedLedger) => {
+      showSuccessToast("Ledger details updated")
+      setName(updatedLedger.name)
+      setDescription(updatedLedger.description ?? "")
+      queryClient.setQueryData(["ledger", ledgerId], updatedLedger)
+      void queryClient.invalidateQueries({ queryKey: ["ledgers"] })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+  const [confirmationName, setConfirmationName] = useState("")
+  const [dangerOpen, setDangerOpen] = useState(false)
+  const deleteCategoriesMutation = useMutation({
+    mutationFn: () => LedgersService.deleteAllCategories({ ledgerId }),
+    onSuccess: () => {
+      showSuccessToast("All ledger categories deleted")
+      setConfirmationName("")
+      setDangerOpen(false)
+      void queryClient.invalidateQueries({
+        queryKey: ["category-groups", ledgerId],
+      })
+      void queryClient.invalidateQueries({ queryKey: ["categories", ledgerId] })
+    },
+    onError: handleError.bind(showErrorToast),
   })
   const [includeArchived, setIncludeArchived] = useState(() => {
     if (typeof window === "undefined") return false
@@ -66,6 +117,41 @@ function LedgerSettings() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Ledger details</CardTitle>
+          <CardDescription>
+            Update the name and description shown throughout the workspace.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="ledger-name">Name</Label>
+            <Input
+              id="ledger-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={255}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ledger-description">Description</Label>
+            <textarea
+              id="ledger-description"
+              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:bg-input/30 flex min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
+          <Button
+            disabled={!name.trim() || updateMutation.isPending}
+            onClick={() => updateMutation.mutate()}
+          >
+            Save details
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Archive className="size-5" />
             Category visibility
@@ -89,6 +175,77 @@ function LedgerSettings() {
         </CardContent>
       </Card>
       <LedgerSharing ledgerId={ledgerId} />
+
+      <Card className="border-destructive/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="size-5" />
+            Danger area
+          </CardTitle>
+          <CardDescription>
+            These actions are permanent and cannot be undone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col justify-between gap-4 rounded-lg border border-destructive/30 p-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="font-medium">Delete all categories</p>
+              <p className="text-sm text-muted-foreground">
+                Permanently delete every category group and category in this
+                ledger.
+              </p>
+            </div>
+            <Dialog open={dangerOpen} onOpenChange={setDangerOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive">Delete all categories</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete all categories?</DialogTitle>
+                  <DialogDescription>
+                    This permanently deletes all category groups and categories
+                    in <strong>{ledger.name}</strong>. Enter the ledger name to
+                    confirm.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2 py-2">
+                  <Label htmlFor="delete-categories-confirmation">
+                    Ledger name
+                  </Label>
+                  <Input
+                    id="delete-categories-confirmation"
+                    value={confirmationName}
+                    onChange={(event) =>
+                      setConfirmationName(event.target.value)
+                    }
+                    placeholder={ledger.name}
+                  />
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button
+                      variant="outline"
+                      disabled={deleteCategoriesMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    variant="destructive"
+                    disabled={
+                      confirmationName !== ledger.name ||
+                      deleteCategoriesMutation.isPending
+                    }
+                    onClick={() => deleteCategoriesMutation.mutate()}
+                  >
+                    Delete permanently
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

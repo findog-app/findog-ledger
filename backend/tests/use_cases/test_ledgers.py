@@ -57,6 +57,53 @@ def test_share_ledger_creates_membership_for_another_user(db: Session) -> None:
     assert membership.role == LedgerAccessRole.EDITOR
 
 
+def test_update_ledger_changes_name_and_description(db: Session) -> None:
+    owner = create_random_user(db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name="Before",
+        description="Old description",
+    )
+
+    updated = ledger_use_cases.update_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        name="  After  ",
+        description="New description",
+    )
+
+    assert updated.name == "After"
+    assert updated.description == "New description"
+
+
+def test_update_ledger_rejects_blank_name(db: Session) -> None:
+    owner = create_random_user(db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name="Ledger",
+    )
+
+    with pytest.raises(ValueError, match="name must not be empty"):
+        ledger_use_cases.update_ledger(
+            session=db,
+            ledger_id=ledger.id,
+            name="   ",
+        )
+
+
+def test_delete_all_categories_succeeds_for_empty_ledger(db: Session) -> None:
+    owner = create_random_user(db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name="Ledger",
+    )
+
+    ledger_use_cases.delete_all_categories(session=db, ledger_id=ledger.id)
+
+
 def test_share_ledger_updates_existing_membership_role(db: Session) -> None:
     owner = create_random_user(db)
     target = create_random_user(db)

@@ -72,6 +72,54 @@ def test_post_ledgers_creates_ledger_and_owner_membership(
     assert membership.role == LedgerAccessRole.OWNER
 
 
+def test_patch_ledger_updates_name_and_description(
+    client: TestClient,
+    db: Session,
+) -> None:
+    owner = create_random_user(db)
+    owner_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name="Before",
+    )
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}",
+        headers=owner_headers,
+        json={"name": "After", "description": "Updated"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "After"
+    assert response.json()["description"] == "Updated"
+
+
+def test_delete_ledger_categories_allows_owner(
+    client: TestClient,
+    db: Session,
+) -> None:
+    owner = create_random_user(db)
+    owner_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name="Ledger",
+    )
+
+    response = client.delete(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories",
+        headers=owner_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"message": "All ledger categories deleted"}
+
+
 def test_get_ledger_returns_404_for_non_member(client: TestClient, db: Session) -> None:
     owner = create_random_user(db)
     outsider = create_random_user(db)

@@ -11,6 +11,11 @@ class LedgerCreate(BaseModel):
     description: str | None = None
 
 
+class LedgerUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+
+
 class LedgerShare(BaseModel):
     user_id: uuid.UUID | None = None
     email: EmailStr | None = None

@@ -123,6 +123,11 @@ export type LedgersPublic = {
     count: number;
 };
 
+export type LedgerUpdate = {
+    name: string;
+    description?: (string | null);
+};
+
 export type Message = {
     message: string;
 };
@@ -187,6 +192,21 @@ export type ValidationError = {
     type: string;
 };
 
+export type CategoriesReadCategoriesData = {
+    categoryGroupId?: (string | null);
+    includeArchived?: boolean;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoriesResponse = (CategoriesPublic);
+
+export type CategoriesCreateCategoryData = {
+    ledgerId: string;
+    requestBody: CategoryCreate;
+};
+
+export type CategoriesCreateCategoryResponse = (CategoryPublic);
+
 export type CategoriesReadCategoryGroupsData = {
     includeArchived?: boolean;
     ledgerId: string;
@@ -215,21 +235,6 @@ export type CategoriesArchiveCategoryGroupData = {
 };
 
 export type CategoriesArchiveCategoryGroupResponse = (CategoryGroupPublic);
-
-export type CategoriesReadCategoriesData = {
-    categoryGroupId?: (string | null);
-    includeArchived?: boolean;
-    ledgerId: string;
-};
-
-export type CategoriesReadCategoriesResponse = (CategoriesPublic);
-
-export type CategoriesCreateCategoryData = {
-    ledgerId: string;
-    requestBody: CategoryCreate;
-};
-
-export type CategoriesCreateCategoryResponse = (CategoryPublic);
 
 export type CategoriesUpdateCategoryData = {
     categoryId: string;
@@ -260,6 +265,13 @@ export type LedgersReadLedgerData = {
 
 export type LedgersReadLedgerResponse = (LedgerPublic);
 
+export type LedgersUpdateLedgerData = {
+    ledgerId: string;
+    requestBody: LedgerUpdate;
+};
+
+export type LedgersUpdateLedgerResponse = (LedgerPublic);
+
 export type LedgersReadLedgerMembersData = {
     ledgerId: string;
 };
@@ -272,6 +284,12 @@ export type LedgersShareLedgerData = {
 };
 
 export type LedgersShareLedgerResponse = (LedgerMemberPublic);
+
+export type LedgersDeleteAllCategoriesData = {
+    ledgerId: string;
+};
+
+export type LedgersDeleteAllCategoriesResponse = (Message);
 
 export type LedgersUpdateLedgerMemberData = {
     ledgerId: string;

@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.domain import LedgerAccessRole
-from app.models import Ledger, LedgerMembership, User
+from app.models import (
+    Category,
+    CategoryGroup,
+    Ledger,
+    LedgerMembership,
+    Obligation,
+    User,
+)
 from app.use_cases.exceptions import (
     LedgerAccessConflictError,
+    LedgerCategoriesInUseError,
     LedgerMembershipNotFoundError,
     LedgerNotFoundError,
     UserNotFoundError,
@@ -63,6 +71,34 @@ def create_ledger(
     session.commit()
     session.refresh(ledger)
     return ledger
+
+
+def update_ledger(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    name: str,
+    description: str | None = None,
+) -> Ledger:
+    ledger = _require_ledger(session=session, ledger_id=ledger_id)
+    ledger.name = _normalize_name(name)
+    ledger.description = description
+    session.commit()
+    session.refresh(ledger)
+    return ledger
+
+
+def delete_all_categories(*, session: Session, ledger_id: uuid.UUID) -> None:
+    _require_ledger(session=session, ledger_id=ledger_id)
+    has_obligations = session.scalar(
+        select(Obligation.id).where(Obligation.ledger_id == ledger_id).limit(1)
+    )
+    if has_obligations is not None:
+        raise LedgerCategoriesInUseError
+
+    session.execute(delete(Category).where(Category.ledger_id == ledger_id))
+    session.execute(delete(CategoryGroup).where(CategoryGroup.ledger_id == ledger_id))
+    session.commit()
 
 
 def share_ledger(

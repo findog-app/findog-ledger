@@ -17,6 +17,7 @@ from app.schemas.ledgers import (
     LedgerPublic,
     LedgerShare,
     LedgersPublic,
+    LedgerUpdate,
 )
 from app.schemas.users import (
     UpdatePassword,
@@ -47,6 +48,7 @@ __all__ = [
     "LedgerMembersPublic",
     "LedgerPublic",
     "LedgerShare",
+    "LedgerUpdate",
     "LedgersPublic",
     "UpdatePassword",
     "UserCreate",

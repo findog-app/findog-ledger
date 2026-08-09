@@ -19,12 +19,14 @@ from app.schemas import (
     LedgerPublic,
     LedgerShare,
     LedgersPublic,
+    LedgerUpdate,
     Message,
 )
 from app.services import users as user_service
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases.exceptions import (
     LedgerAccessConflictError,
+    LedgerCategoriesInUseError,
     LedgerMembershipNotFoundError,
     LedgerNotFoundError,
     UserNotFoundError,
@@ -78,6 +80,26 @@ def read_ledger(ledger: Ledger = Depends(require_ledger_view_access)) -> Any:
     return _to_ledger_public(ledger)
 
 
+@router.patch("/{ledger_id}", response_model=LedgerPublic)
+def update_ledger(
+    *,
+    ledger_in: LedgerUpdate,
+    session: SessionDep,
+    ledger: Ledger = Depends(require_ledger_owner_access),
+) -> Any:
+    try:
+        updated_ledger = ledger_use_cases.update_ledger(
+            session=session,
+            ledger_id=ledger.id,
+            name=ledger_in.name,
+            description=ledger_in.description,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    return _to_ledger_public(updated_ledger)
+
+
 @router.get("/{ledger_id}/members", response_model=LedgerMembersPublic)
 def read_ledger_members(
     session: SessionDep,
@@ -92,6 +114,26 @@ def read_ledger_members(
         data=[_to_ledger_member_public(membership) for membership in memberships],
         count=len(memberships),
     )
+
+
+@router.delete("/{ledger_id}/categories", response_model=Message)
+def delete_all_categories(
+    *,
+    session: SessionDep,
+    ledger: Ledger = Depends(require_ledger_owner_access),
+) -> Message:
+    try:
+        ledger_use_cases.delete_all_categories(
+            session=session,
+            ledger_id=ledger.id,
+        )
+    except LedgerCategoriesInUseError:
+        raise HTTPException(
+            status_code=409,
+            detail="Categories cannot be deleted while ledger obligations exist",
+        )
+
+    return Message(message="All ledger categories deleted")
 
 
 @router.post("/{ledger_id}/members", response_model=LedgerMemberPublic)

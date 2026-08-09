@@ -18,6 +18,10 @@ class LedgerMembershipNotFoundError(ApplicationError):
     pass
 
 
+class LedgerCategoriesInUseError(ApplicationError):
+    pass
+
+
 class CategoryGroupNotFoundError(ApplicationError):
     pass
 
