@@ -9,6 +9,7 @@ from app.domain import LedgerAccessRole
 from app.models import Ledger, LedgerMembership, User
 from app.use_cases.exceptions import (
     LedgerAccessConflictError,
+    LedgerMembershipNotFoundError,
     LedgerNotFoundError,
     UserNotFoundError,
 )
@@ -100,6 +101,57 @@ def share_ledger(
     session.commit()
     session.refresh(membership)
     return membership
+
+
+def update_ledger_membership(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    target_user_id: uuid.UUID,
+    role: LedgerAccessRole,
+) -> LedgerMembership:
+    ledger = _require_ledger(session=session, ledger_id=ledger_id)
+    membership = session.get(
+        LedgerMembership,
+        {"ledger_id": ledger_id, "user_id": target_user_id},
+    )
+    if membership is None:
+        raise LedgerMembershipNotFoundError
+    if (
+        target_user_id == ledger.owner_user_id
+        or membership.role == LedgerAccessRole.OWNER
+    ):
+        raise LedgerAccessConflictError
+    if role == LedgerAccessRole.OWNER:
+        raise LedgerAccessConflictError
+
+    membership.role = role
+    session.commit()
+    session.refresh(membership)
+    return membership
+
+
+def remove_ledger_membership(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    target_user_id: uuid.UUID,
+) -> None:
+    ledger = _require_ledger(session=session, ledger_id=ledger_id)
+    membership = session.get(
+        LedgerMembership,
+        {"ledger_id": ledger_id, "user_id": target_user_id},
+    )
+    if membership is None:
+        raise LedgerMembershipNotFoundError
+    if (
+        target_user_id == ledger.owner_user_id
+        or membership.role == LedgerAccessRole.OWNER
+    ):
+        raise LedgerAccessConflictError
+
+    session.delete(membership)
+    session.commit()
 
 
 def list_ledgers_for_user(*, session: Session, user_id: uuid.UUID) -> list[Ledger]:

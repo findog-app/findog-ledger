@@ -212,6 +212,67 @@ def test_post_ledger_members_returns_404_for_unknown_email(
     assert response.json() == {"detail": "User not found"}
 
 
+def test_patch_ledger_member_updates_role(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    target = create_random_user(db)
+    owner_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name=f"ledger-{random_lower_string()}",
+    )
+    ledger_use_cases.share_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        target_user_id=target.id,
+        role=LedgerAccessRole.VIEWER,
+    )
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/members/{target.id}",
+        headers=owner_headers,
+        json={"role": "editor"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "editor"
+
+
+def test_delete_ledger_member_removes_access(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    target = create_random_user(db)
+    owner_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name=f"ledger-{random_lower_string()}",
+    )
+    ledger_use_cases.share_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        target_user_id=target.id,
+        role=LedgerAccessRole.VIEWER,
+    )
+
+    response = client.delete(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/members/{target.id}",
+        headers=owner_headers,
+    )
+
+    assert response.status_code == 200
+    assert (
+        db.get(
+            LedgerMembership,
+            {"ledger_id": ledger.id, "user_id": target.id},
+        )
+        is None
+    )
+
+
 def test_post_ledger_members_rejects_non_owner(
     client: TestClient,
     db: Session,

@@ -25,6 +25,10 @@ class LedgerShare(BaseModel):
         return self
 
 
+class LedgerMemberUpdate(BaseModel):
+    role: LedgerAccessRole
+
+
 class LedgerPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

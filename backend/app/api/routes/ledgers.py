@@ -1,3 +1,4 @@
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,14 +15,17 @@ from app.schemas import (
     LedgerCreate,
     LedgerMemberPublic,
     LedgerMembersPublic,
+    LedgerMemberUpdate,
     LedgerPublic,
     LedgerShare,
     LedgersPublic,
+    Message,
 )
 from app.services import users as user_service
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases.exceptions import (
     LedgerAccessConflictError,
+    LedgerMembershipNotFoundError,
     LedgerNotFoundError,
     UserNotFoundError,
 )
@@ -123,3 +127,47 @@ def share_ledger(
         raise HTTPException(status_code=409, detail="Ledger membership conflict")
 
     return _to_ledger_member_public(membership)
+
+
+@router.patch("/{ledger_id}/members/{user_id}", response_model=LedgerMemberPublic)
+def update_ledger_member(
+    *,
+    session: SessionDep,
+    user_id: uuid.UUID,
+    member_in: LedgerMemberUpdate,
+    ledger: Ledger = Depends(require_ledger_owner_access),
+) -> Any:
+    try:
+        membership = ledger_use_cases.update_ledger_membership(
+            session=session,
+            ledger_id=ledger.id,
+            target_user_id=user_id,
+            role=member_in.role,
+        )
+    except LedgerMembershipNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger member not found")
+    except LedgerAccessConflictError:
+        raise HTTPException(status_code=409, detail="Owner access cannot be changed")
+
+    return _to_ledger_member_public(membership)
+
+
+@router.delete("/{ledger_id}/members/{user_id}", response_model=Message)
+def remove_ledger_member(
+    *,
+    session: SessionDep,
+    user_id: uuid.UUID,
+    ledger: Ledger = Depends(require_ledger_owner_access),
+) -> Message:
+    try:
+        ledger_use_cases.remove_ledger_membership(
+            session=session,
+            ledger_id=ledger.id,
+            target_user_id=user_id,
+        )
+    except LedgerMembershipNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger member not found")
+    except LedgerAccessConflictError:
+        raise HTTPException(status_code=409, detail="Owner access cannot be removed")
+
+    return Message(message="Ledger member removed")
