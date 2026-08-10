@@ -18,12 +18,12 @@ export type CategoryCreate = {
     category_group_id: string;
     name: string;
     description?: (string | null);
-    code?: (string | null);
+    code: string;
     data_source_policy?: DataSourcePolicy;
     recurrence_interval?: (number | null);
     recurrence_unit?: (RecurrenceUnit | null);
     recurrence_anchor?: (string | null);
-    currency?: (string | null);
+    currency?: Currency;
     due_day?: (number | null);
 };
 
@@ -58,12 +58,12 @@ export type CategoryPublic = {
     name: string;
     description: (string | null);
     is_active: boolean;
-    code: (string | null);
+    code: string;
     data_source_policy: DataSourcePolicy;
     recurrence_interval: (number | null);
     recurrence_unit: (RecurrenceUnit | null);
     recurrence_anchor: (string | null);
-    currency: (string | null);
+    currency: Currency;
     due_day: (number | null);
     archived_at: (string | null);
 };
@@ -71,14 +71,16 @@ export type CategoryPublic = {
 export type CategoryUpdate = {
     name: string;
     description?: (string | null);
-    code?: (string | null);
+    code: string;
     data_source_policy: DataSourcePolicy;
     recurrence_interval?: (number | null);
     recurrence_unit?: (RecurrenceUnit | null);
     recurrence_anchor?: (string | null);
-    currency?: (string | null);
+    currency?: Currency;
     due_day?: (number | null);
 };
+
+export type Currency = 'PLN' | 'EUR' | 'USD' | 'GBP' | 'CHF';
 
 export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
 

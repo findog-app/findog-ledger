@@ -33,6 +33,7 @@ def create_category_tree(db: Session) -> tuple[Ledger, CategoryGroup, Category]:
         ledger_id=ledger.id,
         category_group_id=category_group.id,
         name=f"category-{random_lower_string()}",
+        code=random_lower_string()[:4].upper(),
     )
     return ledger, category_group, category
 

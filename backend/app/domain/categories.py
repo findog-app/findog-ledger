@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 
+from app.domain.currencies import Currency
 from app.domain.obligations import BillingPeriod, DataSourcePolicy, RecurrenceUnit
 
 
@@ -30,12 +31,12 @@ class Category:
     name: str
     description: str | None
     is_active: bool
-    code: str | None
+    code: str
     data_source_policy: DataSourcePolicy
     recurrence_interval: int | None
     recurrence_unit: RecurrenceUnit | None
     recurrence_anchor: date | None
-    currency: str | None
+    currency: Currency
     due_day: int | None
     archived_at: datetime | None
     created_at: datetime

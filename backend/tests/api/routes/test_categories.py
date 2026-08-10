@@ -341,6 +341,7 @@ def test_post_category_creates_category_under_correct_group(
             "category_group_id": str(category_group.id),
             "name": f"category-{random_lower_string()}",
             "description": "Housing",
+            "code": "HOUS",
         },
     )
 
@@ -379,6 +380,7 @@ def test_post_category_rejects_cross_ledger_group_reference(
         json={
             "category_group_id": str(category_group.id),
             "name": f"category-{random_lower_string()}",
+            "code": "CROS",
         },
     )
 
@@ -411,6 +413,7 @@ def test_post_category_rejects_archived_group(client: TestClient, db: Session) -
         json={
             "category_group_id": str(category_group.id),
             "name": f"category-{random_lower_string()}",
+            "code": "ARCH",
         },
     )
 

@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.domain import BillingPeriod, DataSourcePolicy, RecurrenceUnit
+from app.domain import BillingPeriod, Currency, DataSourcePolicy, RecurrenceUnit
 from app.models.base import Base, get_datetime_utc
 
 if TYPE_CHECKING:
@@ -76,7 +76,7 @@ class Category(Base):
         UniqueConstraint("ledger_id", "id"),
         UniqueConstraint("ledger_id", "category_group_id", "name"),
         UniqueConstraint("ledger_id", "code"),
-        CheckConstraint("code IS NULL OR code ~ '^[A-Z]{4}$'"),
+        CheckConstraint("code ~ '^[A-Z]{4}$'"),
         CheckConstraint("due_day IS NULL OR (due_day >= 1 AND due_day <= 31)"),
         CheckConstraint("recurrence_interval IS NULL OR recurrence_interval > 0"),
     )
@@ -96,12 +96,14 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    code: Mapped[str | None] = mapped_column(String(4), nullable=True)
+    code: Mapped[str] = mapped_column(String(4), nullable=False)
     data_source_policy: Mapped[DataSourcePolicy] = mapped_column(nullable=False)
     recurrence_interval: Mapped[int | None] = mapped_column(nullable=True)
     recurrence_unit: Mapped[RecurrenceUnit | None] = mapped_column(nullable=True)
     recurrence_anchor: Mapped[date | None] = mapped_column(Date, nullable=True)
-    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    currency: Mapped[Currency] = mapped_column(
+        String(3), default=Currency.PLN, nullable=False
+    )
     due_day: Mapped[int | None] = mapped_column(nullable=True)
     archived_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

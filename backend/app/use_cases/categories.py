@@ -7,7 +7,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain import DataSourcePolicy, RecurrenceUnit
+from app.domain import Currency, DataSourcePolicy, RecurrenceUnit
 from app.models import Category, CategoryGroup, Ledger
 from app.services import categories as category_service
 from app.use_cases.exceptions import (
@@ -39,13 +39,20 @@ def _normalize_name(value: str) -> str:
     return normalized
 
 
-def _normalize_code(value: str | None) -> str | None:
-    if value is None or value.strip() == "":
-        return None
+def _normalize_code(value: str) -> str:
     normalized = value.strip()
     if re.fullmatch(r"[A-Z]{4}", normalized) is None:
         raise InvalidCategoryCodeError
     return normalized
+
+
+def _generate_code() -> str:
+    return (
+        uuid.uuid4()
+        .hex[:4]
+        .translate(str.maketrans("0123456789", "ABCDEFGHIJ"))
+        .upper()
+    )
 
 
 def create_category_group(
@@ -146,7 +153,7 @@ def create_category(
     recurrence_interval: int | None = None,
     recurrence_unit: RecurrenceUnit | None = None,
     recurrence_anchor: date | None = None,
-    currency: str | None = None,
+    currency: Currency = Currency.PLN,
     due_day: int | None = None,
 ) -> Category:
     _require_ledger(session=session, ledger_id=ledger_id)
@@ -178,19 +185,23 @@ def create_category(
     if existing is not None:
         raise DuplicateCategoryError
 
-    normalized_code = _normalize_code(code)
+    normalized_code = _normalize_code(code) if code is not None else _generate_code()
     if due_day is not None and not 1 <= due_day <= 31:
         raise InvalidCategoryDueDayError
-    if (
-        normalized_code is not None
-        and session.scalar(
+    while (
+        session.scalar(
             select(Category.id).where(
                 Category.ledger_id == ledger_id, Category.code == normalized_code
             )
         )
         is not None
     ):
-        raise DuplicateCategoryCodeError
+        if code is not None:
+            raise DuplicateCategoryCodeError
+        normalized_code = _generate_code()
+
+    if data_source_policy is DataSourcePolicy.MANUAL:
+        recurrence_interval = recurrence_unit = recurrence_anchor = None
 
     category = Category(
         ledger_id=ledger_id,
@@ -224,7 +235,7 @@ def update_category(
     recurrence_interval: int | None = None,
     recurrence_unit: RecurrenceUnit | None = None,
     recurrence_anchor: date | None = None,
-    currency: str | None = None,
+    currency: Currency = Currency.PLN,
     due_day: int | None = None,
 ) -> Category:
     _require_ledger(session=session, ledger_id=ledger_id)
@@ -249,24 +260,29 @@ def update_category(
     if existing_name is not None:
         raise DuplicateCategoryError
 
-    normalized_code = _normalize_code(code)
+    normalized_code = _normalize_code(code) if code is not None else _generate_code()
     if due_day is not None and not 1 <= due_day <= 31:
         raise InvalidCategoryDueDayError
-    if normalized_code is not None:
-        existing_code = session.scalar(
+    while (
+        session.scalar(
             select(Category.id).where(
                 Category.ledger_id == ledger_id,
                 Category.code == normalized_code,
                 Category.id != category_id,
             )
         )
-        if existing_code is not None:
+        is not None
+    ):
+        if code is not None:
             raise DuplicateCategoryCodeError
+        normalized_code = _generate_code()
 
     category.name = normalized_name
     category.description = description
     category.code = normalized_code
     category.data_source_policy = data_source_policy
+    if data_source_policy is DataSourcePolicy.MANUAL:
+        recurrence_interval = recurrence_unit = recurrence_anchor = None
     category.recurrence_interval = recurrence_interval
     category.recurrence_unit = recurrence_unit
     category.recurrence_anchor = recurrence_anchor

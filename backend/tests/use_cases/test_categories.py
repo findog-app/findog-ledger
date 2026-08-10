@@ -1,8 +1,9 @@
-from __future__ import annotations
+from datetime import date
 
 import pytest
 from sqlalchemy.orm import Session
 
+from app.domain import Currency, DataSourcePolicy, RecurrenceUnit
 from app.use_cases import categories as category_use_cases
 from app.use_cases.exceptions import (
     CategoryGroupArchivedError,
@@ -203,6 +204,29 @@ def test_update_category_changes_details_and_obligation_configuration(
     assert updated.recurrence_anchor == date(2026, 1, 1)
     assert updated.currency == "EUR"
     assert updated.due_day == 20
+
+
+def test_create_category_defaults_currency_and_clears_manual_recurrence(
+    db: Session,
+) -> None:
+    ledger, group, _ = create_category_tree(db)
+
+    category = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=group.id,
+        name="Manual category",
+        code="MANL",
+        data_source_policy=DataSourcePolicy.MANUAL,
+        recurrence_interval=1,
+        recurrence_unit=RecurrenceUnit.MONTH,
+        recurrence_anchor=date(2026, 1, 1),
+    )
+
+    assert category.currency == Currency.PLN
+    assert category.recurrence_interval is None
+    assert category.recurrence_unit is None
+    assert category.recurrence_anchor is None
 
 
 def test_update_category_rejects_duplicate_code(db: Session) -> None:

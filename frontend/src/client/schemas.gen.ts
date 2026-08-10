@@ -101,17 +101,10 @@ export const CategoryCreateSchema = {
             title: 'Description'
         },
         code: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 4,
-                    minLength: 4,
-                    pattern: '^[A-Z]{4}$'
-                },
-                {
-                    type: 'null'
-                }
-            ],
+            type: 'string',
+            maxLength: 4,
+            minLength: 4,
+            pattern: '^[A-Z]{4}$',
             title: 'Code'
         },
         data_source_policy: {
@@ -153,17 +146,8 @@ export const CategoryCreateSchema = {
             title: 'Recurrence Anchor'
         },
         currency: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 3,
-                    minLength: 3
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Currency'
+            '$ref': '#/components/schemas/Currency',
+            default: 'PLN'
         },
         due_day: {
             anyOf: [
@@ -180,7 +164,7 @@ export const CategoryCreateSchema = {
         }
     },
     type: 'object',
-    required: ['category_group_id', 'name'],
+    required: ['category_group_id', 'name', 'code'],
     title: 'CategoryCreate'
 } as const;
 
@@ -339,14 +323,7 @@ export const CategoryPublicSchema = {
             title: 'Is Active'
         },
         code: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
+            type: 'string',
             title: 'Code'
         },
         data_source_policy: {
@@ -386,15 +363,7 @@ export const CategoryPublicSchema = {
             title: 'Recurrence Anchor'
         },
         currency: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Currency'
+            '$ref': '#/components/schemas/Currency'
         },
         due_day: {
             anyOf: [
@@ -445,17 +414,10 @@ export const CategoryUpdateSchema = {
             title: 'Description'
         },
         code: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 4,
-                    minLength: 4,
-                    pattern: '^[A-Z]{4}$'
-                },
-                {
-                    type: 'null'
-                }
-            ],
+            type: 'string',
+            maxLength: 4,
+            minLength: 4,
+            pattern: '^[A-Z]{4}$',
             title: 'Code'
         },
         data_source_policy: {
@@ -496,17 +458,8 @@ export const CategoryUpdateSchema = {
             title: 'Recurrence Anchor'
         },
         currency: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 3,
-                    minLength: 3
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Currency'
+            '$ref': '#/components/schemas/Currency',
+            default: 'PLN'
         },
         due_day: {
             anyOf: [
@@ -523,8 +476,14 @@ export const CategoryUpdateSchema = {
         }
     },
     type: 'object',
-    required: ['name', 'data_source_policy'],
+    required: ['name', 'code', 'data_source_policy'],
     title: 'CategoryUpdate'
+} as const;
+
+export const CurrencySchema = {
+    type: 'string',
+    enum: ['PLN', 'EUR', 'USD', 'GBP', 'CHF'],
+    title: 'Currency'
 } as const;
 
 export const DataSourcePolicySchema = {
