@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy.orm import Session
 
-from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
+from app.domain import DataSourcePolicy, RecurrenceUnit
 from app.models import Category, CategoryGroup, Ledger
 from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
@@ -35,14 +37,18 @@ def create_category_tree(db: Session) -> tuple[Ledger, CategoryGroup, Category]:
     return ledger, category_group, category
 
 
-def create_category_with_obligation_policy(
+def create_category_with_recurrence(
     db: Session,
     *,
-    period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE,
+    recurrence_interval: int | None = 1,
+    recurrence_unit: RecurrenceUnit | None = RecurrenceUnit.MONTH,
+    recurrence_anchor: date | None = date(2026, 1, 1),
 ) -> tuple[Ledger, CategoryGroup, Category]:
     ledger, category_group, category = create_category_tree(db)
-    category.creation_policy = ObligationCreationPolicy.HYBRID
-    category.period_generation_policy = period_generation_policy
+    category.data_source_policy = DataSourcePolicy.HYBRID
+    category.recurrence_interval = recurrence_interval
+    category.recurrence_unit = recurrence_unit
+    category.recurrence_anchor = recurrence_anchor
     category.currency = "PLN"
     category.due_day = 10
     category.code = "TEST"

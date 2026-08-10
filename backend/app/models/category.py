@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -16,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
+from app.domain import BillingPeriod, DataSourcePolicy, RecurrenceUnit
 from app.models.base import Base, get_datetime_utc
 
 if TYPE_CHECKING:
@@ -77,6 +78,7 @@ class Category(Base):
         UniqueConstraint("ledger_id", "code"),
         CheckConstraint("code IS NULL OR code ~ '^[A-Z]{4}$'"),
         CheckConstraint("due_day IS NULL OR (due_day >= 1 AND due_day <= 31)"),
+        CheckConstraint("recurrence_interval IS NULL OR recurrence_interval > 0"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -95,10 +97,10 @@ class Category(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     code: Mapped[str | None] = mapped_column(String(4), nullable=True)
-    creation_policy: Mapped[ObligationCreationPolicy] = mapped_column(nullable=False)
-    period_generation_policy: Mapped[PeriodGenerationPolicy] = mapped_column(
-        nullable=False
-    )
+    data_source_policy: Mapped[DataSourcePolicy] = mapped_column(nullable=False)
+    recurrence_interval: Mapped[int | None] = mapped_column(nullable=True)
+    recurrence_unit: Mapped[RecurrenceUnit | None] = mapped_column(nullable=True)
+    recurrence_anchor: Mapped[date | None] = mapped_column(Date, nullable=True)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     due_day: Mapped[int | None] = mapped_column(nullable=True)
     archived_at: Mapped[datetime | None] = mapped_column(
@@ -126,3 +128,24 @@ class Category(Base):
         back_populates="category",
         overlaps="ledger,obligations",
     )
+
+    def occurs_in(self, period: BillingPeriod) -> bool:
+        if (
+            self.recurrence_interval is None
+            or self.recurrence_unit is None
+            or self.recurrence_anchor is None
+        ):
+            return False
+
+        anchor_period = BillingPeriod.from_date(self.recurrence_anchor)
+        month_difference = (period.year - anchor_period.year) * 12 + (
+            period.month - anchor_period.month
+        )
+        if month_difference < 0:
+            return False
+        if self.recurrence_unit is RecurrenceUnit.MONTH:
+            return month_difference % self.recurrence_interval == 0
+        return (
+            period.month == anchor_period.month
+            and (period.year - anchor_period.year) % self.recurrence_interval == 0
+        )

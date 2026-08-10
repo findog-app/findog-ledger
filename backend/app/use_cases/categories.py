@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import re
 import uuid
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
+from app.domain import DataSourcePolicy, RecurrenceUnit
 from app.models import Category, CategoryGroup, Ledger
 from app.services import categories as category_service
 from app.use_cases.exceptions import (
@@ -141,8 +142,10 @@ def create_category(
     name: str,
     description: str | None = None,
     code: str | None = None,
-    creation_policy: ObligationCreationPolicy = ObligationCreationPolicy.HYBRID,
-    period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE,
+    data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
+    recurrence_interval: int | None = None,
+    recurrence_unit: RecurrenceUnit | None = None,
+    recurrence_anchor: date | None = None,
     currency: str | None = None,
     due_day: int | None = None,
 ) -> Category:
@@ -196,8 +199,10 @@ def create_category(
         description=description,
         is_active=True,
         code=normalized_code,
-        creation_policy=creation_policy,
-        period_generation_policy=period_generation_policy,
+        data_source_policy=data_source_policy,
+        recurrence_interval=recurrence_interval,
+        recurrence_unit=recurrence_unit,
+        recurrence_anchor=recurrence_anchor,
         currency=currency,
         due_day=due_day,
     )
@@ -215,8 +220,10 @@ def update_category(
     name: str,
     description: str | None = None,
     code: str | None = None,
-    creation_policy: ObligationCreationPolicy = ObligationCreationPolicy.HYBRID,
-    period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE,
+    data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
+    recurrence_interval: int | None = None,
+    recurrence_unit: RecurrenceUnit | None = None,
+    recurrence_anchor: date | None = None,
     currency: str | None = None,
     due_day: int | None = None,
 ) -> Category:
@@ -259,8 +266,10 @@ def update_category(
     category.name = normalized_name
     category.description = description
     category.code = normalized_code
-    category.creation_policy = creation_policy
-    category.period_generation_policy = period_generation_policy
+    category.data_source_policy = data_source_policy
+    category.recurrence_interval = recurrence_interval
+    category.recurrence_unit = recurrence_unit
+    category.recurrence_anchor = recurrence_anchor
     category.currency = currency
     category.due_day = due_day
     session.commit()

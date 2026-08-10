@@ -3,11 +3,11 @@ from app.domain.ledger import Ledger, LedgerAccessRole, LedgerMembership
 from app.domain.obligations import (
     BillingPeriod,
     CurrentValueSource,
+    DataSourcePolicy,
     EffectiveValueSourceMode,
     Obligation,
-    ObligationCreationPolicy,
     ObligationLifecycle,
-    PeriodGenerationPolicy,
+    RecurrenceUnit,
     ValueState,
 )
 
@@ -16,13 +16,13 @@ __all__ = [
     "Category",
     "CategoryGroup",
     "CurrentValueSource",
+    "DataSourcePolicy",
     "EffectiveValueSourceMode",
     "Ledger",
     "LedgerAccessRole",
     "LedgerMembership",
     "Obligation",
-    "ObligationCreationPolicy",
     "ObligationLifecycle",
-    "PeriodGenerationPolicy",
+    "RecurrenceUnit",
     "ValueState",
 ]

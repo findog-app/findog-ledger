@@ -114,13 +114,43 @@ export const CategoryCreateSchema = {
             ],
             title: 'Code'
         },
-        creation_policy: {
-            '$ref': '#/components/schemas/ObligationCreationPolicy',
+        data_source_policy: {
+            '$ref': '#/components/schemas/DataSourcePolicy',
             default: 'hybrid'
         },
-        period_generation_policy: {
-            '$ref': '#/components/schemas/PeriodGenerationPolicy',
-            default: 'precreate'
+        recurrence_interval: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    exclusiveMinimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Interval'
+        },
+        recurrence_unit: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/RecurrenceUnit'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        recurrence_anchor: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Anchor'
         },
         currency: {
             anyOf: [
@@ -319,11 +349,41 @@ export const CategoryPublicSchema = {
             ],
             title: 'Code'
         },
-        creation_policy: {
-            '$ref': '#/components/schemas/ObligationCreationPolicy'
+        data_source_policy: {
+            '$ref': '#/components/schemas/DataSourcePolicy'
         },
-        period_generation_policy: {
-            '$ref': '#/components/schemas/PeriodGenerationPolicy'
+        recurrence_interval: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Interval'
+        },
+        recurrence_unit: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/RecurrenceUnit'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        recurrence_anchor: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Anchor'
         },
         currency: {
             anyOf: [
@@ -361,7 +421,7 @@ export const CategoryPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'creation_policy', 'period_generation_policy', 'currency', 'due_day', 'archived_at'],
+    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'recurrence_anchor', 'currency', 'due_day', 'archived_at'],
     title: 'CategoryPublic'
 } as const;
 
@@ -398,11 +458,42 @@ export const CategoryUpdateSchema = {
             ],
             title: 'Code'
         },
-        creation_policy: {
-            '$ref': '#/components/schemas/ObligationCreationPolicy'
+        data_source_policy: {
+            '$ref': '#/components/schemas/DataSourcePolicy'
         },
-        period_generation_policy: {
-            '$ref': '#/components/schemas/PeriodGenerationPolicy'
+        recurrence_interval: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    exclusiveMinimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Interval'
+        },
+        recurrence_unit: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/RecurrenceUnit'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        recurrence_anchor: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Anchor'
         },
         currency: {
             anyOf: [
@@ -432,8 +523,14 @@ export const CategoryUpdateSchema = {
         }
     },
     type: 'object',
-    required: ['name', 'creation_policy', 'period_generation_policy'],
+    required: ['name', 'data_source_policy'],
     title: 'CategoryUpdate'
+} as const;
+
+export const DataSourcePolicySchema = {
+    type: 'string',
+    enum: ['manual', 'automatic', 'hybrid'],
+    title: 'DataSourcePolicy'
 } as const;
 
 export const HTTPValidationErrorSchema = {
@@ -705,16 +802,10 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
-export const ObligationCreationPolicySchema = {
+export const RecurrenceUnitSchema = {
     type: 'string',
-    enum: ['manual_only', 'auto_only', 'hybrid'],
-    title: 'ObligationCreationPolicy'
-} as const;
-
-export const PeriodGenerationPolicySchema = {
-    type: 'string',
-    enum: ['precreate', 'on_demand'],
-    title: 'PeriodGenerationPolicy'
+    enum: ['month', 'year'],
+    title: 'RecurrenceUnit'
 } as const;
 
 export const TokenSchema = {

@@ -16,15 +16,15 @@ class ObligationLifecycle(str, Enum):
     ERROR = "error"
 
 
-class ObligationCreationPolicy(str, Enum):
-    MANUAL_ONLY = "manual_only"
-    AUTO_ONLY = "auto_only"
+class DataSourcePolicy(str, Enum):
+    MANUAL = "manual"
+    AUTOMATIC = "automatic"
     HYBRID = "hybrid"
 
 
-class PeriodGenerationPolicy(str, Enum):
-    PRECREATE = "precreate"
-    ON_DEMAND = "on_demand"
+class RecurrenceUnit(str, Enum):
+    MONTH = "month"
+    YEAR = "year"
 
 
 class ValueState(str, Enum):

@@ -173,7 +173,9 @@ def test_create_category_rejects_duplicate_name_in_same_group(db: Session) -> No
 def test_update_category_changes_details_and_obligation_configuration(
     db: Session,
 ) -> None:
-    from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
+    from datetime import date
+
+    from app.domain import DataSourcePolicy, RecurrenceUnit
 
     ledger, _, category = create_category_tree(db)
 
@@ -184,8 +186,10 @@ def test_update_category_changes_details_and_obligation_configuration(
         name="Updated category",
         description="Updated description",
         code="UPDT",
-        creation_policy=ObligationCreationPolicy.AUTO_ONLY,
-        period_generation_policy=PeriodGenerationPolicy.ON_DEMAND,
+        data_source_policy=DataSourcePolicy.AUTOMATIC,
+        recurrence_interval=2,
+        recurrence_unit=RecurrenceUnit.MONTH,
+        recurrence_anchor=date(2026, 1, 1),
         currency="EUR",
         due_day=20,
     )
@@ -193,8 +197,10 @@ def test_update_category_changes_details_and_obligation_configuration(
     assert updated.name == "Updated category"
     assert updated.description == "Updated description"
     assert updated.code == "UPDT"
-    assert updated.creation_policy == ObligationCreationPolicy.AUTO_ONLY
-    assert updated.period_generation_policy == PeriodGenerationPolicy.ON_DEMAND
+    assert updated.data_source_policy == DataSourcePolicy.AUTOMATIC
+    assert updated.recurrence_interval == 2
+    assert updated.recurrence_unit == RecurrenceUnit.MONTH
+    assert updated.recurrence_anchor == date(2026, 1, 1)
     assert updated.currency == "EUR"
     assert updated.due_day == 20
 

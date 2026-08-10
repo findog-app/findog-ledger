@@ -2,13 +2,13 @@ from sqlalchemy.orm import Session
 
 from app.domain import BillingPeriod, ObligationLifecycle
 from app.use_cases import obligations as obligation_use_cases
-from tests.utils.ledger_domain import create_category_with_obligation_policy
+from tests.utils.ledger_domain import create_category_with_recurrence
 
 
 def test_ensure_obligations_for_period_creates_current_and_next_drafts(
     db: Session,
 ) -> None:
-    ledger, _, category = create_category_with_obligation_policy(db)
+    ledger, _, category = create_category_with_recurrence(db)
     created = obligation_use_cases.ensure_obligations_for_period(
         session=db, ledger_id=ledger.id, period=BillingPeriod(2026, 3)
     )
@@ -17,8 +17,8 @@ def test_ensure_obligations_for_period_creates_current_and_next_drafts(
 
 
 def test_list_obligations_for_period_filters_by_category_id(db: Session) -> None:
-    ledger_one, _, category_one = create_category_with_obligation_policy(db)
-    _, _, category_two = create_category_with_obligation_policy(db)
+    ledger_one, _, category_one = create_category_with_recurrence(db)
+    _, _, category_two = create_category_with_recurrence(db)
     period = BillingPeriod(2026, 9)
     obligation_use_cases.ensure_obligations_for_period(
         session=db, ledger_id=ledger_one.id, period=period
@@ -33,7 +33,7 @@ def test_list_obligations_for_period_filters_by_category_id(db: Session) -> None
 
 
 def test_list_obligations_for_period_filters_by_lifecycle(db: Session) -> None:
-    ledger, _, _ = create_category_with_obligation_policy(db)
+    ledger, _, _ = create_category_with_recurrence(db)
     period = BillingPeriod(2026, 8)
     created = obligation_use_cases.ensure_obligations_for_period(
         session=db, ledger_id=ledger.id, period=period

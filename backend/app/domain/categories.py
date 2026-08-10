@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
-from app.domain.obligations import ObligationCreationPolicy, PeriodGenerationPolicy
+from app.domain.obligations import BillingPeriod, DataSourcePolicy, RecurrenceUnit
 
 
 @dataclass(slots=True)
@@ -31,8 +31,10 @@ class Category:
     description: str | None
     is_active: bool
     code: str | None
-    creation_policy: ObligationCreationPolicy
-    period_generation_policy: PeriodGenerationPolicy
+    data_source_policy: DataSourcePolicy
+    recurrence_interval: int | None
+    recurrence_unit: RecurrenceUnit | None
+    recurrence_anchor: date | None
     currency: str | None
     due_day: int | None
     archived_at: datetime | None
@@ -42,3 +44,24 @@ class Category:
     def archive(self, *, archived_at: datetime) -> None:
         self.is_active = False
         self.archived_at = archived_at
+
+    def occurs_in(self, period: BillingPeriod) -> bool:
+        if (
+            self.recurrence_interval is None
+            or self.recurrence_unit is None
+            or self.recurrence_anchor is None
+        ):
+            return False
+
+        anchor_period = BillingPeriod.from_date(self.recurrence_anchor)
+        month_difference = (period.year - anchor_period.year) * 12 + (
+            period.month - anchor_period.month
+        )
+        if month_difference < 0:
+            return False
+        if self.recurrence_unit is RecurrenceUnit.MONTH:
+            return month_difference % self.recurrence_interval == 0
+        return (
+            period.month == anchor_period.month
+            and (period.year - anchor_period.year) % self.recurrence_interval == 0
+        )

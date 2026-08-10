@@ -11,7 +11,6 @@ from app.domain import (
     CurrentValueSource,
     EffectiveValueSourceMode,
     ObligationLifecycle,
-    PeriodGenerationPolicy,
     ValueState,
 )
 from app.models import Category, Obligation
@@ -83,13 +82,14 @@ def ensure_obligations_for_period(
         select(Category).where(
             Category.ledger_id == ledger_id,
             Category.is_active.is_(True),
-            Category.period_generation_policy == PeriodGenerationPolicy.PRECREATE,
         )
     ).all()
 
     created: list[Obligation] = []
     for category in categories:
         for period in (current_period, current_period.next()):
+            if not category.occurs_in(period):
+                continue
             obligation, was_created = get_or_create_obligation(
                 session=session,
                 category=category,

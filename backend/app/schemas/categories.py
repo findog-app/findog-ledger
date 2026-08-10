@@ -1,9 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain import ObligationCreationPolicy, PeriodGenerationPolicy
+from app.domain import DataSourcePolicy, RecurrenceUnit
 
 
 class CategoryGroupCreate(BaseModel):
@@ -23,8 +23,10 @@ class CategoryCreate(BaseModel):
     code: str | None = Field(
         default=None, min_length=4, max_length=4, pattern=r"^[A-Z]{4}$"
     )
-    creation_policy: ObligationCreationPolicy = ObligationCreationPolicy.HYBRID
-    period_generation_policy: PeriodGenerationPolicy = PeriodGenerationPolicy.PRECREATE
+    data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID
+    recurrence_interval: int | None = Field(default=None, gt=0)
+    recurrence_unit: RecurrenceUnit | None = None
+    recurrence_anchor: date | None = None
     currency: str | None = Field(default=None, min_length=3, max_length=3)
     due_day: int | None = Field(default=None, ge=1, le=31)
 
@@ -35,8 +37,10 @@ class CategoryUpdate(BaseModel):
     code: str | None = Field(
         default=None, min_length=4, max_length=4, pattern=r"^[A-Z]{4}$"
     )
-    creation_policy: ObligationCreationPolicy
-    period_generation_policy: PeriodGenerationPolicy
+    data_source_policy: DataSourcePolicy
+    recurrence_interval: int | None = Field(default=None, gt=0)
+    recurrence_unit: RecurrenceUnit | None = None
+    recurrence_anchor: date | None = None
     currency: str | None = Field(default=None, min_length=3, max_length=3)
     due_day: int | None = Field(default=None, ge=1, le=31)
 
@@ -67,8 +71,10 @@ class CategoryPublic(BaseModel):
     description: str | None
     is_active: bool
     code: str | None
-    creation_policy: ObligationCreationPolicy
-    period_generation_policy: PeriodGenerationPolicy
+    data_source_policy: DataSourcePolicy
+    recurrence_interval: int | None
+    recurrence_unit: RecurrenceUnit | None
+    recurrence_anchor: date | None
     currency: str | None
     due_day: int | None
     archived_at: datetime | None

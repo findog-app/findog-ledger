@@ -72,8 +72,10 @@ const categorySchema = z.object({
       "Code must contain exactly 4 uppercase letters",
     )
     .optional(),
-  creation_policy: z.enum(["manual_only", "auto_only", "hybrid"]),
-  period_generation_policy: z.enum(["precreate", "on_demand"]),
+  data_source_policy: z.enum(["manual", "automatic", "hybrid"]),
+  recurrence_interval: z.number().int().positive().optional(),
+  recurrence_unit: z.enum(["month", "year"]).optional(),
+  recurrence_anchor: z.string().optional(),
   currency: z.string().trim().length(3).optional(),
   due_day: z.number().int().min(1).max(31).optional(),
 })
@@ -280,7 +282,7 @@ function EditGroupDialog({
             />
             <DialogFooter>
               <LoadingButton type="submit" loading={mutation.isPending}>
-                Save changes
+                Save group changes
               </LoadingButton>
             </DialogFooter>
           </form>
@@ -308,8 +310,10 @@ function CreateCategoryDialog({
       name: "",
       description: "",
       code: "",
-      creation_policy: "hybrid",
-      period_generation_policy: "precreate",
+      data_source_policy: "hybrid",
+      recurrence_interval: undefined,
+      recurrence_unit: undefined,
+      recurrence_anchor: "",
       currency: "",
       due_day: undefined,
     },
@@ -349,6 +353,7 @@ function CreateCategoryDialog({
                 ...data,
                 description: data.description || null,
                 code: data.code || null,
+                recurrence_anchor: data.recurrence_anchor || null,
                 currency: data.currency ? data.currency.toUpperCase() : null,
               }),
             )}
@@ -427,10 +432,10 @@ function CreateCategoryDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="creation_policy"
+                name="data_source_policy"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Creation policy</FormLabel>
+                    <FormLabel>Data source</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -438,13 +443,9 @@ function CreateCategoryDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="manual_only">Manual only</SelectItem>
-                        <SelectItem value="auto_only">
-                          Automatic only
-                        </SelectItem>
-                        <SelectItem value="hybrid">
-                          Manual and automatic
-                        </SelectItem>
+                        <SelectItem value="manual">Manual</SelectItem>
+                        <SelectItem value="automatic">Automatic</SelectItem>
+                        <SelectItem value="hybrid">Hybrid</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -453,10 +454,10 @@ function CreateCategoryDialog({
               />
               <FormField
                 control={form.control}
-                name="period_generation_policy"
+                name="recurrence_unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Period generation</FormLabel>
+                    <FormLabel>Recurrence unit</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -464,12 +465,50 @@ function CreateCategoryDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="precreate">
-                          Pre-create periods
-                        </SelectItem>
-                        <SelectItem value="on_demand">On demand</SelectItem>
+                        <SelectItem value="month">Monthly</SelectItem>
+                        <SelectItem value="year">Yearly</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="recurrence_interval"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Recurrence interval</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="For example, 2"
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="recurrence_anchor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Recurrence anchor</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} value={field.value ?? ""} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -546,8 +585,10 @@ function EditCategoryDialog({
       name: category.name,
       description: category.description ?? "",
       code: category.code ?? "",
-      creation_policy: category.creation_policy,
-      period_generation_policy: category.period_generation_policy,
+      data_source_policy: category.data_source_policy,
+      recurrence_interval: category.recurrence_interval ?? undefined,
+      recurrence_unit: category.recurrence_unit ?? undefined,
+      recurrence_anchor: category.recurrence_anchor ?? "",
       currency: category.currency ?? "",
       due_day: category.due_day ?? undefined,
     },
@@ -560,8 +601,10 @@ function EditCategoryDialog({
         name: category.name,
         description: category.description ?? "",
         code: category.code ?? "",
-        creation_policy: category.creation_policy,
-        period_generation_policy: category.period_generation_policy,
+        data_source_policy: category.data_source_policy,
+        recurrence_interval: category.recurrence_interval ?? undefined,
+        recurrence_unit: category.recurrence_unit ?? undefined,
+        recurrence_anchor: category.recurrence_anchor ?? "",
         currency: category.currency ?? "",
         due_day: category.due_day ?? undefined,
       })
@@ -606,8 +649,10 @@ function EditCategoryDialog({
                 name: data.name,
                 description: data.description || null,
                 code: data.code || null,
-                creation_policy: data.creation_policy,
-                period_generation_policy: data.period_generation_policy,
+                data_source_policy: data.data_source_policy,
+                recurrence_interval: data.recurrence_interval,
+                recurrence_unit: data.recurrence_unit ?? null,
+                recurrence_anchor: data.recurrence_anchor || null,
                 currency: data.currency ? data.currency.toUpperCase() : null,
                 due_day: data.due_day,
               }),
@@ -663,10 +708,10 @@ function EditCategoryDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="creation_policy"
+                name="data_source_policy"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Creation policy</FormLabel>
+                    <FormLabel>Data source</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -674,13 +719,9 @@ function EditCategoryDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="manual_only">Manual only</SelectItem>
-                        <SelectItem value="auto_only">
-                          Automatic only
-                        </SelectItem>
-                        <SelectItem value="hybrid">
-                          Manual and automatic
-                        </SelectItem>
+                        <SelectItem value="manual">Manual</SelectItem>
+                        <SelectItem value="automatic">Automatic</SelectItem>
+                        <SelectItem value="hybrid">Hybrid</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -689,10 +730,10 @@ function EditCategoryDialog({
               />
               <FormField
                 control={form.control}
-                name="period_generation_policy"
+                name="recurrence_unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Period generation</FormLabel>
+                    <FormLabel>Recurrence unit</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -700,10 +741,8 @@ function EditCategoryDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="precreate">
-                          Pre-create periods
-                        </SelectItem>
-                        <SelectItem value="on_demand">On demand</SelectItem>
+                        <SelectItem value="month">Monthly</SelectItem>
+                        <SelectItem value="year">Yearly</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -747,6 +786,46 @@ function EditCategoryDialog({
                           )
                         }
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="recurrence_interval"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Recurrence interval</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="For example, 2"
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="recurrence_anchor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Recurrence anchor</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} value={field.value ?? ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -922,12 +1001,13 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
                             <Badge variant="secondary">{category.code}</Badge>
                           )}
                           <Badge variant="outline">
-                            {category.creation_policy.replace("_", " ")}
+                            {category.data_source_policy}
                           </Badge>
                           <Badge variant="outline">
-                            {category.period_generation_policy === "precreate"
-                              ? "pre-create"
-                              : "on demand"}
+                            {category.recurrence_interval &&
+                            category.recurrence_unit
+                              ? `every ${category.recurrence_interval} ${category.recurrence_unit}${category.recurrence_interval === 1 ? "" : "s"}`
+                              : "no recurrence"}
                           </Badge>
                           {category.currency && (
                             <Badge variant="outline">{category.currency}</Badge>

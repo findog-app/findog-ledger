@@ -19,8 +19,10 @@ export type CategoryCreate = {
     name: string;
     description?: (string | null);
     code?: (string | null);
-    creation_policy?: ObligationCreationPolicy;
-    period_generation_policy?: PeriodGenerationPolicy;
+    data_source_policy?: DataSourcePolicy;
+    recurrence_interval?: (number | null);
+    recurrence_unit?: (RecurrenceUnit | null);
+    recurrence_anchor?: (string | null);
     currency?: (string | null);
     due_day?: (number | null);
 };
@@ -57,8 +59,10 @@ export type CategoryPublic = {
     description: (string | null);
     is_active: boolean;
     code: (string | null);
-    creation_policy: ObligationCreationPolicy;
-    period_generation_policy: PeriodGenerationPolicy;
+    data_source_policy: DataSourcePolicy;
+    recurrence_interval: (number | null);
+    recurrence_unit: (RecurrenceUnit | null);
+    recurrence_anchor: (string | null);
     currency: (string | null);
     due_day: (number | null);
     archived_at: (string | null);
@@ -68,11 +72,15 @@ export type CategoryUpdate = {
     name: string;
     description?: (string | null);
     code?: (string | null);
-    creation_policy: ObligationCreationPolicy;
-    period_generation_policy: PeriodGenerationPolicy;
+    data_source_policy: DataSourcePolicy;
+    recurrence_interval?: (number | null);
+    recurrence_unit?: (RecurrenceUnit | null);
+    recurrence_anchor?: (string | null);
     currency?: (string | null);
     due_day?: (number | null);
 };
+
+export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
 
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
@@ -137,9 +145,7 @@ export type NewPassword = {
     new_password: string;
 };
 
-export type ObligationCreationPolicy = 'manual_only' | 'auto_only' | 'hybrid';
-
-export type PeriodGenerationPolicy = 'precreate' | 'on_demand';
+export type RecurrenceUnit = 'month' | 'year';
 
 export type Token = {
     access_token: string;
