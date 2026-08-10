@@ -218,7 +218,6 @@ function LedgerSettings() {
                     onChange={(event) =>
                       setConfirmationName(event.target.value)
                     }
-                    placeholder={ledger.name}
                   />
                 </div>
                 <DialogFooter>
