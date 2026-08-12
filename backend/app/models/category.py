@@ -13,6 +13,8 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
+    inspect,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -151,3 +153,11 @@ class Category(Base):
             period.month == anchor_period.month
             and (period.year - anchor_period.year) % self.recurrence_interval == 0
         )
+
+
+@event.listens_for(Category, "before_update")
+def _prevent_category_code_change(
+    _mapper: object, _connection: object, target: Category
+) -> None:
+    if inspect(target).attrs.code.history.has_changes():
+        raise ValueError("Category code is immutable")

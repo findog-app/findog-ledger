@@ -71,6 +71,7 @@ class Obligation:
     id: uuid.UUID
     ledger_id: uuid.UUID
     category_id: uuid.UUID
+    category_code: str
     period: BillingPeriod
     name: str
     lifecycle: ObligationLifecycle
@@ -87,3 +88,8 @@ class Obligation:
     currency: str | None
     created_at: datetime
     updated_at: datetime
+
+    @property
+    def business_key(self) -> str:
+        """Stable public key derived from the immutable category code and period."""
+        return f"{self.category_code}-{self.period.year:04d}-{self.period.month:02d}"

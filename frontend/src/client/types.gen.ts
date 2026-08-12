@@ -71,7 +71,6 @@ export type CategoryPublic = {
 export type CategoryUpdate = {
     name: string;
     description?: (string | null);
-    code: string;
     data_source_policy: DataSourcePolicy;
     recurrence_interval?: (number | null);
     recurrence_unit?: (RecurrenceUnit | null);

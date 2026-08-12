@@ -104,3 +104,8 @@ class Obligation(Base):
         back_populates="obligations",
         overlaps="ledger,obligations",
     )
+
+    @property
+    def business_key(self) -> str:
+        """Stable public key derived from the immutable category code and period."""
+        return f"{self.category.code}-{self.period_year:04d}-{self.period_month:02d}"

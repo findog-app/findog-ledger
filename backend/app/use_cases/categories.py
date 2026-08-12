@@ -46,15 +46,6 @@ def _normalize_code(value: str) -> str:
     return normalized
 
 
-def _generate_code() -> str:
-    return (
-        uuid.uuid4()
-        .hex[:4]
-        .translate(str.maketrans("0123456789", "ABCDEFGHIJ"))
-        .upper()
-    )
-
-
 def create_category_group(
     *,
     session: Session,
@@ -148,7 +139,7 @@ def create_category(
     category_group_id: uuid.UUID,
     name: str,
     description: str | None = None,
-    code: str | None = None,
+    code: str,
     data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
     recurrence_interval: int | None = None,
     recurrence_unit: RecurrenceUnit | None = None,
@@ -185,7 +176,7 @@ def create_category(
     if existing is not None:
         raise DuplicateCategoryError
 
-    normalized_code = _normalize_code(code) if code is not None else _generate_code()
+    normalized_code = _normalize_code(code)
     if due_day is not None and not 1 <= due_day <= 31:
         raise InvalidCategoryDueDayError
     while (
@@ -196,9 +187,7 @@ def create_category(
         )
         is not None
     ):
-        if code is not None:
-            raise DuplicateCategoryCodeError
-        normalized_code = _generate_code()
+        raise DuplicateCategoryCodeError
 
     if data_source_policy is DataSourcePolicy.MANUAL:
         recurrence_interval = recurrence_unit = recurrence_anchor = None
@@ -230,7 +219,6 @@ def update_category(
     category_id: uuid.UUID,
     name: str,
     description: str | None = None,
-    code: str | None = None,
     data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
     recurrence_interval: int | None = None,
     recurrence_unit: RecurrenceUnit | None = None,
@@ -260,26 +248,11 @@ def update_category(
     if existing_name is not None:
         raise DuplicateCategoryError
 
-    normalized_code = _normalize_code(code) if code is not None else _generate_code()
     if due_day is not None and not 1 <= due_day <= 31:
         raise InvalidCategoryDueDayError
-    while (
-        session.scalar(
-            select(Category.id).where(
-                Category.ledger_id == ledger_id,
-                Category.code == normalized_code,
-                Category.id != category_id,
-            )
-        )
-        is not None
-    ):
-        if code is not None:
-            raise DuplicateCategoryCodeError
-        normalized_code = _generate_code()
 
     category.name = normalized_name
     category.description = description
-    category.code = normalized_code
     category.data_source_policy = data_source_policy
     if data_source_policy is DataSourcePolicy.MANUAL:
         recurrence_interval = recurrence_unit = recurrence_anchor = None

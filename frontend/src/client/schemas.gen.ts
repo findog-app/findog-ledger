@@ -413,13 +413,6 @@ export const CategoryUpdateSchema = {
             ],
             title: 'Description'
         },
-        code: {
-            type: 'string',
-            maxLength: 4,
-            minLength: 4,
-            pattern: '^[A-Z]{4}$',
-            title: 'Code'
-        },
         data_source_policy: {
             '$ref': '#/components/schemas/DataSourcePolicy'
         },
@@ -475,8 +468,9 @@ export const CategoryUpdateSchema = {
             title: 'Due Day'
         }
     },
+    additionalProperties: false,
     type: 'object',
-    required: ['name', 'code', 'data_source_policy'],
+    required: ['name', 'data_source_policy'],
     title: 'CategoryUpdate'
 } as const;
 

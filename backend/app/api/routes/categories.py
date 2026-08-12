@@ -217,7 +217,6 @@ def update_category(
             category_id=category_id,
             name=category_in.name,
             description=category_in.description,
-            code=category_in.code,
             data_source_policy=category_in.data_source_policy,
             recurrence_interval=category_in.recurrence_interval,
             recurrence_unit=category_in.recurrence_unit,

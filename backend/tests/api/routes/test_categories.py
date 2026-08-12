@@ -180,6 +180,7 @@ def test_patch_category_group_archive_fails_when_active_child_categories_exist(
         ledger_id=ledger.id,
         category_group_id=category_group.id,
         name=f"category-{random_lower_string()}",
+        code="CHLD",
     )
 
     response = client.patch(
@@ -222,12 +223,14 @@ def test_get_categories_returns_only_categories_for_that_ledger(
         ledger_id=ledger_one.id,
         category_group_id=group_one.id,
         name=f"category-{random_lower_string()}",
+        code="LONE",
     )
     category_use_cases.create_category(
         session=db,
         ledger_id=ledger_two.id,
         category_group_id=group_two.id,
         name=f"category-{random_lower_string()}",
+        code="LTWO",
     )
 
     response = client.get(
@@ -265,12 +268,14 @@ def test_get_categories_supports_group_filter(client: TestClient, db: Session) -
         ledger_id=ledger.id,
         category_group_id=group_one.id,
         name=f"category-{random_lower_string()}",
+        code="GONE",
     )
     category_use_cases.create_category(
         session=db,
         ledger_id=ledger.id,
         category_group_id=group_two.id,
         name=f"category-{random_lower_string()}",
+        code="GTWO",
     )
 
     response = client.get(
@@ -487,6 +492,7 @@ def test_patch_category_archive_archives_category_for_authorized_editor(
         ledger_id=ledger.id,
         category_group_id=category_group.id,
         name=f"category-{random_lower_string()}",
+        code="EDIT",
     )
 
     response = client.patch(
@@ -524,6 +530,7 @@ def test_patch_category_archive_returns_404_for_non_member_access(
         ledger_id=ledger.id,
         category_group_id=category_group.id,
         name=f"category-{random_lower_string()}",
+        code="OUTS",
     )
 
     response = client.patch(
@@ -533,3 +540,38 @@ def test_patch_category_archive_returns_404_for_non_member_access(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Ledger not found"}
+
+
+def test_patch_category_rejects_code_change(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db,
+        owner_user_id=owner.id,
+        name=f"ledger-{random_lower_string()}",
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db,
+        ledger_id=ledger.id,
+        name=f"group-{random_lower_string()}",
+    )
+    category = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name=f"category-{random_lower_string()}",
+        code="IMMU",
+    )
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}",
+        headers=headers,
+        json={
+            "name": category.name,
+            "data_source_policy": category.data_source_policy.value,
+            "currency": category.currency,
+            "code": "CHNG",
+        },
+    )
+
+    assert response.status_code == 422

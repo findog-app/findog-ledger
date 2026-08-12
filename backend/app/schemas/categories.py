@@ -30,9 +30,10 @@ class CategoryCreate(BaseModel):
 
 
 class CategoryUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(min_length=1, max_length=255)
     description: str | None = None
-    code: str = Field(min_length=4, max_length=4, pattern=r"^[A-Z]{4}$")
     data_source_policy: DataSourcePolicy
     recurrence_interval: int | None = Field(default=None, gt=0)
     recurrence_unit: RecurrenceUnit | None = None

@@ -21,6 +21,10 @@ def test_ensure_obligations_creates_current_and_next_drafts(db: Session) -> None
         (2026, 4),
     }
     assert all(item.category_id == category.id for item in created)
+    assert {item.business_key for item in created} == {
+        f"{category.code}-2026-03",
+        f"{category.code}-2026-04",
+    }
 
 
 def test_ensure_obligations_is_idempotent(db: Session) -> None:

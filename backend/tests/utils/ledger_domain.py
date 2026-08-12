@@ -52,7 +52,6 @@ def create_category_with_recurrence(
     category.recurrence_anchor = recurrence_anchor
     category.currency = "PLN"
     category.due_day = 10
-    category.code = "TEST"
     db.commit()
     db.refresh(category)
     return ledger, category_group, category

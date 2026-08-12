@@ -13,7 +13,6 @@ from app.use_cases.exceptions import (
     DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
-    InvalidCategoryCodeError,
 )
 from tests.utils.ledger_domain import create_category_tree, create_test_ledger
 from tests.utils.utils import random_lower_string
@@ -49,6 +48,7 @@ def test_create_category_rejects_cross_ledger_category_group_reference(
             ledger_id=ledger_one.id,
             category_group_id=category_group.id,
             name=f"category-{random_lower_string()}",
+            code="CROS",
         )
 
 
@@ -71,6 +71,7 @@ def test_create_category_rejects_archived_group(db: Session) -> None:
             ledger_id=ledger.id,
             category_group_id=category_group.id,
             name=f"category-{random_lower_string()}",
+            code="ARCH",
         )
 
 
@@ -160,6 +161,7 @@ def test_create_category_rejects_duplicate_name_in_same_group(db: Session) -> No
         ledger_id=ledger.id,
         category_group_id=category_group.id,
         name=name,
+        code="NAME",
     )
 
     with pytest.raises(DuplicateCategoryError):
@@ -168,6 +170,7 @@ def test_create_category_rejects_duplicate_name_in_same_group(db: Session) -> No
             ledger_id=ledger.id,
             category_group_id=category_group.id,
             name=name,
+            code="DIFF",
         )
 
 
@@ -186,7 +189,6 @@ def test_update_category_changes_details_and_obligation_configuration(
         category_id=category.id,
         name="Updated category",
         description="Updated description",
-        code="UPDT",
         data_source_policy=DataSourcePolicy.AUTOMATIC,
         recurrence_interval=2,
         recurrence_unit=RecurrenceUnit.MONTH,
@@ -197,7 +199,7 @@ def test_update_category_changes_details_and_obligation_configuration(
 
     assert updated.name == "Updated category"
     assert updated.description == "Updated description"
-    assert updated.code == "UPDT"
+    assert updated.code == category.code
     assert updated.data_source_policy == DataSourcePolicy.AUTOMATIC
     assert updated.recurrence_interval == 2
     assert updated.recurrence_unit == RecurrenceUnit.MONTH
@@ -229,36 +231,29 @@ def test_create_category_defaults_currency_and_clears_manual_recurrence(
     assert category.recurrence_anchor is None
 
 
-def test_update_category_rejects_duplicate_code(db: Session) -> None:
+def test_category_code_is_immutable(db: Session) -> None:
     ledger, group, category = create_category_tree(db)
-    other = category_use_cases.create_category(
+    category.code = "OTHR"
+    with pytest.raises(ValueError, match="immutable"):
+        db.commit()
+    db.rollback()
+
+
+def test_archived_category_code_cannot_be_reused(db: Session) -> None:
+    ledger, group, category = create_category_tree(db)
+    category_use_cases.archive_category(
         session=db,
         ledger_id=ledger.id,
-        category_group_id=group.id,
-        name="Other category",
-        code="OTHR",
+        category_id=category.id,
     )
 
     with pytest.raises(DuplicateCategoryCodeError):
-        category_use_cases.update_category(
+        category_use_cases.create_category(
             session=db,
             ledger_id=ledger.id,
-            category_id=category.id,
-            name=category.name,
-            code=other.code,
-        )
-
-
-def test_update_category_rejects_invalid_code(db: Session) -> None:
-    ledger, _, category = create_category_tree(db)
-
-    with pytest.raises(InvalidCategoryCodeError):
-        category_use_cases.update_category(
-            session=db,
-            ledger_id=ledger.id,
-            category_id=category.id,
-            name=category.name,
-            code="abc1",
+            category_group_id=group.id,
+            name="Replacement category",
+            code=category.code,
         )
 
 
@@ -285,12 +280,14 @@ def test_same_group_and_category_names_across_ledgers_are_allowed(
         ledger_id=ledger_one.id,
         category_group_id=group_one.id,
         name=category_name,
+        code="LONE",
     )
     category_two = category_use_cases.create_category(
         session=db,
         ledger_id=ledger_two.id,
         category_group_id=group_two.id,
         name=category_name,
+        code="LTWO",
     )
 
     assert group_one.name == group_two.name
