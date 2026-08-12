@@ -60,14 +60,9 @@ const groupSchema = z.object({
   description: z.string().optional(),
 })
 
-const categorySchema = z.object({
-  category_group_id: z.string().min(1, "Choose a group"),
+const categoryConfigurationSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(255),
   description: z.string().optional(),
-  code: z
-    .string()
-    .trim()
-    .regex(/^[A-Z]{4}$/, "Code must contain exactly 4 uppercase letters"),
   data_source_policy: z.enum(["manual", "automatic", "hybrid"]),
   recurrence_interval: z.number().int().positive().optional(),
   recurrence_unit: z.enum(["month", "year"]).optional(),
@@ -76,8 +71,17 @@ const categorySchema = z.object({
   due_day: z.number().int().min(1).max(31).optional(),
 })
 
+const categorySchema = categoryConfigurationSchema.extend({
+  category_group_id: z.string().min(1, "Choose a group"),
+  code: z
+    .string()
+    .trim()
+    .regex(/^[A-Z]{4}$/, "Code must contain exactly 4 uppercase letters"),
+})
+
 type GroupFormData = z.infer<typeof groupSchema>
 type CategoryFormData = z.infer<typeof categorySchema>
+type CategoryUpdateFormData = z.infer<typeof categoryConfigurationSchema>
 
 function useCategoryQueries(ledgerId: string, includeArchived: boolean) {
   const groups = useSuspenseQuery({
@@ -603,13 +607,11 @@ function EditCategoryDialog({
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const form = useForm<CategoryFormData>({
-    resolver: zodResolver(categorySchema),
+  const form = useForm<CategoryUpdateFormData>({
+    resolver: zodResolver(categoryConfigurationSchema),
     defaultValues: {
-      category_group_id: category.category_group_id,
       name: category.name,
       description: category.description ?? "",
-      code: category.code,
       data_source_policy: category.data_source_policy,
       recurrence_interval: category.recurrence_interval ?? undefined,
       recurrence_unit: category.recurrence_unit ?? undefined,
@@ -622,10 +624,8 @@ function EditCategoryDialog({
   useEffect(() => {
     if (open) {
       form.reset({
-        category_group_id: category.category_group_id,
         name: category.name,
         description: category.description ?? "",
-        code: category.code,
         data_source_policy: category.data_source_policy,
         recurrence_interval: category.recurrence_interval ?? undefined,
         recurrence_unit: category.recurrence_unit ?? undefined,
@@ -673,7 +673,6 @@ function EditCategoryDialog({
               mutation.mutate({
                 name: data.name,
                 description: data.description || null,
-                code: data.code,
                 data_source_policy: data.data_source_policy,
                 recurrence_interval: data.recurrence_interval,
                 recurrence_unit: data.recurrence_unit ?? null,
@@ -710,26 +709,10 @@ function EditCategoryDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Code</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="ELEC"
-                      maxLength={4}
-                      {...field}
-                      onChange={(event) =>
-                        field.onChange(event.target.value.toUpperCase())
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Code</p>
+              <Badge variant="secondary">{category.code}</Badge>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
