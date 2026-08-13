@@ -1,0 +1,57 @@
+name: Bug report
+description: Report reproducible incorrect behaviour in Findog Ledger.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please do not include passwords,
+        tokens, personal data, or security vulnerabilities in a public issue.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Clearly describe the actual behaviour and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the browser, operating system, and relevant dependency versions.
+      placeholder: Firefox 140, Ubuntu 24.04, Bun 1.3.14
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Remove any sensitive information before attaching logs or images.
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context

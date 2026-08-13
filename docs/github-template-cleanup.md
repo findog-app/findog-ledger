@@ -35,10 +35,10 @@ Analiza pozostałości po FastAPI full-stack template i elementów wymagających
 
 ## Zalecane pliki repozytorium
 
-- `LICENSE`
-- `SECURITY.md`
-- `CONTRIBUTING.md`
-- aktualne formularze issue dla bugów i feature requestów
+- [x] `LICENSE` (MIT)
+- [x] `SECURITY.md`
+- [x] `CONTRIBUTING.md`
+- [x] Aktualne formularze issue dla bugów i feature requestów
 
 ## Stan Git
 
