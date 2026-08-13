@@ -9,7 +9,7 @@ updates:
     open-pull-requests-limit: 3
     assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
     groups:
       non-major:
@@ -23,7 +23,7 @@ updates:
     open-pull-requests-limit: 3
     assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
     groups:
       non-major:
@@ -37,7 +37,7 @@ updates:
     open-pull-requests-limit: 3
     assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
     groups:
       non-major:
@@ -55,7 +55,7 @@ updates:
     open-pull-requests-limit: 3
     assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
     groups:
       non-major:
@@ -69,7 +69,7 @@ updates:
     open-pull-requests-limit: 3
     assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
     groups:
       non-major:
