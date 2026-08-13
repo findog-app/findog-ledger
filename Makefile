@@ -21,7 +21,7 @@ dev-b:
 	cd backend && uv run fastapi dev app/main.py
 
 dev-f:
-	npm --workspace frontend run dev
+	bun run --filter frontend dev
 
 pre:
 	cd backend && uv run pre-commit run --all-files

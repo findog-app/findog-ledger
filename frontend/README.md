@@ -1,44 +1,19 @@
 # Findog Ledger - Frontend
 
-The frontend is built with [Vite](https://vitejs.dev/), [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/), [TanStack Query](https://tanstack.com/query), [TanStack Router](https://tanstack.com/router) and [Tailwind CSS](https://tailwindcss.com/).
+React/Vite frontend for Findog Ledger. It uses Bun; run the following commands from the repository root.
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/)
+- [Bun](https://bun.sh/)
 
 ## Quick Start
 
 ```bash
-npm install
-npm run dev
+bun install --frozen-lockfile
+bun run --filter frontend dev
 ```
 
-* Then open your browser at http://localhost:5173/.
-
-Notice that this live server is not running inside Docker, it's for local development, and that is the recommended workflow. Once you are happy with your frontend, you can build the frontend Docker image and start it, to test it in a production-like environment. But building the image at every change will not be as productive as running the local development server with live reload.
-
-Check the file `package.json` to see other available options.
-
-### Removing the frontend
-
-If you are developing an API-only app and want to remove the frontend, you can do it easily:
-
-* Remove the `./frontend` directory.
-
-* In the `compose.yml` file, remove the whole service / section `frontend`.
-
-* In the `compose.override.yml` file, remove the whole service / section `frontend` and `playwright`.
-
-Done, you have a frontend-less (api-only) app. 🤓
-
----
-
-If you want, you can also remove the `FRONTEND` environment variables from:
-
-* `.env`
-* `./scripts/*.sh`
-
-But it would be only to clean them up, leaving them won't really have any effect either way.
+Open <http://localhost:5173>. The local dev server is the recommended frontend workflow; Docker Compose is useful for testing the full stack.
 
 ## Generate Client
 
@@ -62,7 +37,7 @@ bash ./scripts/generate-client.sh
 * To generate the frontend client, run:
 
 ```bash
-npm run generate-client
+bun run --filter frontend generate-client
 ```
 
 * Commit the changes.
@@ -72,30 +47,8 @@ Notice that every time the backend OpenAPI schema changes, you should regenerate
 ## Current Frontend Scope
 
 - No public signup flow.
-- No demo item pages or navigation.
-- Admin user-management page is available only to superusers.
-- Dashboard copy reflects the current repository-preparation phase, not the final product.
-
-## Using a Remote API
-
-If you want to use a remote API, you can set the environment variable `VITE_API_URL` to the URL of the remote API. For example, you can set it in the `frontend/.env` file:
-
-```env
-VITE_API_URL=https://api.my-domain.example.com
-```
-
-Then, when you run the frontend, it will use that URL as the base URL for the API.
-
-## Code Structure
-
-The frontend code is structured as follows:
-
-* `frontend/src` - The main frontend code.
-* `frontend/src/assets` - Static assets.
-* `frontend/src/client` - The generated OpenAPI client.
-* `frontend/src/components` -  The different components of the frontend.
-* `frontend/src/hooks` - Custom hooks.
-* `frontend/src/routes` - The different routes of the frontend which include the pages.
+- Admin user management is limited to superusers.
+- Ledger, membership sharing, and category management are available.
 
 ## End-to-End Testing with Playwright
 
@@ -108,13 +61,13 @@ docker compose up -d --wait backend
 Then, you can run the tests with the following command:
 
 ```bash
-npm run test
+bun run --filter frontend test
 ```
 
 You can also run your tests in UI mode to see the browser and interact with it running:
 
 ```bash
-npm run test:ui
+bun run --filter frontend test:ui
 ```
 
 To stop and remove the Docker Compose stack and clean the data created in tests, use the following command:

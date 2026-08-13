@@ -28,10 +28,10 @@ Analiza pozostałości po FastAPI full-stack template i elementów wymagających
 
 ### Dokumentacja
 
-- Zaktualizować główny `README.md`, ponieważ opisuje część funkcji jako przyszłe, mimo że categories, obligations i ledger sharing już istnieją.
-- Ograniczyć w `frontend/README.md` ogólne instrukcje odziedziczone po template.
-- Oznaczyć lub usunąć odniesienia do `localhost.tiangolo.com` w `development.md`.
-- Ujednolicić instrukcje używania `npm` i `bun` — obecnie dokumentacja i workflowy używają obu narzędzi.
+- [x] Zaktualizować główny `README.md`, ponieważ opisuje część funkcji jako przyszłe, mimo że categories, obligations i ledger sharing już istnieją.
+- [x] Ograniczyć w `frontend/README.md` ogólne instrukcje odziedziczone po template.
+- [x] Usunąć odniesienia do `localhost.tiangolo.com` z `development.md`.
+- [x] Ujednolicić workflow frontendowy na Bun.
 
 ## Zalecane pliki repozytorium
 

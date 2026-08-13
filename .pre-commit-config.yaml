@@ -27,7 +27,7 @@ repos:
 
       - id: local-biome-check
         name: biome check
-        entry: npm run lint
+        entry: bash ./scripts/bun.sh run --filter frontend lint
         language: system
         pass_filenames: false
         types: [text]
