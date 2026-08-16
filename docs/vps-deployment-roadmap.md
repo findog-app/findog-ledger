@@ -45,14 +45,14 @@ push / tag Git
    - dołącza frontend i backend do zewnętrznej sieci `firefly_net`;
    - nie wystawia portów aplikacji ani PostgreSQL na hosta;
    - nie uruchamia Adminera w produkcji, chyba że będzie wyraźnie potrzebny;
-   - pozostawia dane PostgreSQL w trwałym wolumenie Compose.
+   - nie uruchamia PostgreSQL ani wolumenu danych, ponieważ produkcja korzysta z zewnętrznie zarządzanej bazy.
 4. Dodać `.env.production.example`, bez wartości sekretów, z pełną listą wymaganych zmiennych, m.in. `TAG`, `DOMAIN`, `FRONTEND_HOST`, `BACKEND_CORS_ORIGINS`, dane PostgreSQL, `SECRET_KEY`, konto administratora i SMTP.
-5. Upewnić się, że build frontendu otrzymuje produkcyjne `VITE_API_URL`, np. `https://api.ledger.m.wilczur.cc`. Ta wartość jest osadzana w statycznym bundlu frontendu.
+5. Upewnić się, że frontend odczytuje produkcyjne `VITE_API_URL` w chwili startu kontenera, np. `https://api.ledger.m.wilczur.cc`. Wartość jest generowana do niecache'owanego `config.js`, dzięki czemu ten sam obraz może działać na różnych środowiskach.
 
 ## Etap 2: jednorazowe przygotowanie VPS-a
 
 1. Utworzyć katalog aplikacji, np. `/home/wini/findog-ledger`.
-2. Umieścić w nim pliki Compose oraz produkcyjny `.env`. Sekretów nie zapisujemy w repozytorium ani obrazach.
+2. Umieścić w nim `compose.production.yml` oraz produkcyjny `.env`, utworzony na podstawie `.env.production.example`. Sekretów nie zapisujemy w repozytorium ani obrazach.
 3. Jeżeli obrazy GHCR będą prywatne, wykonać jednorazowo `docker login ghcr.io` tokenem z zakresem `read:packages`.
 4. Dopisać do `/home/wini/ff-toolkit/nginx-edge.conf` dwa bloki virtual hostów:
    - `ledger.m.wilczur.cc` kierujący do usługi frontendowej na porcie `80`;
@@ -65,11 +65,11 @@ push / tag Git
 Na VPS-ie, z katalogu aplikacji:
 
 ```bash
-TAG=v0.1.0 docker compose -f compose.yml -f compose.production.yml pull
-TAG=v0.1.0 docker compose -f compose.yml -f compose.production.yml up -d --no-build
+docker compose -f compose.production.yml pull
+docker compose -f compose.production.yml up -d --no-build
 ```
 
-Usługa `prestart` powinna zaczekać na PostgreSQL i uruchomić migracje Alembica przed startem backendu.
+Usługa `prestart` powinna potwierdzić połączenie z zewnętrznym PostgreSQL i uruchomić migracje Alembica przed startem backendu.
 
 Po uruchomieniu należy sprawdzić:
 
@@ -83,8 +83,8 @@ Po uruchomieniu należy sprawdzić:
 Kolejny deploy polega na użyciu nowego, konkretnego tagu:
 
 ```bash
-TAG=v0.2.0 docker compose -f compose.yml -f compose.production.yml pull
-TAG=v0.2.0 docker compose -f compose.yml -f compose.production.yml up -d --no-build
+TAG=v0.2.0 docker compose -f compose.production.yml pull
+TAG=v0.2.0 docker compose -f compose.production.yml up -d --no-build
 ```
 
 Rollback obrazu przebiega tak samo, z poprzednim tagiem. Należy jednak projektować migracje bazy jako kompatybilne wstecz albo mieć osobny, świadomy plan cofania migracji — cofnięcie samego obrazu nie cofa struktury bazy danych.
@@ -94,4 +94,4 @@ Rollback obrazu przebiega tak samo, z poprzednim tagiem. Należy jednak projekto
 - Potwierdzić nazwy hostów (proponowane: `ledger.m.wilczur.cc` i `api.ledger.m.wilczur.cc`).
 - Zdecydować, czy pakiety GHCR będą publiczne, czy prywatne.
 - Ustalić, czy deploy ma być ręczny przez SSH, czy wywoływany z GitHub Actions po wydaniu release.
-- Ustalić politykę backupów wolumenu PostgreSQL przed pierwszym użyciem produkcyjnym.
+- Ustalić politykę backupów zewnętrznej bazy PostgreSQL przed pierwszym użyciem produkcyjnym.
