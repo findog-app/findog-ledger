@@ -1,29 +1,28 @@
 # Security Policy
 
-Security is very important for this project and its community. 🔒
+## Reporting a vulnerability
 
-Learn more about it below. 👇
+Do not report security vulnerabilities in public GitHub issues or discussions.
 
-## Versions
+After the GitHub repository is created, use its **Security** tab and the
+**Report a vulnerability** button to submit a private report. Include:
 
-The latest version or release is supported.
+- a clear description of the vulnerability and its impact;
+- steps to reproduce it or a proof of concept;
+- affected versions, commit hashes, or deployment details; and
+- any suggested mitigation, if available.
 
-You are encouraged to write tests for your application and update your versions frequently after ensuring that your tests are passing. This way you will benefit from the latest features, bug fixes, and **security fixes**.
+Please remove credentials, access tokens, personal data, and production data
+from all attachments.
 
-## Reporting a Vulnerability
+## Maintainer setup
 
-If you think you found a vulnerability, and even if you are not sure about it, please report it right away by sending an email to: security@tiangolo.com. Please try to be as explicit as possible, describing all the steps and example code to reproduce the security issue.
+Before making the repository public, enable private vulnerability reporting in
+the repository's GitHub security settings. This policy relies on that feature
+as the only supported security-reporting channel.
 
-I (the author, [@tiangolo](https://twitter.com/tiangolo)) will review it thoroughly and get back to you.
+## Disclosure
 
-## Public Discussions
-
-Please restrain from publicly discussing a potential security vulnerability. 🙊
-
-It's better to discuss privately and try to find a solution first, to limit the potential impact as much as possible.
-
----
-
-Thanks for your help!
-
-The community and I thank you for that. 🙇
+Please allow maintainers time to investigate and remediate a report before
+disclosing it publicly. Once a fix is available, maintainers will coordinate
+the disclosure and credit reporters when appropriate.

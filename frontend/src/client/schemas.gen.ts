@@ -57,6 +57,435 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const CategoriesPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/CategoryPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'CategoriesPublic'
+} as const;
+
+export const CategoryCreateSchema = {
+    properties: {
+        category_group_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Category Group Id'
+        },
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        code: {
+            type: 'string',
+            maxLength: 4,
+            minLength: 4,
+            pattern: '^[A-Z]{4}$',
+            title: 'Code'
+        },
+        data_source_policy: {
+            '$ref': '#/components/schemas/DataSourcePolicy',
+            default: 'hybrid'
+        },
+        recurrence_interval: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    exclusiveMinimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Interval'
+        },
+        recurrence_unit: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/RecurrenceUnit'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        recurrence_anchor: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Anchor'
+        },
+        currency: {
+            '$ref': '#/components/schemas/Currency',
+            default: 'PLN'
+        },
+        due_day: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    maximum: 31,
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Day'
+        }
+    },
+    type: 'object',
+    required: ['category_group_id', 'name', 'code'],
+    title: 'CategoryCreate'
+} as const;
+
+export const CategoryGroupCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'CategoryGroupCreate'
+} as const;
+
+export const CategoryGroupPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        ledger_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Ledger Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active'
+        },
+        archived_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Archived At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'ledger_id', 'name', 'description', 'is_active', 'archived_at'],
+    title: 'CategoryGroupPublic'
+} as const;
+
+export const CategoryGroupUpdateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'CategoryGroupUpdate'
+} as const;
+
+export const CategoryGroupsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/CategoryGroupPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'CategoryGroupsPublic'
+} as const;
+
+export const CategoryPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        ledger_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Ledger Id'
+        },
+        category_group_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Category Group Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active'
+        },
+        code: {
+            type: 'string',
+            title: 'Code'
+        },
+        data_source_policy: {
+            '$ref': '#/components/schemas/DataSourcePolicy'
+        },
+        recurrence_interval: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Interval'
+        },
+        recurrence_unit: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/RecurrenceUnit'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        recurrence_anchor: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Anchor'
+        },
+        currency: {
+            '$ref': '#/components/schemas/Currency'
+        },
+        due_day: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Day'
+        },
+        archived_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Archived At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'recurrence_anchor', 'currency', 'due_day', 'archived_at'],
+    title: 'CategoryPublic'
+} as const;
+
+export const CategoryUpdateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        data_source_policy: {
+            '$ref': '#/components/schemas/DataSourcePolicy'
+        },
+        recurrence_interval: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    exclusiveMinimum: 0
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Interval'
+        },
+        recurrence_unit: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/RecurrenceUnit'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        recurrence_anchor: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Recurrence Anchor'
+        },
+        currency: {
+            '$ref': '#/components/schemas/Currency',
+            default: 'PLN'
+        },
+        due_day: {
+            anyOf: [
+                {
+                    type: 'integer',
+                    maximum: 31,
+                    minimum: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Day'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['name', 'data_source_policy'],
+    title: 'CategoryUpdate'
+} as const;
+
+export const CurrencySchema = {
+    type: 'string',
+    enum: ['PLN', 'EUR', 'USD', 'GBP', 'CHF'],
+    title: 'Currency'
+} as const;
+
+export const DataSourcePolicySchema = {
+    type: 'string',
+    enum: ['manual', 'automatic', 'hybrid'],
+    title: 'DataSourcePolicy'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -69,6 +498,231 @@ export const HTTPValidationErrorSchema = {
     },
     type: 'object',
     title: 'HTTPValidationError'
+} as const;
+
+export const LedgerAccessRoleSchema = {
+    type: 'string',
+    enum: ['owner', 'editor', 'viewer'],
+    title: 'LedgerAccessRole'
+} as const;
+
+export const LedgerCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'LedgerCreate'
+} as const;
+
+export const LedgerMemberPublicSchema = {
+    properties: {
+        ledger_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Ledger Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        email: {
+            type: 'string',
+            format: 'email',
+            title: 'Email'
+        },
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        },
+        role: {
+            '$ref': '#/components/schemas/LedgerAccessRole'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['ledger_id', 'user_id', 'email', 'full_name', 'role', 'created_at'],
+    title: 'LedgerMemberPublic'
+} as const;
+
+export const LedgerMemberUpdateSchema = {
+    properties: {
+        role: {
+            '$ref': '#/components/schemas/LedgerAccessRole'
+        }
+    },
+    type: 'object',
+    required: ['role'],
+    title: 'LedgerMemberUpdate'
+} as const;
+
+export const LedgerMembersPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/LedgerMemberPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'LedgerMembersPublic'
+} as const;
+
+export const LedgerPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        owner_user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Owner User Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'owner_user_id', 'name', 'description', 'created_at', 'updated_at'],
+    title: 'LedgerPublic'
+} as const;
+
+export const LedgerShareSchema = {
+    properties: {
+        user_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Id'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        role: {
+            '$ref': '#/components/schemas/LedgerAccessRole'
+        }
+    },
+    type: 'object',
+    required: ['role'],
+    title: 'LedgerShare'
+} as const;
+
+export const LedgerUpdateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'LedgerUpdate'
+} as const;
+
+export const LedgersPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/LedgerPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'LedgersPublic'
 } as const;
 
 export const MessageSchema = {
@@ -91,12 +745,20 @@ export const NewPasswordSchema = {
         },
         new_password: {
             type: 'string',
+            maxLength: 128,
+            minLength: 8,
             title: 'New Password'
         }
     },
     type: 'object',
     required: ['token', 'new_password'],
     title: 'NewPassword'
+} as const;
+
+export const RecurrenceUnitSchema = {
+    type: 'string',
+    enum: ['month', 'year'],
+    title: 'RecurrenceUnit'
 } as const;
 
 export const TokenSchema = {
@@ -183,6 +845,7 @@ export const UserPublicSchema = {
         email: {
             type: 'string',
             maxLength: 255,
+            format: 'email',
             title: 'Email'
         },
         is_active: {
@@ -213,20 +876,13 @@ export const UserPublicSchema = {
             title: 'Id'
         },
         created_at: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'date-time'
-                },
-                {
-                    type: 'null'
-                }
-            ],
+            type: 'string',
+            format: 'date-time',
             title: 'Created At'
         }
     },
     type: 'object',
-    required: ['email', 'id'],
+    required: ['email', 'id', 'created_at'],
     title: 'UserPublic'
 } as const;
 
@@ -246,14 +902,26 @@ export const UserUpdateSchema = {
             title: 'Email'
         },
         is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
         },
         is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Superuser'
         },
         full_name: {
             anyOf: [

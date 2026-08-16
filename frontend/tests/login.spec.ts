@@ -95,7 +95,7 @@ test("Logged-out user cannot access protected routes", async ({ page }) => {
   await page.waitForURL("/")
 
   await expect(
-    page.getByText("Welcome back, nice to see you again!"),
+    page.getByRole("heading", { name: "Current Scope" }),
   ).toBeVisible()
 
   await page.getByTestId("user-menu").click()

@@ -120,6 +120,10 @@ $ bash ./scripts/test.sh
 
 The tests run with Pytest, modify and add tests to `./backend/tests/`.
 
+Backend tests require a dedicated database configured via `TEST_SQLALCHEMY_DATABASE_URI`.
+This URL must point to a different database than the main `SQLALCHEMY_DATABASE_URI`.
+The test suite will fail fast if the test DB URL is missing or points at the main DB.
+
 If you use GitHub Actions the tests will run automatically.
 
 ### Test running stack

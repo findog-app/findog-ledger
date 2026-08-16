@@ -1,13 +1,12 @@
 import uuid
 from datetime import datetime
 
-from pydantic import EmailStr
-from sqlmodel import Field, SQLModel
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.schemas.common import PasswordStr
 
 
-class UserBase(SQLModel):
+class UserBase(BaseModel):
     email: EmailStr = Field(max_length=255)
     is_active: bool = True
     is_superuser: bool = False
@@ -18,26 +17,31 @@ class UserCreate(UserBase):
     password: PasswordStr
 
 
-class UserUpdate(UserBase):
-    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore[assignment]
+class UserUpdate(BaseModel):
+    email: EmailStr | None = Field(default=None, max_length=255)
+    is_active: bool | None = None
+    is_superuser: bool | None = None
+    full_name: str | None = Field(default=None, max_length=255)
     password: PasswordStr | None = None
 
 
-class UserUpdateMe(SQLModel):
+class UserUpdateMe(BaseModel):
     full_name: str | None = Field(default=None, max_length=255)
     email: EmailStr | None = Field(default=None, max_length=255)
 
 
-class UpdatePassword(SQLModel):
+class UpdatePassword(BaseModel):
     current_password: PasswordStr
     new_password: PasswordStr
 
 
 class UserPublic(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
-    created_at: datetime | None = None
+    created_at: datetime
 
 
-class UsersPublic(SQLModel):
+class UsersPublic(BaseModel):
     data: list[UserPublic]
     count: int

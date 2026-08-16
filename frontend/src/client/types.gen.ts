@@ -9,8 +9,132 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type CategoriesPublic = {
+    data: Array<CategoryPublic>;
+    count: number;
+};
+
+export type CategoryCreate = {
+    category_group_id: string;
+    name: string;
+    description?: (string | null);
+    code: string;
+    data_source_policy?: DataSourcePolicy;
+    recurrence_interval?: (number | null);
+    recurrence_unit?: (RecurrenceUnit | null);
+    recurrence_anchor?: (string | null);
+    currency?: Currency;
+    due_day?: (number | null);
+};
+
+export type CategoryGroupCreate = {
+    name: string;
+    description?: (string | null);
+};
+
+export type CategoryGroupPublic = {
+    id: string;
+    ledger_id: string;
+    name: string;
+    description: (string | null);
+    is_active: boolean;
+    archived_at: (string | null);
+};
+
+export type CategoryGroupsPublic = {
+    data: Array<CategoryGroupPublic>;
+    count: number;
+};
+
+export type CategoryGroupUpdate = {
+    name: string;
+    description?: (string | null);
+};
+
+export type CategoryPublic = {
+    id: string;
+    ledger_id: string;
+    category_group_id: string;
+    name: string;
+    description: (string | null);
+    is_active: boolean;
+    code: string;
+    data_source_policy: DataSourcePolicy;
+    recurrence_interval: (number | null);
+    recurrence_unit: (RecurrenceUnit | null);
+    recurrence_anchor: (string | null);
+    currency: Currency;
+    due_day: (number | null);
+    archived_at: (string | null);
+};
+
+export type CategoryUpdate = {
+    name: string;
+    description?: (string | null);
+    data_source_policy: DataSourcePolicy;
+    recurrence_interval?: (number | null);
+    recurrence_unit?: (RecurrenceUnit | null);
+    recurrence_anchor?: (string | null);
+    currency?: Currency;
+    due_day?: (number | null);
+};
+
+export type Currency = 'PLN' | 'EUR' | 'USD' | 'GBP' | 'CHF';
+
+export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
+};
+
+export type LedgerAccessRole = 'owner' | 'editor' | 'viewer';
+
+export type LedgerCreate = {
+    name: string;
+    description?: (string | null);
+};
+
+export type LedgerMemberPublic = {
+    ledger_id: string;
+    user_id: string;
+    email: string;
+    full_name: (string | null);
+    role: LedgerAccessRole;
+    created_at: string;
+};
+
+export type LedgerMembersPublic = {
+    data: Array<LedgerMemberPublic>;
+    count: number;
+};
+
+export type LedgerMemberUpdate = {
+    role: LedgerAccessRole;
+};
+
+export type LedgerPublic = {
+    id: string;
+    owner_user_id: string;
+    name: string;
+    description: (string | null);
+    created_at: string;
+    updated_at: string;
+};
+
+export type LedgerShare = {
+    user_id?: (string | null);
+    email?: (string | null);
+    role: LedgerAccessRole;
+};
+
+export type LedgersPublic = {
+    data: Array<LedgerPublic>;
+    count: number;
+};
+
+export type LedgerUpdate = {
+    name: string;
+    description?: (string | null);
 };
 
 export type Message = {
@@ -21,6 +145,8 @@ export type NewPassword = {
     token: string;
     new_password: string;
 };
+
+export type RecurrenceUnit = 'month' | 'year';
 
 export type Token = {
     access_token: string;
@@ -46,7 +172,7 @@ export type UserPublic = {
     is_superuser?: boolean;
     full_name?: (string | null);
     id: string;
-    created_at?: (string | null);
+    created_at: string;
 };
 
 export type UsersPublic = {
@@ -56,8 +182,8 @@ export type UsersPublic = {
 
 export type UserUpdate = {
     email?: (string | null);
-    is_active?: boolean;
-    is_superuser?: boolean;
+    is_active?: (boolean | null);
+    is_superuser?: (boolean | null);
     full_name?: (string | null);
     password?: (string | null);
 };
@@ -72,6 +198,120 @@ export type ValidationError = {
     msg: string;
     type: string;
 };
+
+export type CategoriesReadCategoriesData = {
+    categoryGroupId?: (string | null);
+    includeArchived?: boolean;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoriesResponse = (CategoriesPublic);
+
+export type CategoriesCreateCategoryData = {
+    ledgerId: string;
+    requestBody: CategoryCreate;
+};
+
+export type CategoriesCreateCategoryResponse = (CategoryPublic);
+
+export type CategoriesReadCategoryGroupsData = {
+    includeArchived?: boolean;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoryGroupsResponse = (CategoryGroupsPublic);
+
+export type CategoriesCreateCategoryGroupData = {
+    ledgerId: string;
+    requestBody: CategoryGroupCreate;
+};
+
+export type CategoriesCreateCategoryGroupResponse = (CategoryGroupPublic);
+
+export type CategoriesUpdateCategoryGroupData = {
+    categoryGroupId: string;
+    ledgerId: string;
+    requestBody: CategoryGroupUpdate;
+};
+
+export type CategoriesUpdateCategoryGroupResponse = (CategoryGroupPublic);
+
+export type CategoriesArchiveCategoryGroupData = {
+    categoryGroupId: string;
+    ledgerId: string;
+};
+
+export type CategoriesArchiveCategoryGroupResponse = (CategoryGroupPublic);
+
+export type CategoriesUpdateCategoryData = {
+    categoryId: string;
+    ledgerId: string;
+    requestBody: CategoryUpdate;
+};
+
+export type CategoriesUpdateCategoryResponse = (CategoryPublic);
+
+export type CategoriesArchiveCategoryData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesArchiveCategoryResponse = (CategoryPublic);
+
+export type LedgersReadLedgersResponse = (LedgersPublic);
+
+export type LedgersCreateLedgerData = {
+    requestBody: LedgerCreate;
+};
+
+export type LedgersCreateLedgerResponse = (LedgerPublic);
+
+export type LedgersReadLedgerData = {
+    ledgerId: string;
+};
+
+export type LedgersReadLedgerResponse = (LedgerPublic);
+
+export type LedgersUpdateLedgerData = {
+    ledgerId: string;
+    requestBody: LedgerUpdate;
+};
+
+export type LedgersUpdateLedgerResponse = (LedgerPublic);
+
+export type LedgersReadLedgerMembersData = {
+    ledgerId: string;
+};
+
+export type LedgersReadLedgerMembersResponse = (LedgerMembersPublic);
+
+export type LedgersShareLedgerData = {
+    ledgerId: string;
+    requestBody: LedgerShare;
+};
+
+export type LedgersShareLedgerResponse = (LedgerMemberPublic);
+
+export type LedgersDeleteAllCategoriesData = {
+    ledgerId: string;
+};
+
+export type LedgersDeleteAllCategoriesResponse = (Message);
+
+export type LedgersUpdateLedgerMemberData = {
+    ledgerId: string;
+    requestBody: LedgerMemberUpdate;
+    userId: string;
+};
+
+export type LedgersUpdateLedgerMemberResponse = (LedgerMemberPublic);
+
+export type LedgersRemoveLedgerMemberData = {
+    ledgerId: string;
+    userId: string;
+};
+
+export type LedgersRemoveLedgerMemberResponse = (Message);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;

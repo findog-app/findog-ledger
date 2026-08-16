@@ -3,7 +3,385 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesUpdateCategoryData, CategoriesUpdateCategoryResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersUpdateLedgerData, LedgersUpdateLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LedgersDeleteAllCategoriesData, LedgersDeleteAllCategoriesResponse, LedgersUpdateLedgerMemberData, LedgersUpdateLedgerMemberResponse, LedgersRemoveLedgerMemberData, LedgersRemoveLedgerMemberResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class CategoriesService {
+    /**
+     * Read Categories
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @param data.includeArchived
+     * @param data.categoryGroupId
+     * @returns CategoriesPublic Successful Response
+     * @throws ApiError
+     */
+    public static readCategories(data: CategoriesReadCategoriesData): CancelablePromise<CategoriesReadCategoriesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ledgers/{ledger_id}/categories',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            query: {
+                include_archived: data.includeArchived,
+                category_group_id: data.categoryGroupId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Category
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns CategoryPublic Successful Response
+     * @throws ApiError
+     */
+    public static createCategory(data: CategoriesCreateCategoryData): CancelablePromise<CategoriesCreateCategoryResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ledgers/{ledger_id}/categories',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Category Groups
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @param data.includeArchived
+     * @returns CategoryGroupsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readCategoryGroups(data: CategoriesReadCategoryGroupsData): CancelablePromise<CategoriesReadCategoryGroupsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ledgers/{ledger_id}/category-groups',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            query: {
+                include_archived: data.includeArchived
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Category Group
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns CategoryGroupPublic Successful Response
+     * @throws ApiError
+     */
+    public static createCategoryGroup(data: CategoriesCreateCategoryGroupData): CancelablePromise<CategoriesCreateCategoryGroupResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ledgers/{ledger_id}/category-groups',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Category Group
+     * @param data The data for the request.
+     * @param data.categoryGroupId
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns CategoryGroupPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateCategoryGroup(data: CategoriesUpdateCategoryGroupData): CancelablePromise<CategoriesUpdateCategoryGroupResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}/category-groups/{category_group_id}',
+            path: {
+                category_group_id: data.categoryGroupId,
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Archive Category Group
+     * @param data The data for the request.
+     * @param data.categoryGroupId
+     * @param data.ledgerId
+     * @returns CategoryGroupPublic Successful Response
+     * @throws ApiError
+     */
+    public static archiveCategoryGroup(data: CategoriesArchiveCategoryGroupData): CancelablePromise<CategoriesArchiveCategoryGroupResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}/category-groups/{category_group_id}/archive',
+            path: {
+                category_group_id: data.categoryGroupId,
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Category
+     * @param data The data for the request.
+     * @param data.categoryId
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns CategoryPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateCategory(data: CategoriesUpdateCategoryData): CancelablePromise<CategoriesUpdateCategoryResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}/categories/{category_id}',
+            path: {
+                category_id: data.categoryId,
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Archive Category
+     * @param data The data for the request.
+     * @param data.categoryId
+     * @param data.ledgerId
+     * @returns CategoryPublic Successful Response
+     * @throws ApiError
+     */
+    public static archiveCategory(data: CategoriesArchiveCategoryData): CancelablePromise<CategoriesArchiveCategoryResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}/categories/{category_id}/archive',
+            path: {
+                category_id: data.categoryId,
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class LedgersService {
+    /**
+     * Read Ledgers
+     * @returns LedgersPublic Successful Response
+     * @throws ApiError
+     */
+    public static readLedgers(): CancelablePromise<LedgersReadLedgersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ledgers/'
+        });
+    }
+    
+    /**
+     * Create Ledger
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns LedgerPublic Successful Response
+     * @throws ApiError
+     */
+    public static createLedger(data: LedgersCreateLedgerData): CancelablePromise<LedgersCreateLedgerResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ledgers/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Ledger
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @returns LedgerPublic Successful Response
+     * @throws ApiError
+     */
+    public static readLedger(data: LedgersReadLedgerData): CancelablePromise<LedgersReadLedgerResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ledgers/{ledger_id}',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Ledger
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns LedgerPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateLedger(data: LedgersUpdateLedgerData): CancelablePromise<LedgersUpdateLedgerResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Ledger Members
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @returns LedgerMembersPublic Successful Response
+     * @throws ApiError
+     */
+    public static readLedgerMembers(data: LedgersReadLedgerMembersData): CancelablePromise<LedgersReadLedgerMembersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ledgers/{ledger_id}/members',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Share Ledger
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns LedgerMemberPublic Successful Response
+     * @throws ApiError
+     */
+    public static shareLedger(data: LedgersShareLedgerData): CancelablePromise<LedgersShareLedgerResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ledgers/{ledger_id}/members',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete All Categories
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteAllCategories(data: LedgersDeleteAllCategoriesData): CancelablePromise<LedgersDeleteAllCategoriesResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/ledgers/{ledger_id}/categories',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Ledger Member
+     * @param data The data for the request.
+     * @param data.userId
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns LedgerMemberPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateLedgerMember(data: LedgersUpdateLedgerMemberData): CancelablePromise<LedgersUpdateLedgerMemberResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}/members/{user_id}',
+            path: {
+                user_id: data.userId,
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove Ledger Member
+     * @param data The data for the request.
+     * @param data.userId
+     * @param data.ledgerId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static removeLedgerMember(data: LedgersRemoveLedgerMemberData): CancelablePromise<LedgersRemoveLedgerMemberResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/ledgers/{ledger_id}/members/{user_id}',
+            path: {
+                user_id: data.userId,
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class LoginService {
     /**
