@@ -50,7 +50,7 @@ wheels = [
 
 [[package]]
 name = "app"
-version = "0.0.1a0"
+version = "0.0.1a1"
 source = { editable = "backend" }
 dependencies = [
     { name = "alembic" },
