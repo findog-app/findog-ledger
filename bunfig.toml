@@ -1,0 +1,5 @@
+[install]
+# Keep workspace dependencies isolated. In particular, TanStack Router's
+# generator must resolve its declared Zod 3 dependency rather than the
+# application's Zod 4 dependency.
+linker = "isolated"

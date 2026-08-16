@@ -2,7 +2,7 @@
 name = "app"
 version = "0.1.0"
 description = ""
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "fastapi[standard]<1.0.0,>=0.114.2",
     "python-multipart<1.0.0,>=0.0.7",
@@ -15,7 +15,7 @@ dependencies = [
     "httpx<1.0.0,>=0.25.1",
     "psycopg[binary]<4.0.0,>=3.1.13",
     "sqlmodel<1.0.0,>=0.0.21",
-    "pydantic-settings<3.0.0,>=2.2.1",
+    "pydantic-settings>=2.15.0,<3.0.0",
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "pyjwt<3.0.0,>=2.8.0",
     "pwdlib[argon2,bcrypt]>=0.3.0",
@@ -23,11 +23,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "commitizen>=4.8.3,<5.0.0",
     "pytest<8.0.0,>=7.4.3",
-    "mypy<2.0.0,>=1.8.0",
-    "ruff<1.0.0,>=0.2.2",
-    "prek>=0.2.24,<1.0.0",
-    "coverage<8.0.0,>=7.4.3",
+    "mypy>=2.3.0,<3.0.0",
+    "pre-commit>=4.3.0,<5.0.0",
+    "ruff>=0.16.2,<1.0.0",
+    "prek>=0.4.13,<1.0.0",
+    "coverage>=7.15.4,<8.0.0",
 ]
 
 [build-system]
@@ -39,7 +41,7 @@ strict = true
 exclude = ["venv", ".venv", "alembic"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 exclude = ["alembic"]
 
 [tool.ruff.lint]
@@ -72,6 +74,7 @@ dynamic_context = "test_function"
 [tool.coverage.report]
 show_missing = true
 sort = "-Cover"
+omit = ["app/alembic/*"]
 
 [tool.coverage.html]
 show_contexts = true

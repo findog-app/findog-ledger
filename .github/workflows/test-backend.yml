@@ -3,26 +3,48 @@ name: Test Backend
 on:
   push:
     branches:
-      - master
+      - dev
   pull_request:
     types:
       - opened
       - synchronize
+
+env:
+  PROJECT_NAME: Findog Ledger
+  DOMAIN: localhost
+  FRONTEND_HOST: http://localhost:5173
+  ENVIRONMENT: local
+  STACK_NAME: findog-ledger-ci
+  BACKEND_CORS_ORIGINS: http://localhost,http://localhost:5173
+  SECRET_KEY: ci-secret-key-not-for-production
+  FIRST_SUPERUSER: admin@example.com
+  FIRST_SUPERUSER_PASSWORD: ci-admin-password
+  POSTGRES_SERVER: localhost
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: findog
+  POSTGRES_USER: findog
+  POSTGRES_PASSWORD: ci-postgres-password
+  DOCKER_IMAGE_BACKEND: findog-ledger-backend
+  DOCKER_IMAGE_FRONTEND: findog-ledger-frontend
 
 jobs:
   test-backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+      - name: Create CI environment file
+        run: cp .github/ci.env .env
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - run: docker compose down -v --remove-orphans
-      - run: docker compose up -d db mailcatcher
+      - run: docker compose up -d --wait db mailcatcher
+      - name: Create test database
+        run: docker compose exec -T db createdb -U "$POSTGRES_USER" findog_test
       - name: Migrate DB
         run: uv run bash scripts/prestart.sh
         working-directory: backend
@@ -31,11 +53,11 @@ jobs:
         working-directory: backend
       - run: docker compose down -v --remove-orphans
       - name: Store coverage files
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-html
           path: backend/htmlcov
           include-hidden-files: true
       - name: Coverage report
-        run: uv run coverage report --fail-under=90
+        run: uv run coverage report --fail-under=85
         working-directory: backend

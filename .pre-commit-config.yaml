@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-toml
@@ -19,10 +19,17 @@ repos:
         exclude: ^frontend/src/client/.*
   - repo: local
     hooks:
+      - id: commitizen-check
+        name: commitizen check
+        entry: bash -lc 'cd backend && uv run cz check --allow-abort --commit-msg-file "$1"' --
+        language: system
+        stages: [commit-msg]
+
       - id: local-biome-check
         name: biome check
-        entry: npm run lint
+        entry: bash ./scripts/bun.sh run --filter frontend lint
         language: system
+        pass_filenames: false
         types: [text]
         files: ^frontend/
 
@@ -39,6 +46,14 @@ repos:
         require_serial: true
         language: unsupported
         types: [python]
+
+      - id: local-mypy
+        name: mypy
+        entry: bash -lc 'cd backend && uv run mypy app'
+        pass_filenames: false
+        require_serial: true
+        language: system
+        files: ^backend/.*\.py$
 
       - id: generate-frontend-sdk
         name: Generate Frontend SDK

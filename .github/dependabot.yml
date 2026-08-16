@@ -4,26 +4,44 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 3
+    assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
+    groups:
+      non-major:
+        update-types: [minor, patch]
   # Python uv
   - package-ecosystem: uv
     directory: /
     schedule:
       interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 3
+    assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
+    groups:
+      non-major:
+        update-types: [minor, patch]
   # bun
   - package-ecosystem: bun
     directory: /
     schedule:
       interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 3
+    assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
+    groups:
+      non-major:
+        update-types: [minor, patch]
     ignore:
       - dependency-name: "@hey-api/openapi-ts"
   # Docker
@@ -33,14 +51,26 @@ updates:
       - /frontend
     schedule:
       interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 3
+    assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
+    groups:
+      non-major:
+        update-types: [minor, patch]
   # Docker Compose
   - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 3
+    assignees: [wini83]
     commit-message:
-      prefix: ⬆
+      prefix: "chore(deps)"
     labels: [dependencies, internal]
+    groups:
+      non-major:
+        update-types: [minor, patch]

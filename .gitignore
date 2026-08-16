@@ -5,4 +5,15 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+.env
+.env.*
+frontend/.env
+frontend/.env.*
+
 zzz.patch
+
+.env
+.env.*
+frontend/.env
+frontend/.env.*

@@ -3,7 +3,7 @@ name: Playwright Tests
 on:
   push:
     branches:
-    - master
+    - dev
   pull_request:
     types:
     - opened
@@ -15,6 +15,24 @@ on:
         required: false
         default: 'false'
 
+env:
+  PROJECT_NAME: Findog Ledger
+  DOMAIN: localhost
+  FRONTEND_HOST: http://localhost:5173
+  ENVIRONMENT: local
+  STACK_NAME: findog-ledger-ci
+  BACKEND_CORS_ORIGINS: http://localhost,http://localhost:5173
+  SECRET_KEY: ci-secret-key-not-for-production
+  FIRST_SUPERUSER: admin@example.com
+  FIRST_SUPERUSER_PASSWORD: ci-admin-password
+  POSTGRES_SERVER: localhost
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: findog
+  POSTGRES_USER: findog
+  POSTGRES_PASSWORD: ci-postgres-password
+  DOCKER_IMAGE_BACKEND: findog-ledger-backend
+  DOCKER_IMAGE_FRONTEND: findog-ledger-frontend
+
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -22,9 +40,9 @@ jobs:
     outputs:
       changed: ${{ steps.filter.outputs.changed }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     # For pull requests it's not necessary to checkout the code but for the main branch it is
-    - uses: dorny/paths-filter@v3
+    - uses: dorny/paths-filter@v4
       id: filter
       with:
         filters: |
@@ -47,11 +65,13 @@ jobs:
         shardTotal: [4]
       fail-fast: false
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
+    - name: Create CI environment file
+      run: cp .github/ci.env .env
     - uses: oven-sh/setup-bun@v2
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v7
       with:
-        python-version: '3.10'
+        python-version: '3.12'
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true' }}
@@ -71,7 +91,7 @@ jobs:
     - run: docker compose down -v --remove-orphans
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: blob-report-${{ matrix.shardIndex }}
         path: frontend/blob-report
@@ -86,12 +106,12 @@ jobs:
     if: ${{ !cancelled() && needs.changes.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: oven-sh/setup-bun@v2
     - name: Install dependencies
       run: bun ci
     - name: Download blob reports from GitHub Actions Artifacts
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         path: frontend/all-blob-reports
         pattern: blob-report-*
@@ -100,7 +120,7 @@ jobs:
       run: bunx playwright merge-reports --reporter html ./all-blob-reports
       working-directory: frontend
     - name: Upload HTML report
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: html-report--attempt-${{ github.run_attempt }}
         path: frontend/playwright-report

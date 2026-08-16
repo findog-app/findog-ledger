@@ -29,10 +29,9 @@ function Dashboard() {
       <section className="rounded-lg border bg-card p-6 text-card-foreground">
         <h2 className="text-lg font-medium">Current Scope</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Authentication and admin-managed users are available. Business modules
-          for categories, counterparties, obligation templates, obligations, and
-          integration sync are being prepared in the backend for later
-          implementation.
+          Authentication, admin-managed users, ledgers, and category management
+          are available. Counterparties, categories, obligations, and
+          integration sync are next in the business workflow.
         </p>
       </section>
       {currentUser?.is_superuser ? (

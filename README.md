@@ -1,15 +1,6 @@
 # Findog Ledger
 
-Private multi-user payment-obligation system based on the FastAPI full-stack template.
-
-This repository is currently in the foundation phase. The template demo domain has been removed and the codebase is being prepared for the later implementation of:
-
-- auth and user administration
-- categories
-- counterparties
-- obligation templates
-- obligations
-- integration status and sync event handling
+Private multi-user system for managing payment obligations, based on the FastAPI full-stack template.
 
 ## Current Scope
 
@@ -17,8 +8,10 @@ This repository is currently in the foundation phase. The template demo domain h
 - Users are created and managed only by a superuser/admin.
 - Login, current-user, password reset, and password change flows remain available.
 - Demo `Item` backend/frontend code has been removed.
-- Backend structure now separates `api`, `core`, `models`, `schemas`, `repositories`, and `services`.
-- Placeholder modules exist for the future payment-obligation bounded contexts without fake business logic.
+- Users can create ledgers and share them with other users as owners, editors, or viewers.
+- Ledgers include category groups and categories, including their recurrence and payment settings.
+- Payment obligations are created for recurring categories and tracked in the ledger data model.
+- Counterparty management and external integration/synchronization are not implemented yet.
 
 ## Stack
 
@@ -28,6 +21,7 @@ This repository is currently in the foundation phase. The template demo domain h
 - generated OpenAPI client in `frontend/src/client`
 - Alembic migrations
 - `uv` for backend dependency and command workflow
+- Bun for frontend dependency and command workflow
 
 ## Local Development
 

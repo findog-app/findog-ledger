@@ -2,13 +2,13 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from pwdlib.hashers.bcrypt import BcryptHasher
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.crud import create_user
 from app.models import User
 from app.schemas import UserCreate
+from app.services import users as user_service
 from app.utils import generate_password_reset_token
 from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
@@ -56,10 +56,7 @@ def test_use_access_token(
 def test_recovery_password(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
-    with (
-        patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
-        patch("app.core.config.settings.SMTP_USER", "admin@example.com"),
-    ):
+    with patch("app.api.routes.login.send_email", return_value=None):
         email = "test@example.com"
         r = client.post(
             f"{settings.API_V1_STR}/password-recovery/{email}",
@@ -98,7 +95,7 @@ def test_reset_password(client: TestClient, db: Session) -> None:
         is_active=True,
         is_superuser=False,
     )
-    user = create_user(session=db, user_create=user_create)
+    user = user_service.create_user(session=db, user_in=user_create)
     token = generate_password_reset_token(email=email)
     headers = user_authentication_headers(client=client, email=email, password=password)
     data = {"new_password": new_password, "token": token}
