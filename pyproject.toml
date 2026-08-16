@@ -4,6 +4,8 @@ members = ["backend"]
 [tool.commitizen]
 name = "cz_conventional_commits"
 tag_format = "v$version"
-update_changelog_on_bump = false
-version_provider = "pep621"
+update_changelog_on_bump = true
+version_provider = "commitizen"
+version = "0.0.1a0"
 version_files = ["backend/pyproject.toml:^version = \"(?P<version>.*)\""]
+annotated_tag = true
