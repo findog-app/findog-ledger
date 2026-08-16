@@ -13,7 +13,14 @@ import { Toaster } from "./components/ui/sonner"
 import "./index.css"
 import { routeTree } from "./routeTree.gen"
 
-OpenAPI.BASE = import.meta.env.VITE_API_URL
+const apiUrl =
+  window.__FINDOG_LEDGER_CONFIG__?.VITE_API_URL || import.meta.env.VITE_API_URL
+
+if (!apiUrl) {
+  throw new Error("VITE_API_URL must be set in the runtime configuration")
+}
+
+OpenAPI.BASE = apiUrl
 OpenAPI.TOKEN = async () => {
   return localStorage.getItem("access_token") || ""
 }
