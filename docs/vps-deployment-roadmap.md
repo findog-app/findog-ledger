@@ -45,7 +45,6 @@ push / tag Git
    - dołącza frontend i backend do zewnętrznej sieci `firefly_net`;
    - nie wystawia portów aplikacji ani PostgreSQL na hosta;
    - nie uruchamia Adminera w produkcji, chyba że będzie wyraźnie potrzebny;
-   - pozostawia dane PostgreSQL w trwałym wolumenie Compose.
 4. Dodać `.env.production.example`, bez wartości sekretów, z pełną listą wymaganych zmiennych, m.in. `TAG`, `DOMAIN`, `FRONTEND_HOST`, `BACKEND_CORS_ORIGINS`, dane PostgreSQL, `SECRET_KEY`, konto administratora i SMTP.
 5. Upewnić się, że build frontendu otrzymuje produkcyjne `VITE_API_URL`, np. `https://api.ledger.m.wilczur.cc`. Ta wartość jest osadzana w statycznym bundlu frontendu.
 
