@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 
-class ObligationLifecycle(str, Enum):
+class ObligationLifecycle(StrEnum):
     DRAFT = "draft"
     COLLECTING_DATA = "collecting_data"
     READY = "ready"
@@ -16,31 +17,31 @@ class ObligationLifecycle(str, Enum):
     ERROR = "error"
 
 
-class DataSourcePolicy(str, Enum):
+class DataSourcePolicy(StrEnum):
     MANUAL = "manual"
     AUTOMATIC = "automatic"
     HYBRID = "hybrid"
 
 
-class RecurrenceUnit(str, Enum):
+class RecurrenceUnit(StrEnum):
     MONTH = "month"
     YEAR = "year"
 
 
-class ValueState(str, Enum):
+class ValueState(StrEnum):
     UNKNOWN = "unknown"
     ESTIMATED = "estimated"
     CONFIRMED = "confirmed"
     OVERRIDDEN = "overridden"
 
 
-class CurrentValueSource(str, Enum):
+class CurrentValueSource(StrEnum):
     UNKNOWN = "unknown"
     AUTOMATIC = "automatic"
     MANUAL = "manual"
 
 
-class EffectiveValueSourceMode(str, Enum):
+class EffectiveValueSourceMode(StrEnum):
     UNKNOWN = "unknown"
     AUTOMATIC = "automatic"
     MANUAL = "manual"
@@ -64,6 +65,35 @@ class BillingPeriod:
     @classmethod
     def from_date(cls, value: date) -> BillingPeriod:
         return cls(year=value.year, month=value.month)
+
+
+@dataclass(frozen=True, slots=True)
+class ObligationKey:
+    """Public business key for an obligation."""
+
+    category_code: str
+    period: BillingPeriod
+
+    _PATTERN = re.compile(
+        r"(?P<category_code>[A-Z]{4})-(?P<year>\d{4})-(?P<month>\d{2})"
+    )
+
+    def __str__(self) -> str:
+        return f"{self.category_code}-{self.period.year:04d}-{self.period.month:02d}"
+
+    @classmethod
+    def parse(cls, value: str) -> ObligationKey:
+        match = cls._PATTERN.fullmatch(value)
+        if match is None:
+            raise ValueError("Invalid obligation key")
+        try:
+            period = BillingPeriod(
+                year=int(match["year"]),
+                month=int(match["month"]),
+            )
+        except ValueError as exc:
+            raise ValueError("Invalid obligation key") from exc
+        return cls(category_code=match["category_code"], period=period)
 
 
 @dataclass(slots=True)
@@ -92,4 +122,4 @@ class Obligation:
     @property
     def business_key(self) -> str:
         """Stable public key derived from the immutable category code and period."""
-        return f"{self.category_code}-{self.period.year:04d}-{self.period.month:02d}"
+        return str(ObligationKey(category_code=self.category_code, period=self.period))

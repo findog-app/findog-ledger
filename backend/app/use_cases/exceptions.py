@@ -64,3 +64,11 @@ class CrossLedgerReferenceError(ApplicationError):
 
 class InvalidCategoryDueDayError(ApplicationError):
     pass
+
+
+class DuplicateObligationError(ApplicationError):
+    pass
+
+
+class ObligationNotFoundError(ApplicationError):
+    pass
