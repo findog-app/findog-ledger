@@ -44,7 +44,7 @@ push / tag Git
    - nie buduje obrazów na VPS-ie;
    - dołącza frontend i backend do zewnętrznej sieci `firefly_net`;
    - nie wystawia portów aplikacji ani PostgreSQL na hosta;
-   - nie uruchamia Adminera w produkcji, chyba że będzie wyraźnie potrzebny;
+   - udostępnia Adminer wyłącznie przez HTTPS i HTTP Basic Auth, gdy jest wyraźnie potrzebny;
    - nie uruchamia PostgreSQL ani wolumenu danych, ponieważ produkcja korzysta z zewnętrznie zarządzanej bazy.
 4. Dodać `.env.production.example`, bez wartości sekretów, z pełną listą wymaganych zmiennych, m.in. `TAG`, `DOMAIN`, `FRONTEND_HOST`, `BACKEND_CORS_ORIGINS`, dane PostgreSQL, `SECRET_KEY`, konto administratora i SMTP.
 5. Upewnić się, że frontend odczytuje produkcyjne `VITE_API_URL` w chwili startu kontenera, np. `https://api.ledger.m.wilczur.cc`. Wartość jest generowana do niecache'owanego `config.js`, dzięki czemu ten sam obraz może działać na różnych środowiskach.
@@ -53,11 +53,10 @@ push / tag Git
 
 1. Utworzyć katalog aplikacji, np. `/home/wini/findog-ledger`.
 2. Umieścić w nim `compose.production.yml` oraz produkcyjny `.env`, utworzony na podstawie `.env.production.example`. Sekretów nie zapisujemy w repozytorium ani obrazach.
-3. Jeżeli obrazy GHCR będą prywatne, wykonać jednorazowo `docker login ghcr.io` tokenem z zakresem `read:packages`.
 4. Dopisać do `/home/wini/ff-toolkit/nginx-edge.conf` dwa bloki virtual hostów:
    - `ledger.m.wilczur.cc` kierujący do usługi frontendowej na porcie `80`;
    - `api.ledger.m.wilczur.cc` kierujący do usługi backendowej na porcie `8000`.
-5. Wydać lub rozszerzyć certyfikat TLS przez obecny mechanizm Certbot/Cloudflare. Najwygodniejsza docelowo jest obsługa certyfikatu wildcard `*.m.wilczur.cc`.
+5. Wydać lub rozszerzyć certyfikat TLS przez obecny mechanizm Certbot/Cloudflare. Wildcard `*.m.wilczur.cc` nie obejmuje `api.ledger.m.wilczur.cc`, więc tę nazwę trzeba dopisać do certyfikatu jawnie.
 6. Przeładować istniejący Nginx i sprawdzić dostępność obu hostów po HTTPS.
 
 ## Etap 3: pierwszy deploy
