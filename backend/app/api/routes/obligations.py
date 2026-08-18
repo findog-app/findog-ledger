@@ -19,6 +19,7 @@ from app.use_cases import obligations as obligation_use_cases
 from app.use_cases.exceptions import (
     CategoryNotFoundError,
     DuplicateObligationError,
+    ManualObligationNotAllowedError,
     ObligationNotFoundError,
 )
 
@@ -94,9 +95,18 @@ def create_obligation(
                 year=obligation_in.period.year,
                 month=obligation_in.period.month,
             ),
+            data_ready=obligation_in.data_ready,
+            current_amount=obligation_in.current_amount,
+            issue_date=obligation_in.issue_date,
+            due_date=obligation_in.due_date,
         )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
+    except ManualObligationNotAllowedError:
+        raise HTTPException(
+            status_code=422,
+            detail="Manual obligations are not allowed for automatic categories",
+        )
     except DuplicateObligationError:
         raise HTTPException(status_code=409, detail="Obligation already exists")
 

@@ -34,6 +34,10 @@ class CategoryArchivedError(ApplicationError):
     pass
 
 
+class ManualObligationNotAllowedError(ApplicationError):
+    pass
+
+
 class DuplicateCategoryGroupError(ApplicationError):
     pass
 

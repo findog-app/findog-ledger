@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 import uuid
+from calendar import monthrange
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
 
@@ -65,6 +66,23 @@ class BillingPeriod:
     @classmethod
     def from_date(cls, value: date) -> BillingPeriod:
         return cls(year=value.year, month=value.month)
+
+
+def due_date_range(period: BillingPeriod) -> tuple[date, date]:
+    """Return the allowed due-date range for a billing period.
+
+    The maximum is the seventh Monday-to-Friday business day after the end of
+    the period. Public holidays are intentionally not included in this rule.
+    """
+
+    minimum = date(period.year, period.month, 1)
+    maximum = date(period.year, period.month, monthrange(period.year, period.month)[1])
+    business_days = 0
+    while business_days < 7:
+        maximum += timedelta(days=1)
+        if maximum.weekday() < 5:
+            business_days += 1
+    return minimum, maximum
 
 
 @dataclass(frozen=True, slots=True)

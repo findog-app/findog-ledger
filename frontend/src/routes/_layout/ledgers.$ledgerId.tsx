@@ -10,6 +10,7 @@ import { Suspense } from "react"
 
 import { LedgersService } from "@/client"
 import CategoryWorkspace from "@/components/Categories/CategoryWorkspace"
+import { ObligationWorkspace } from "@/components/Obligations/ObligationWorkspace"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -49,6 +50,9 @@ function LedgerDetails() {
           </Button>
         </div>
       </div>
+      <Suspense fallback={<CategoryWorkspaceSkeleton />}>
+        <ObligationWorkspace ledgerId={ledgerId} />
+      </Suspense>
       <Suspense fallback={<CategoryWorkspaceSkeleton />}>
         <CategoryWorkspace ledgerId={ledgerId} />
       </Suspense>

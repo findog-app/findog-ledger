@@ -796,6 +796,50 @@ export const ObligationCreateSchema = {
         },
         period: {
             '$ref': '#/components/schemas/BillingPeriodInput'
+        },
+        data_ready: {
+            type: 'boolean',
+            title: 'Data Ready',
+            default: false
+        },
+        current_amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Amount'
+        },
+        issue_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Issue Date'
+        },
+        due_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Date'
         }
     },
     type: 'object',

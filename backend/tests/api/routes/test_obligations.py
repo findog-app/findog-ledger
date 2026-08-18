@@ -2,7 +2,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.domain import BillingPeriod, ObligationLifecycle
+from app.domain import (
+    BillingPeriod,
+    CurrentValueSource,
+    DataSourcePolicy,
+    ObligationLifecycle,
+    ValueState,
+)
 from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases import obligations as obligation_use_cases
@@ -32,7 +38,14 @@ def test_obligations_endpoints_happy_path_and_filters(
     create_response = client.post(
         f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
         headers=headers,
-        json={"category_code": "ELEC", "period": {"year": 2026, "month": 8}},
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "data_ready": True,
+            "current_amount": "123.45",
+            "issue_date": "2026-08-02",
+            "due_date": "2026-08-20",
+        },
     )
 
     assert create_response.status_code == 200
@@ -40,7 +53,16 @@ def test_obligations_endpoints_happy_path_and_filters(
     assert created["key"] == "ELEC-2026-08"
     assert created["category_code"] == "ELEC"
     assert created["period"] == {"year": 2026, "month": 8}
-    assert created["lifecycle"] == ObligationLifecycle.DRAFT.value
+    assert created["lifecycle"] == ObligationLifecycle.READY.value
+    assert created["current_amount"] == "123.45"
+    assert created["amount_state"] == ValueState.CONFIRMED.value
+    assert created["amount_source"] == CurrentValueSource.MANUAL.value
+    assert created["issue_date"] == "2026-08-02"
+    assert created["issue_date_state"] == ValueState.CONFIRMED.value
+    assert created["issue_date_source"] == CurrentValueSource.MANUAL.value
+    assert created["due_date"] == "2026-08-20"
+    assert created["due_date_state"] == ValueState.CONFIRMED.value
+    assert created["due_date_source"] == CurrentValueSource.MANUAL.value
 
     list_response = client.get(
         f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
@@ -49,7 +71,7 @@ def test_obligations_endpoints_happy_path_and_filters(
             "year": 2026,
             "month": 8,
             "category_code": "ELEC",
-            "lifecycle": "draft",
+            "lifecycle": "ready",
         },
     )
 
@@ -64,6 +86,110 @@ def test_obligations_endpoints_happy_path_and_filters(
 
     assert detail_response.status_code == 200
     assert detail_response.json()["id"] == created["id"]
+
+
+def test_create_obligation_with_incomplete_data_marks_values_as_estimated(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "current_amount": "100.00",
+            "issue_date": "2026-08-02",
+        },
+    )
+
+    assert response.status_code == 200
+    created = response.json()
+    assert created["lifecycle"] == ObligationLifecycle.COLLECTING_DATA.value
+    assert created["amount_state"] == ValueState.ESTIMATED.value
+    assert created["amount_source"] == CurrentValueSource.MANUAL.value
+    assert created["issue_date_state"] == ValueState.ESTIMATED.value
+    assert created["issue_date_source"] == CurrentValueSource.MANUAL.value
+    assert created["due_date"] is None
+    assert created["due_date_state"] == ValueState.UNKNOWN.value
+    assert created["due_date_source"] == CurrentValueSource.UNKNOWN.value
+
+
+def test_create_ready_obligation_requires_amount_and_due_date(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "data_ready": True,
+            "current_amount": "100.00",
+        },
+    )
+
+    assert response.status_code == 422
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "data_ready": True,
+            "current_amount": "100.00",
+            "issue_date": "2026-08-21",
+            "due_date": "2026-08-20",
+        },
+    )
+
+    assert response.status_code == 422
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "data_ready": True,
+            "current_amount": "100.00",
+            "due_date": "2026-09-11",
+        },
+    )
+
+    assert response.status_code == 422
 
 
 def test_create_obligation_rejects_duplicate(client: TestClient, db: Session) -> None:
@@ -100,6 +226,38 @@ def test_create_obligation_rejects_duplicate(client: TestClient, db: Session) ->
 
     assert response.status_code == 409
     assert response.json() == {"detail": "Obligation already exists"}
+
+
+def test_create_obligation_rejects_automatic_category(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+        data_source_policy=DataSourcePolicy.AUTOMATIC,
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={"category_code": "ELEC", "period": {"year": 2026, "month": 8}},
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Manual obligations are not allowed for automatic categories"
+    }
 
 
 def test_read_obligation_rejects_invalid_business_key(

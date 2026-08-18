@@ -1,17 +1,29 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain import BillingPeriod, ObligationKey, ObligationLifecycle
+from app.domain import (
+    BillingPeriod,
+    CurrentValueSource,
+    DataSourcePolicy,
+    EffectiveValueSourceMode,
+    ObligationKey,
+    ObligationLifecycle,
+    ValueState,
+    due_date_range,
+)
 from app.models import Category, Ledger, Obligation
 from app.services import obligations as obligation_service
 from app.use_cases.exceptions import (
     CategoryNotFoundError,
     DuplicateObligationError,
     LedgerNotFoundError,
+    ManualObligationNotAllowedError,
     ObligationNotFoundError,
 )
 
@@ -116,7 +128,25 @@ def create_manual_obligation(
     ledger_id: uuid.UUID,
     category_code: str,
     period: BillingPeriod,
+    data_ready: bool = False,
+    current_amount: Decimal | None = None,
+    issue_date: date | None = None,
+    due_date: date | None = None,
 ) -> Obligation:
+    if data_ready and (current_amount is None or due_date is None):
+        raise ValueError(
+            "current_amount and due_date are required when data_ready is true"
+        )
+    if due_date is not None:
+        minimum, maximum = due_date_range(period)
+        if not minimum <= due_date <= maximum:
+            raise ValueError(
+                "due_date must be within the billing period or the first "
+                "seven business days after it"
+            )
+    if issue_date is not None and due_date is not None and issue_date > due_date:
+        raise ValueError("issue_date cannot be later than due_date")
+
     _require_ledger(session=session, ledger_id=ledger_id)
     category = session.scalar(
         select(Category).where(
@@ -126,6 +156,8 @@ def create_manual_obligation(
     )
     if category is None:
         raise CategoryNotFoundError
+    if category.data_source_policy is DataSourcePolicy.AUTOMATIC:
+        raise ManualObligationNotAllowedError
 
     obligation, created = obligation_service.get_or_create_obligation(
         session=session,
@@ -134,6 +166,28 @@ def create_manual_obligation(
     )
     if not created:
         raise DuplicateObligationError
+
+    obligation.lifecycle = (
+        ObligationLifecycle.READY if data_ready else ObligationLifecycle.COLLECTING_DATA
+    )
+    obligation.current_amount = current_amount
+    obligation.issue_date = issue_date
+    obligation.due_date = due_date
+    obligation.effective_value_source = (
+        EffectiveValueSourceMode.MANUAL
+        if any(value is not None for value in (current_amount, issue_date, due_date))
+        else EffectiveValueSourceMode.UNKNOWN
+    )
+    value_state = ValueState.CONFIRMED if data_ready else ValueState.ESTIMATED
+    if current_amount is not None:
+        obligation.amount_state = value_state
+        obligation.amount_source = CurrentValueSource.MANUAL
+    if issue_date is not None:
+        obligation.issue_date_state = value_state
+        obligation.issue_date_source = CurrentValueSource.MANUAL
+    if due_date is not None:
+        obligation.due_date_state = value_state
+        obligation.due_date_source = CurrentValueSource.MANUAL
 
     session.commit()
     session.refresh(obligation)

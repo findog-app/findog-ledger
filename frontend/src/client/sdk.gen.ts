@@ -31,6 +31,7 @@ export class CategoriesService {
             }
         });
     }
+    
     /**
      * Create Category
      * @param data The data for the request.
@@ -53,6 +54,7 @@ export class CategoriesService {
             }
         });
     }
+    
     /**
      * Read Category Groups
      * @param data The data for the request.
@@ -76,6 +78,7 @@ export class CategoriesService {
             }
         });
     }
+    
     /**
      * Create Category Group
      * @param data The data for the request.
@@ -98,6 +101,7 @@ export class CategoriesService {
             }
         });
     }
+    
     /**
      * Update Category Group
      * @param data The data for the request.
@@ -506,6 +510,7 @@ export class ObligationsService {
             }
         });
     }
+    
     /**
      * Create Obligation
      * @param data The data for the request.
@@ -528,6 +533,7 @@ export class ObligationsService {
             }
         });
     }
+    
     /**
      * Read Obligation
      * @param data The data for the request.
