@@ -331,6 +331,30 @@ def update_manual_obligation(
     return obligation
 
 
+def mark_obligation_ready(
+    *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
+) -> Obligation:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    if obligation.lifecycle is not ObligationLifecycle.COLLECTING_DATA:
+        raise ValueError("Only obligations collecting data can be marked as ready")
+    if obligation.current_amount is None or obligation.due_date is None:
+        raise ValueError("current_amount and due_date are required to mark ready")
+    if (
+        obligation.amount_state is ValueState.UNKNOWN
+        or obligation.due_date_state is ValueState.UNKNOWN
+    ):
+        raise ValueError(
+            "current_amount and due_date must have at least an estimated state"
+        )
+
+    obligation.lifecycle = ObligationLifecycle.READY
+    obligation.amount_state = ValueState.CONFIRMED
+    obligation.due_date_state = ValueState.CONFIRMED
+    session.commit()
+    session.refresh(obligation)
+    return obligation
+
+
 def get_obligation_by_key(
     *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
 ) -> Obligation:

@@ -146,6 +146,35 @@ def update_obligation(
     return _to_obligation_public(obligation)
 
 
+@router.patch(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/ready",
+    response_model=ObligationPublic,
+)
+def mark_obligation_ready(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        key = ObligationKey.parse(obligation_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid obligation key") from exc
+
+    try:
+        obligation = obligation_use_cases.mark_obligation_ready(
+            session=session,
+            ledger_id=ledger.id,
+            key=key,
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return _to_obligation_public(obligation)
+
+
 @router.get(
     "/ledgers/{ledger_id}/obligations/{obligation_key}",
     response_model=ObligationPublic,

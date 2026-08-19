@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { EllipsisVertical, Landmark, Pencil, Plus } from "lucide-react"
+import {
+  CircleCheck,
+  EllipsisVertical,
+  Landmark,
+  Pencil,
+  Plus,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 
 import {
@@ -143,6 +149,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [editingObligation, setEditingObligation] =
     useState<ObligationPublic | null>(null)
+  const queryClient = useQueryClient()
   const { showErrorToast, showSuccessToast } = useCustomToast()
   const filterYear = Number(year)
   const filterMonth = Number(month)
@@ -177,6 +184,23 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
         obligationKey: selectedKey!,
       }),
     queryKey: ["obligation", ledgerId, selectedKey],
+  })
+  const markReady = useMutation({
+    mutationFn: (obligation: ObligationPublic) =>
+      ObligationsService.markObligationReady({
+        ledgerId,
+        obligationKey: obligation.key,
+      }),
+    onError: handleError.bind(showErrorToast),
+    onSuccess: (_, obligation) => {
+      showSuccessToast("Obligation marked as ready")
+      void queryClient.invalidateQueries({
+        queryKey: ["obligation", ledgerId, obligation.key],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["obligations", ledgerId],
+      })
+    },
   })
 
   return (
@@ -281,7 +305,9 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                   key={obligation.key}
                   obligation={obligation}
                   onEdit={() => setEditingObligation(obligation)}
+                  onMarkReady={() => markReady.mutate(obligation)}
                   onSelect={() => setSelectedKey(obligation.key)}
+                  markingReady={markReady.isPending}
                 />
               ))
             : null}
@@ -426,17 +452,27 @@ function businessDaysUntil(dueDate: string | null) {
 function ObligationTile({
   obligation,
   onEdit,
+  onMarkReady,
   onSelect,
+  markingReady,
 }: {
   obligation: ObligationPublic
   onEdit: () => void
+  onMarkReady: () => void
   onSelect: () => void
+  markingReady: boolean
 }) {
   const amount =
     obligation.current_amount !== null
       ? `${obligation.current_amount} ${obligation.currency ?? ""}`.trim()
       : "Amount unknown"
   const dueDateStatus = businessDaysUntil(obligation.due_date)
+  const canMarkReady =
+    obligation.lifecycle === "collecting_data" &&
+    obligation.current_amount !== null &&
+    obligation.due_date !== null &&
+    obligation.amount_state !== "unknown" &&
+    obligation.due_date_state !== "unknown"
 
   return (
     <div className="group rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">
@@ -468,6 +504,12 @@ function ObligationTile({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {canMarkReady ? (
+              <DropdownMenuItem disabled={markingReady} onSelect={onMarkReady}>
+                <CircleCheck />
+                Mark as ready
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem onSelect={onEdit}>
               <Pencil />
               Edit

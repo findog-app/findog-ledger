@@ -298,6 +298,90 @@ def test_update_obligation_validates_resulting_dates_and_allows_clearing_values(
     assert updated["issue_date_source"] == CurrentValueSource.UNKNOWN.value
 
 
+def test_mark_obligation_ready_requires_estimated_amount_and_due_date(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    create_response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "current_amount": "100.00",
+            "due_date": "2026-08-20",
+        },
+    )
+    assert create_response.status_code == 200
+    assert (
+        create_response.json()["lifecycle"] == ObligationLifecycle.COLLECTING_DATA.value
+    )
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ELEC-2026-08/ready",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["lifecycle"] == ObligationLifecycle.READY.value
+    assert response.json()["amount_state"] == ValueState.CONFIRMED.value
+    assert response.json()["due_date_state"] == ValueState.CONFIRMED.value
+
+
+def test_mark_obligation_ready_rejects_missing_required_values(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    create_response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "current_amount": "100.00",
+        },
+    )
+    assert create_response.status_code == 200
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ELEC-2026-08/ready",
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "current_amount and due_date are required to mark ready"
+    }
+
+
 def test_create_ready_obligation_requires_amount_and_due_date(
     client: TestClient, db: Session
 ) -> None:

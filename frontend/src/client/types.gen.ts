@@ -436,6 +436,13 @@ export type ObligationsReadObligationData = {
 
 export type ObligationsReadObligationResponse = (ObligationPublic);
 
+export type ObligationsMarkObligationReadyData = {
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsMarkObligationReadyResponse = (ObligationPublic);
+
 export type UsersReadUsersData = {
     limit?: number;
     skip?: number;
