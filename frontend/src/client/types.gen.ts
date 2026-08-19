@@ -198,6 +198,7 @@ export type ObligationPublic = {
     due_date_state: ValueState;
     due_date_source: CurrentValueSource;
     currency: (string | null);
+    paid_at: (string | null);
     created_at: string;
     updated_at: string;
 };
@@ -461,6 +462,27 @@ export type ObligationsMarkObligationReadyData = {
 };
 
 export type ObligationsMarkObligationReadyResponse = (ObligationPublic);
+
+export type ObligationsMarkObligationPaidData = {
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsMarkObligationPaidResponse = (ObligationPublic);
+
+export type ObligationsCancelObligationData = {
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsCancelObligationResponse = (ObligationPublic);
+
+export type ObligationsReopenObligationData = {
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsReopenObligationResponse = (ObligationPublic);
 
 export type UsersReadUsersData = {
     limit?: number;

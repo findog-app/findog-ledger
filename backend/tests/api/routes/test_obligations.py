@@ -1,5 +1,8 @@
+import uuid
 from datetime import date
+from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -18,6 +21,304 @@ from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases import obligations as obligation_use_cases
 from tests.utils.user import authentication_token_from_email, create_random_user
 from tests.utils.utils import random_lower_string
+
+
+def _create_ready_obligation(db: Session, *, ledger_id: uuid.UUID):
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger_id, name="Group"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger_id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    return obligation_use_cases.create_manual_obligation(
+        session=db,
+        ledger_id=ledger_id,
+        category_code="ELEC",
+        period=BillingPeriod(2026, 8),
+        data_ready=True,
+        current_amount=Decimal("100.00"),
+        due_date=date(2026, 8, 20),
+    )
+
+
+def test_mark_obligation_paid_sets_paid_at_for_ready_obligation(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}/mark-paid",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["lifecycle"] == ObligationLifecycle.PAID.value
+    assert response.json()["paid_at"] is not None
+
+
+def test_mark_obligation_paid_rejects_draft_and_collecting_data(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    url = (
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/"
+        f"{obligation.business_key}/mark-paid"
+    )
+
+    obligation.lifecycle = ObligationLifecycle.DRAFT
+    db.commit()
+    draft_response = client.post(url, headers=headers)
+
+    obligation.lifecycle = ObligationLifecycle.COLLECTING_DATA
+    db.commit()
+    collecting_response = client.post(url, headers=headers)
+
+    assert draft_response.status_code == 409
+    assert draft_response.json() == {
+        "detail": "Only ready obligations can be marked as paid"
+    }
+    assert collecting_response.status_code == 409
+    assert collecting_response.json() == {
+        "detail": "Only ready obligations can be marked as paid"
+    }
+
+
+def test_mark_obligation_paid_is_idempotent_and_patch_cannot_set_lifecycle(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    base_url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}"
+
+    first = client.post(f"{base_url}/mark-paid", headers=headers)
+    second = client.post(f"{base_url}/mark-paid", headers=headers)
+    patch = client.patch(
+        base_url,
+        headers=headers,
+        json={"lifecycle": ObligationLifecycle.PAID.value},
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert second.json()["paid_at"] == first.json()["paid_at"]
+    assert patch.status_code == 422
+
+
+def test_mark_obligation_paid_rejects_viewer(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    viewer = create_random_user(db)
+    viewer_headers = authentication_token_from_email(
+        client=client, email=viewer.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    ledger_use_cases.share_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        target_user_id=viewer.id,
+        role=LedgerAccessRole.VIEWER,
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}/mark-paid",
+        headers=viewer_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Ledger not found"}
+
+
+def test_cancel_obligation_moves_collecting_data_to_canceled(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    obligation.lifecycle = ObligationLifecycle.COLLECTING_DATA
+    db.commit()
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}/cancel",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["lifecycle"] == ObligationLifecycle.CANCELED.value
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [
+        ObligationLifecycle.DRAFT,
+        ObligationLifecycle.READY,
+        ObligationLifecycle.PAID,
+        ObligationLifecycle.CANCELED,
+        ObligationLifecycle.ERROR,
+    ],
+)
+def test_cancel_obligation_rejects_other_lifecycles(
+    client: TestClient, db: Session, lifecycle: ObligationLifecycle
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    obligation.lifecycle = lifecycle
+    db.commit()
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}/cancel",
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Only obligations collecting data can be canceled"
+    }
+
+
+def test_cancel_obligation_rejects_viewer(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    viewer = create_random_user(db)
+    viewer_headers = authentication_token_from_email(
+        client=client, email=viewer.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    ledger_use_cases.share_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        target_user_id=viewer.id,
+        role=LedgerAccessRole.VIEWER,
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    obligation.lifecycle = ObligationLifecycle.COLLECTING_DATA
+    db.commit()
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}/cancel",
+        headers=viewer_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Ledger not found"}
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [
+        ObligationLifecycle.READY,
+        ObligationLifecycle.PAID,
+        ObligationLifecycle.CANCELED,
+        ObligationLifecycle.ERROR,
+    ],
+)
+def test_reopen_obligation_moves_reopenable_lifecycles_to_collecting_data(
+    client: TestClient, db: Session, lifecycle: ObligationLifecycle
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    base_url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}"
+
+    if lifecycle is ObligationLifecycle.PAID:
+        assert client.post(f"{base_url}/mark-paid", headers=headers).status_code == 200
+    elif lifecycle is not ObligationLifecycle.READY:
+        obligation.lifecycle = lifecycle
+        db.commit()
+
+    response = client.post(f"{base_url}/reopen", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["lifecycle"] == ObligationLifecycle.COLLECTING_DATA.value
+    assert response.json()["paid_at"] is None
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [
+        ObligationLifecycle.DRAFT,
+        ObligationLifecycle.COLLECTING_DATA,
+    ],
+)
+def test_reopen_obligation_rejects_other_lifecycles(
+    client: TestClient, db: Session, lifecycle: ObligationLifecycle
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    obligation.lifecycle = lifecycle
+    db.commit()
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}/reopen",
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Only ready, paid, canceled, or error obligations can be reopened"
+    }
+
+
+def test_reopen_obligation_rejects_viewer(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    viewer = create_random_user(db)
+    viewer_headers = authentication_token_from_email(
+        client=client, email=viewer.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    ledger_use_cases.share_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        target_user_id=viewer.id,
+        role=LedgerAccessRole.VIEWER,
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    obligation.lifecycle = ObligationLifecycle.CANCELED
+    db.commit()
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}/reopen",
+        headers=viewer_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Ledger not found"}
 
 
 def test_ensure_obligations_creates_current_and_next_period_for_active_categories(
@@ -307,7 +608,7 @@ def test_create_obligation_with_incomplete_data_marks_values_as_estimated(
     assert created["due_date_source"] == CurrentValueSource.UNKNOWN.value
 
 
-def test_update_obligation_overrides_confirmed_values_and_updates_notes(
+def test_update_obligation_updates_collecting_data_values_and_notes(
     client: TestClient, db: Session
 ) -> None:
     owner = create_random_user(db)
@@ -331,7 +632,6 @@ def test_update_obligation_overrides_confirmed_values_and_updates_notes(
         json={
             "category_code": "ELEC",
             "period": {"year": 2026, "month": 8},
-            "data_ready": True,
             "current_amount": "100.00",
             "issue_date": "2026-08-02",
             "due_date": "2026-08-20",
@@ -354,15 +654,47 @@ def test_update_obligation_overrides_confirmed_values_and_updates_notes(
     assert response.status_code == 200
     updated = response.json()
     assert updated["current_amount"] == "125.50"
-    assert updated["amount_state"] == ValueState.OVERRIDDEN.value
+    assert updated["amount_state"] == ValueState.ESTIMATED.value
     assert updated["amount_source"] == CurrentValueSource.MANUAL.value
     assert updated["issue_date"] == "2026-08-03"
-    assert updated["issue_date_state"] == ValueState.OVERRIDDEN.value
+    assert updated["issue_date_state"] == ValueState.ESTIMATED.value
     assert updated["issue_date_source"] == CurrentValueSource.MANUAL.value
     assert updated["due_date"] == "2026-08-21"
-    assert updated["due_date_state"] == ValueState.OVERRIDDEN.value
+    assert updated["due_date_state"] == ValueState.ESTIMATED.value
     assert updated["due_date_source"] == CurrentValueSource.MANUAL.value
     assert updated["notes"] == "Corrected manually"
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [
+        ObligationLifecycle.READY,
+        ObligationLifecycle.PAID,
+        ObligationLifecycle.CANCELED,
+    ],
+)
+def test_update_obligation_rejects_read_only_lifecycles(
+    client: TestClient, db: Session, lifecycle: ObligationLifecycle
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    obligation.lifecycle = lifecycle
+    db.commit()
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/{obligation.business_key}",
+        headers=headers,
+        json={"notes": "Cannot be changed"},
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Only draft and collecting data obligations can be edited"
+    }
 
 
 def test_update_obligation_validates_resulting_dates_and_allows_clearing_values(

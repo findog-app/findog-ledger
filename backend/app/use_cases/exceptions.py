@@ -76,3 +76,11 @@ class DuplicateObligationError(ApplicationError):
 
 class ObligationNotFoundError(ApplicationError):
     pass
+
+
+class ObligationInvalidLifecycleError(ApplicationError):
+    pass
+
+
+class ObligationReadOnlyError(ApplicationError):
+    pass

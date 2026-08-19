@@ -82,6 +82,9 @@ class Obligation(Base):
     due_date_state: Mapped[ValueState] = mapped_column(nullable=False)
     due_date_source: Mapped[CurrentValueSource] = mapped_column(nullable=False)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     last_auto_sync_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

@@ -1018,6 +1018,18 @@ export const ObligationPublicSchema = {
             ],
             title: 'Currency'
         },
+        paid_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Paid At'
+        },
         created_at: {
             type: 'string',
             format: 'date-time',
@@ -1030,7 +1042,7 @@ export const ObligationPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_id', 'category_code', 'key', 'name', 'notes', 'lifecycle', 'period', 'effective_value_source', 'current_amount', 'amount_state', 'amount_source', 'issue_date', 'issue_date_state', 'issue_date_source', 'due_date', 'due_date_state', 'due_date_source', 'currency', 'created_at', 'updated_at'],
+    required: ['id', 'ledger_id', 'category_id', 'category_code', 'key', 'name', 'notes', 'lifecycle', 'period', 'effective_value_source', 'current_amount', 'amount_state', 'amount_source', 'issue_date', 'issue_date_state', 'issue_date_source', 'due_date', 'due_date_state', 'due_date_source', 'currency', 'paid_at', 'created_at', 'updated_at'],
     title: 'ObligationPublic'
 } as const;
 

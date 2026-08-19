@@ -23,7 +23,9 @@ from app.use_cases.exceptions import (
     CategoryNotFoundError,
     DuplicateObligationError,
     ManualObligationNotAllowedError,
+    ObligationInvalidLifecycleError,
     ObligationNotFoundError,
+    ObligationReadOnlyError,
 )
 
 router = APIRouter(tags=["obligations"])
@@ -54,6 +56,7 @@ def _to_obligation_public(obligation: Obligation) -> ObligationPublic:
         due_date_state=obligation.due_date_state,
         due_date_source=obligation.due_date_source,
         currency=obligation.currency,
+        paid_at=obligation.paid_at,
         created_at=obligation.created_at,
         updated_at=obligation.updated_at,
     )
@@ -169,6 +172,11 @@ def update_obligation(
         )
     except ObligationNotFoundError:
         raise HTTPException(status_code=404, detail="Obligation not found")
+    except ObligationReadOnlyError:
+        raise HTTPException(
+            status_code=409,
+            detail="Only draft and collecting data obligations can be edited",
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -200,6 +208,102 @@ def mark_obligation_ready(
         raise HTTPException(status_code=404, detail="Obligation not found")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return _to_obligation_public(obligation)
+
+
+@router.post(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/mark-paid",
+    response_model=ObligationPublic,
+)
+def mark_obligation_paid(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        key = ObligationKey.parse(obligation_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid obligation key") from exc
+
+    try:
+        obligation = obligation_use_cases.mark_obligation_paid(
+            session=session,
+            ledger_id=ledger.id,
+            key=key,
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except ObligationInvalidLifecycleError:
+        raise HTTPException(
+            status_code=409,
+            detail="Only ready obligations can be marked as paid",
+        )
+
+    return _to_obligation_public(obligation)
+
+
+@router.post(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/cancel",
+    response_model=ObligationPublic,
+)
+def cancel_obligation(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        key = ObligationKey.parse(obligation_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid obligation key") from exc
+
+    try:
+        obligation = obligation_use_cases.cancel_obligation(
+            session=session,
+            ledger_id=ledger.id,
+            key=key,
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except ObligationInvalidLifecycleError:
+        raise HTTPException(
+            status_code=409,
+            detail="Only obligations collecting data can be canceled",
+        )
+
+    return _to_obligation_public(obligation)
+
+
+@router.post(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/reopen",
+    response_model=ObligationPublic,
+)
+def reopen_obligation(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        key = ObligationKey.parse(obligation_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid obligation key") from exc
+
+    try:
+        obligation = obligation_use_cases.reopen_obligation(
+            session=session,
+            ledger_id=ledger.id,
+            key=key,
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except ObligationInvalidLifecycleError:
+        raise HTTPException(
+            status_code=409,
+            detail="Only ready, paid, canceled, or error obligations can be reopened",
+        )
 
     return _to_obligation_public(obligation)
 

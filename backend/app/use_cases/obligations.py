@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -24,7 +24,9 @@ from app.use_cases.exceptions import (
     DuplicateObligationError,
     LedgerNotFoundError,
     ManualObligationNotAllowedError,
+    ObligationInvalidLifecycleError,
     ObligationNotFoundError,
+    ObligationReadOnlyError,
 )
 
 
@@ -260,6 +262,11 @@ def update_manual_obligation(
     notes: str | None | _Unset = UNSET,
 ) -> Obligation:
     obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    if obligation.lifecycle not in {
+        ObligationLifecycle.DRAFT,
+        ObligationLifecycle.COLLECTING_DATA,
+    }:
+        raise ObligationReadOnlyError
 
     next_current_amount = (
         obligation.current_amount
@@ -348,6 +355,54 @@ def mark_obligation_ready(
     obligation.lifecycle = ObligationLifecycle.READY
     obligation.amount_state = ValueState.CONFIRMED
     obligation.due_date_state = ValueState.CONFIRMED
+    session.commit()
+    session.refresh(obligation)
+    return obligation
+
+
+def mark_obligation_paid(
+    *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
+) -> Obligation:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    if obligation.lifecycle is ObligationLifecycle.PAID:
+        return obligation
+    if obligation.lifecycle is not ObligationLifecycle.READY:
+        raise ObligationInvalidLifecycleError
+
+    obligation.lifecycle = ObligationLifecycle.PAID
+    obligation.paid_at = datetime.now(UTC)
+    session.commit()
+    session.refresh(obligation)
+    return obligation
+
+
+def cancel_obligation(
+    *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
+) -> Obligation:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    if obligation.lifecycle is not ObligationLifecycle.COLLECTING_DATA:
+        raise ObligationInvalidLifecycleError
+
+    obligation.lifecycle = ObligationLifecycle.CANCELED
+    session.commit()
+    session.refresh(obligation)
+    return obligation
+
+
+def reopen_obligation(
+    *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
+) -> Obligation:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    if obligation.lifecycle not in {
+        ObligationLifecycle.READY,
+        ObligationLifecycle.PAID,
+        ObligationLifecycle.CANCELED,
+        ObligationLifecycle.ERROR,
+    }:
+        raise ObligationInvalidLifecycleError
+
+    obligation.lifecycle = ObligationLifecycle.COLLECTING_DATA
+    obligation.paid_at = None
     session.commit()
     session.refresh(obligation)
     return obligation

@@ -85,6 +85,7 @@ class ObligationPublic(BaseModel):
     due_date_state: ValueState
     due_date_source: CurrentValueSource
     currency: str | None
+    paid_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

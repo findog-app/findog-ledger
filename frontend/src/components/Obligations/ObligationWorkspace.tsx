@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
+  Ban,
   CircleCheck,
   EllipsisVertical,
   Landmark,
   Pencil,
   Plus,
+  RotateCcw,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -149,6 +151,21 @@ function canMarkObligationReady(obligation: ObligationPublic) {
   )
 }
 
+function canEditObligation(obligation: ObligationPublic) {
+  return (
+    obligation.lifecycle === "draft" ||
+    obligation.lifecycle === "collecting_data"
+  )
+}
+
+function canCancelObligation(obligation: ObligationPublic) {
+  return obligation.lifecycle === "collecting_data"
+}
+
+function canReopenObligation(obligation: ObligationPublic) {
+  return ["ready", "paid", "canceled", "error"].includes(obligation.lifecycle)
+}
+
 export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const period = currentPeriod()
   const [year, setYear] = useState(String(period.year))
@@ -204,6 +221,40 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
     onError: handleError.bind(showErrorToast),
     onSuccess: (_, obligation) => {
       showSuccessToast("Obligation marked as ready")
+      void queryClient.invalidateQueries({
+        queryKey: ["obligation", ledgerId, obligation.key],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["obligations", ledgerId],
+      })
+    },
+  })
+  const reopen = useMutation({
+    mutationFn: (obligation: ObligationPublic) =>
+      ObligationsService.reopenObligation({
+        ledgerId,
+        obligationKey: obligation.key,
+      }),
+    onError: handleError.bind(showErrorToast),
+    onSuccess: (_, obligation) => {
+      showSuccessToast("Obligation reopened")
+      void queryClient.invalidateQueries({
+        queryKey: ["obligation", ledgerId, obligation.key],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["obligations", ledgerId],
+      })
+    },
+  })
+  const cancel = useMutation({
+    mutationFn: (obligation: ObligationPublic) =>
+      ObligationsService.cancelObligation({
+        ledgerId,
+        obligationKey: obligation.key,
+      }),
+    onError: handleError.bind(showErrorToast),
+    onSuccess: (_, obligation) => {
+      showSuccessToast("Obligation canceled")
       void queryClient.invalidateQueries({
         queryKey: ["obligation", ledgerId, obligation.key],
       })
@@ -315,9 +366,13 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                   key={obligation.key}
                   obligation={obligation}
                   onEdit={() => setEditingObligation(obligation)}
+                  onCancel={() => cancel.mutate(obligation)}
                   onMarkReady={() => markReady.mutate(obligation)}
+                  onReopen={() => reopen.mutate(obligation)}
                   onSelect={() => setSelectedKey(obligation.key)}
                   markingReady={markReady.isPending}
+                  canceling={cancel.isPending}
+                  reopening={reopen.isPending}
                 />
               ))
             : null}
@@ -365,14 +420,38 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                       Mark as ready
                     </Button>
                   ) : null}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingObligation(selected.data)}
-                  >
-                    <Pencil />
-                    Edit
-                  </Button>
+                  {canCancelObligation(selected.data) ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={cancel.isPending}
+                      onClick={() => cancel.mutate(selected.data)}
+                    >
+                      <Ban />
+                      Cancel
+                    </Button>
+                  ) : null}
+                  {canReopenObligation(selected.data) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={reopen.isPending}
+                      onClick={() => reopen.mutate(selected.data)}
+                    >
+                      <RotateCcw />
+                      Reopen
+                    </Button>
+                  ) : null}
+                  {canEditObligation(selected.data) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingObligation(selected.data)}
+                    >
+                      <Pencil />
+                      Edit
+                    </Button>
+                  ) : null}
                 </div>
                 {selected.data.notes ? (
                   <div className="space-y-1">
@@ -474,22 +553,33 @@ function businessDaysUntil(dueDate: string | null) {
 function ObligationTile({
   obligation,
   onEdit,
+  onCancel,
   onMarkReady,
+  onReopen,
   onSelect,
   markingReady,
+  canceling,
+  reopening,
 }: {
   obligation: ObligationPublic
   onEdit: () => void
+  onCancel: () => void
   onMarkReady: () => void
+  onReopen: () => void
   onSelect: () => void
   markingReady: boolean
+  canceling: boolean
+  reopening: boolean
 }) {
   const amount =
     obligation.current_amount !== null
       ? `${obligation.current_amount} ${obligation.currency ?? ""}`.trim()
       : "Amount unknown"
   const dueDateStatus = businessDaysUntil(obligation.due_date)
+  const canCancel = canCancelObligation(obligation)
   const canMarkReady = canMarkObligationReady(obligation)
+  const canEdit = canEditObligation(obligation)
+  const canReopen = canReopenObligation(obligation)
 
   return (
     <div className="group rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">
@@ -527,10 +617,28 @@ function ObligationTile({
                 Mark as ready
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem onSelect={onEdit}>
-              <Pencil />
-              Edit
-            </DropdownMenuItem>
+            {canCancel ? (
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={canceling}
+                onSelect={onCancel}
+              >
+                <Ban />
+                Cancel
+              </DropdownMenuItem>
+            ) : null}
+            {canReopen ? (
+              <DropdownMenuItem disabled={reopening} onSelect={onReopen}>
+                <RotateCcw />
+                Reopen
+              </DropdownMenuItem>
+            ) : null}
+            {canEdit ? (
+              <DropdownMenuItem onSelect={onEdit}>
+                <Pencil />
+                Edit
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
