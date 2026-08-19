@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: commitizen-check
         name: commitizen check
-        entry: bash -lc 'cd backend && uv run cz check --allow-abort --commit-msg-file "$1"' --
+        entry: bash -lc 'commit_msg_file="$(realpath "$1")"; cd backend && uv run cz check --allow-abort --commit-msg-file "$commit_msg_file"' --
         language: system
         stages: [commit-msg]
 

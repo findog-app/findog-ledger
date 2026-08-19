@@ -38,7 +38,8 @@ Make sure your editor is using the correct Python virtual environment, with the 
 - Users are provisioned by a superuser only.
 - Admin-only user management remains available under `/api/v1/users`.
 - Demo `Item` endpoints have been removed.
-- Future payment-obligation modules currently exist only as placeholders.
+- Payment obligations support lifecycle actions for data collection, readiness,
+  payment, cancellation, and reopening.
 
 ## Database
 

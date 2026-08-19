@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link, useLocation, useNavigate } from "@tanstack/react-router"
-import { BookOpen, Check, ChevronsUpDown, List, Settings } from "lucide-react"
+import {
+  BookOpen,
+  Check,
+  ChevronsUpDown,
+  List,
+  Settings,
+  Tags,
+} from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
 import { LedgersService } from "@/client"
@@ -105,15 +112,26 @@ export function LedgerSwitcher() {
             ))}
             <DropdownMenuSeparator />
             {activeLedgerId && (
-              <DropdownMenuItem asChild>
-                <Link
-                  to="/ledgers/$ledgerId/settings"
-                  params={{ ledgerId: activeLedgerId }}
-                >
-                  <Settings />
-                  Ledger settings
-                </Link>
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/ledgers/$ledgerId/settings"
+                    params={{ ledgerId: activeLedgerId }}
+                  >
+                    <Settings />
+                    Ledger settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/ledgers/$ledgerId/categories"
+                    params={{ ledgerId: activeLedgerId }}
+                  >
+                    <Tags />
+                    Categories
+                  </Link>
+                </DropdownMenuItem>
+              </>
             )}
             <DropdownMenuItem asChild>
               <Link to="/ledgers">

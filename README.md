@@ -1,55 +1,87 @@
 # Findog Ledger
 
-Private multi-user system for managing payment obligations, based on the FastAPI full-stack template.
+<p align="center">
+  <img src="frontend/public/assets/images/findog-logo.svg" alt="Findog Ledger" width="280" />
+</p>
 
-## Current Scope
+<p align="center"><strong>A calm, self-hosted home for recurring payments and obligations.</strong></p>
 
-- Public signup is disabled completely.
-- Users are created and managed only by a superuser/admin.
-- Login, current-user, password reset, and password change flows remain available.
-- Demo `Item` backend/frontend code has been removed.
-- Users can create ledgers and share them with other users as owners, editors, or viewers.
-- Ledgers include category groups and categories, including their recurrence and payment settings.
-- Payment obligations are created for recurring categories and tracked in the ledger data model.
-- Counterparty management and external integration/synchronization are not implemented yet.
+> **Early development:** Findog Ledger is actively evolving. The data model and
+> core workflow are usable, but integrations, automation, and parts of the
+> product experience are still being shaped.
 
-## Stack
+Findog Ledger helps a household or small team keep recurring bills in one
+shared ledger. Instead of relying on a bank feed or a third-party financial
+dashboard, you keep control of the application and its data: run it on your
+own infrastructure, invite the people who need access, and decide how the
+workflow should grow.
 
-- FastAPI + SQLModel backend
-- PostgreSQL database
-- React + Vite frontend
-- generated OpenAPI client in `frontend/src/client`
-- Alembic migrations
-- `uv` for backend dependency and command workflow
-- Bun for frontend dependency and command workflow
+## What it does today
 
-## Local Development
+- Organises recurring costs into category groups and categories.
+- Creates and tracks payment obligations for billing periods.
+- Supports shared ledgers with owner, editor, and viewer access.
+- Keeps an explicit workflow from collecting payment data to ready, paid,
+  canceled, or reopened obligations.
+- Highlights approaching and overdue payments, while keeping paid obligations
+  clearly separate.
 
-- Backend development uses `uv` from [`backend/`](./backend/README.md).
-- The project currently targets an external PostgreSQL instance configured through `.env`.
-- Docker Compose and local workflow details are in [`development.md`](./development.md).
-- Frontend development notes are in [`frontend/README.md`](./frontend/README.md).
+For the precise obligation-state rules, API actions, and planned integration
+behaviour, see the [obligation lifecycle](docs/obligation-lifecycle.md).
 
-## User Management Rules
+## Screenshots
 
-- Only existing users can log in.
-- Only superusers can create users.
-- Only superusers can list users.
-- Only superusers can update other users, including activation/deactivation.
-- Regular users can only manage their own profile/password endpoints.
+Screenshots will be added as the interface settles.
 
-## Migrations
+| Obligations workspace | Categories and groups |
+| --- | --- |
+| _Placeholder: `docs/screenshots/obligations-workspace.png`_ | _Placeholder: `docs/screenshots/categories-workspace.png`_ |
 
-- The demo `item` table is removed by Alembic migration `b1e4c8d5e2f1_remove_demo_item_domain`.
-- Fresh databases should be created through Alembic, not through ad hoc table creation.
+## Run it yourself
 
-## Verification
+The production setup is designed for a self-hosted Docker Compose deployment.
+It uses prebuilt container images, an externally managed PostgreSQL database,
+and an existing reverse proxy network named `firefly_net`.
 
-Backend verification completed with:
+Before starting, make sure your server has Docker Compose, access to PostgreSQL,
+and a reverse proxy that can route your chosen frontend and API hostnames to
+the `findog-ledger-frontend` and `findog-ledger-backend` aliases on that
+network.
 
-```bash
-cd backend
-uv run pytest tests/api/routes tests/crud tests/scripts
-```
+1. Clone the repository on the server and enter it.
 
-Frontend build/codegen verification requires the Node workspace dependencies to be installed locally.
+   ```bash
+   git clone https://github.com/wini83/findog-ledger.git
+   cd findog-ledger
+   ```
+
+2. Create the production environment file and set the values for your
+   deployment. At minimum, choose an immutable image `TAG`, public URLs,
+   PostgreSQL credentials, a random `SECRET_KEY`, and the first administrator
+   account.
+
+   ```bash
+   cp .env.production.example .env
+   ```
+
+3. Ensure the external Docker network exists and configure your reverse proxy
+   to forward the public frontend and API hostnames to the aliases above.
+
+4. Pull and start the stack. The `prestart` service runs database migrations
+   before the application starts.
+
+   ```bash
+   docker compose -f compose.production.yml pull
+   docker compose -f compose.production.yml up -d --no-build
+   ```
+
+5. Confirm that the services are healthy, then open the frontend URL from your
+   `.env` file.
+
+   ```bash
+   docker compose -f compose.production.yml ps
+   ```
+
+For later releases, change `TAG` to the desired immutable version and run the
+same two Compose commands. Keep database backups and migration compatibility in
+mind before rolling a version back.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -34,7 +34,7 @@ def archive_category(
         raise CategoryNotFoundError
 
     if category.is_active:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         category.is_active = False
         category.archived_at = now
 
@@ -67,7 +67,7 @@ def archive_category_group(
         raise CategoryGroupHasActiveChildrenError
 
     if category_group.is_active:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         category_group.is_active = False
         category_group.archived_at = now
 

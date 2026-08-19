@@ -63,7 +63,6 @@ class Obligation(Base):
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False, index=True
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     lifecycle: Mapped[ObligationLifecycle] = mapped_column(nullable=False)
     period_year: Mapped[int] = mapped_column(nullable=False)
@@ -83,6 +82,9 @@ class Obligation(Base):
     due_date_state: Mapped[ValueState] = mapped_column(nullable=False)
     due_date_source: Mapped[CurrentValueSource] = mapped_column(nullable=False)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     last_auto_sync_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

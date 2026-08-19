@@ -66,6 +66,9 @@ function LedgerSettings() {
   })
   const [confirmationName, setConfirmationName] = useState("")
   const [dangerOpen, setDangerOpen] = useState(false)
+  const [obligationsConfirmationName, setObligationsConfirmationName] =
+    useState("")
+  const [obligationsDangerOpen, setObligationsDangerOpen] = useState(false)
   const deleteCategoriesMutation = useMutation({
     mutationFn: () => LedgersService.deleteAllCategories({ ledgerId }),
     onSuccess: () => {
@@ -76,6 +79,18 @@ function LedgerSettings() {
         queryKey: ["category-groups", ledgerId],
       })
       void queryClient.invalidateQueries({ queryKey: ["categories", ledgerId] })
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+  const deleteObligationsMutation = useMutation({
+    mutationFn: () => LedgersService.deleteAllObligations({ ledgerId }),
+    onSuccess: () => {
+      showSuccessToast("All ledger obligations deleted")
+      setObligationsConfirmationName("")
+      setObligationsDangerOpen(false)
+      void queryClient.invalidateQueries({
+        queryKey: ["obligations", ledgerId],
+      })
     },
     onError: handleError.bind(showErrorToast),
   })
@@ -122,7 +137,7 @@ function LedgerSettings() {
             Update the name and description shown throughout the workspace.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="space-y-2">
             <Label htmlFor="ledger-name">Name</Label>
             <Input
@@ -161,7 +176,7 @@ function LedgerSettings() {
             workspace.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <Checkbox
               id="show-archived-categories"
@@ -186,7 +201,7 @@ function LedgerSettings() {
             These actions are permanent and cannot be undone.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex flex-col justify-between gap-4 rounded-lg border border-destructive/30 p-4 sm:flex-row sm:items-center">
             <div>
               <p className="font-medium">Delete all categories</p>
@@ -236,6 +251,64 @@ function LedgerSettings() {
                       deleteCategoriesMutation.isPending
                     }
                     onClick={() => deleteCategoriesMutation.mutate()}
+                  >
+                    Delete permanently
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <div className="flex flex-col justify-between gap-4 rounded-lg border border-destructive/30 p-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="font-medium">Delete all obligations</p>
+              <p className="text-sm text-muted-foreground">
+                Permanently delete every obligation in this ledger.
+              </p>
+            </div>
+            <Dialog
+              open={obligationsDangerOpen}
+              onOpenChange={setObligationsDangerOpen}
+            >
+              <DialogTrigger asChild>
+                <Button variant="destructive">Delete all obligations</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete all obligations?</DialogTitle>
+                  <DialogDescription>
+                    This permanently deletes every obligation in{" "}
+                    <strong>{ledger.name}</strong>. Enter the ledger name to
+                    confirm.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2 py-2">
+                  <Label htmlFor="delete-obligations-confirmation">
+                    Ledger name
+                  </Label>
+                  <Input
+                    id="delete-obligations-confirmation"
+                    value={obligationsConfirmationName}
+                    onChange={(event) =>
+                      setObligationsConfirmationName(event.target.value)
+                    }
+                  />
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button
+                      variant="outline"
+                      disabled={deleteObligationsMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    variant="destructive"
+                    disabled={
+                      obligationsConfirmationName !== ledger.name ||
+                      deleteObligationsMutation.isPending
+                    }
+                    onClick={() => deleteObligationsMutation.mutate()}
                   >
                     Delete permanently
                   </Button>
