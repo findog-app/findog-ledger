@@ -14,6 +14,7 @@ help:
 	@echo "  make fmt    - format backend code with ruff"
 	@echo "  make hooks  - install git pre-commit and commit-msg hooks"
 	@echo "  make refresh - update dev and synchronize Bun and Python dependencies"
+	@echo "  make alembic - run alembic migrations to upgrade database schema"
 
 cmt:
 	bash ./scripts/cz.sh commit
@@ -41,6 +42,9 @@ fmt:
 
 hooks:
 	cd backend && uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+
+alembic:
+	cd backend && uv run alembic upgrade head
 
 refresh:
 	git pull --ff-only origin dev

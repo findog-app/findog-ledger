@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -131,6 +133,59 @@ def test_post_category_group_rejects_viewer(client: TestClient, db: Session) -> 
     assert response.json() == {"detail": "Ledger not found"}
 
 
+def test_post_category_group_rejects_duplicate_name(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    group_name = f"group-{random_lower_string()}"
+    category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=group_name
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/category-groups",
+        headers=headers,
+        json={"name": group_name},
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Category group already exists"}
+
+
+def test_patch_category_group_updates_group_and_returns_404_when_missing(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+
+    updated = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/category-groups/{category_group.id}",
+        headers=headers,
+        json={"name": "Updated group", "description": "Updated description"},
+    )
+    missing = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/category-groups/{uuid.uuid4()}",
+        headers=headers,
+        json={"name": "Missing group"},
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "Updated group"
+    assert updated.json()["description"] == "Updated description"
+    assert missing.status_code == 404
+    assert missing.json() == {"detail": "Category group not found"}
+
+
 def test_patch_category_group_archive_succeeds_for_empty_group(
     client: TestClient,
     db: Session,
@@ -190,6 +245,24 @@ def test_patch_category_group_archive_fails_when_active_child_categories_exist(
 
     assert response.status_code == 409
     assert response.json() == {"detail": "Category group has active categories"}
+
+
+def test_patch_category_group_archive_returns_404_for_missing_group(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/category-groups/{uuid.uuid4()}/archive",
+        headers=headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Category group not found"}
 
 
 def test_get_categories_returns_only_categories_for_that_ledger(
@@ -575,3 +648,47 @@ def test_patch_category_rejects_code_change(client: TestClient, db: Session) -> 
     )
 
     assert response.status_code == 422
+
+
+def test_patch_category_updates_category_and_returns_404_when_missing(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    payload = {
+        "name": "Updated electricity",
+        "description": "Monthly bill",
+        "data_source_policy": "hybrid",
+        "currency": "PLN",
+        "due_day": 15,
+    }
+
+    updated = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}",
+        headers=headers,
+        json=payload,
+    )
+    missing = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{uuid.uuid4()}",
+        headers=headers,
+        json=payload,
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "Updated electricity"
+    assert updated.json()["due_day"] == 15
+    assert missing.status_code == 404
+    assert missing.json() == {"detail": "Category not found"}

@@ -8,7 +8,9 @@ from app.services import obligations as obligation_service
 from tests.utils.ledger_domain import create_category_with_recurrence
 
 
-def test_ensure_obligations_creates_current_and_next_drafts(db: Session) -> None:
+def test_ensure_obligations_creates_current_and_next_periods_with_lifecycles(
+    db: Session,
+) -> None:
     ledger, _, category = create_category_with_recurrence(db)
 
     created = obligation_service.ensure_obligations_for_period(
@@ -24,6 +26,12 @@ def test_ensure_obligations_creates_current_and_next_drafts(db: Session) -> None
     assert {item.business_key for item in created} == {
         f"{category.code}-2026-03",
         f"{category.code}-2026-04",
+    }
+    assert {
+        (item.period_year, item.period_month): item.lifecycle for item in created
+    } == {
+        (2026, 3): "collecting_data",
+        (2026, 4): "draft",
     }
 
 
@@ -71,6 +79,28 @@ def test_ensure_obligations_only_creates_periods_that_occur(db: Session) -> None
     )
 
     assert {(item.period_year, item.period_month) for item in created} == {(2026, 3)}
+
+
+def test_ensure_obligations_derives_due_date_from_category_due_day(
+    db: Session,
+) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    category.due_day = 31
+    db.commit()
+
+    created = obligation_service.ensure_obligations_for_period(
+        session=db, ledger_id=ledger.id, current_period=BillingPeriod(2026, 2)
+    )
+
+    due_dates = {
+        (item.period_year, item.period_month): item.due_date for item in created
+    }
+    assert due_dates == {
+        (2026, 2): date(2026, 2, 27),
+        (2026, 3): date(2026, 3, 31),
+    }
+    assert all(item.due_date_state.value == "estimated" for item in created)
+    assert all(item.due_date_source.value == "automatic" for item in created)
 
 
 def test_category_occurs_in_respects_month_and_year_recurrence(db: Session) -> None:

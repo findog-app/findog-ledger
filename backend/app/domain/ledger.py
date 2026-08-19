@@ -3,10 +3,10 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 
-class LedgerAccessRole(str, Enum):
+class LedgerAccessRole(StrEnum):
     OWNER = "owner"
     EDITOR = "editor"
     VIEWER = "viewer"

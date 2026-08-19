@@ -7,9 +7,11 @@ from app.domain.obligations import (
     DataSourcePolicy,
     EffectiveValueSourceMode,
     Obligation,
+    ObligationKey,
     ObligationLifecycle,
     RecurrenceUnit,
     ValueState,
+    due_date_range,
 )
 
 __all__ = [
@@ -19,11 +21,13 @@ __all__ = [
     "CurrentValueSource",
     "Currency",
     "DataSourcePolicy",
+    "due_date_range",
     "EffectiveValueSourceMode",
     "Ledger",
     "LedgerAccessRole",
     "LedgerMembership",
     "Obligation",
+    "ObligationKey",
     "ObligationLifecycle",
     "RecurrenceUnit",
     "ValueState",

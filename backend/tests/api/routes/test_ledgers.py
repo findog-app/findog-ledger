@@ -4,9 +4,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.domain import LedgerAccessRole
-from app.models import LedgerMembership
+from app.domain import BillingPeriod, LedgerAccessRole
+from app.models import LedgerMembership, Obligation
+from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
+from app.use_cases import obligations as obligation_use_cases
 from tests.utils.user import authentication_token_from_email, create_random_user
 from tests.utils.utils import random_lower_string
 
@@ -118,6 +120,44 @@ def test_delete_ledger_categories_allows_owner(
 
     assert response.status_code == 200
     assert response.json() == {"message": "All ledger categories deleted"}
+
+
+def test_delete_ledger_obligations_allows_owner(
+    client: TestClient,
+    db: Session,
+) -> None:
+    owner = create_random_user(db)
+    owner_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="Ledger"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="Group"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    obligation_use_cases.create_manual_obligation(
+        session=db,
+        ledger_id=ledger.id,
+        category_code="ELEC",
+        period=BillingPeriod(2026, 3),
+    )
+
+    response = client.delete(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=owner_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"message": "All ledger obligations deleted"}
+    assert db.query(Obligation).filter(Obligation.ledger_id == ledger.id).count() == 0
 
 
 def test_get_ledger_returns_404_for_non_member(client: TestClient, db: Session) -> None:

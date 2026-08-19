@@ -34,6 +34,10 @@ class CategoryArchivedError(ApplicationError):
     pass
 
 
+class ManualObligationNotAllowedError(ApplicationError):
+    pass
+
+
 class DuplicateCategoryGroupError(ApplicationError):
     pass
 
@@ -63,4 +67,20 @@ class CrossLedgerReferenceError(ApplicationError):
 
 
 class InvalidCategoryDueDayError(ApplicationError):
+    pass
+
+
+class DuplicateObligationError(ApplicationError):
+    pass
+
+
+class ObligationNotFoundError(ApplicationError):
+    pass
+
+
+class ObligationInvalidLifecycleError(ApplicationError):
+    pass
+
+
+class ObligationReadOnlyError(ApplicationError):
     pass

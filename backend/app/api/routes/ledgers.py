@@ -136,6 +136,19 @@ def delete_all_categories(
     return Message(message="All ledger categories deleted")
 
 
+@router.delete("/{ledger_id}/obligations", response_model=Message)
+def delete_all_obligations(
+    *,
+    session: SessionDep,
+    ledger: Ledger = Depends(require_ledger_owner_access),
+) -> Message:
+    ledger_use_cases.delete_all_obligations(
+        session=session,
+        ledger_id=ledger.id,
+    )
+    return Message(message="All ledger obligations deleted")
+
+
 @router.post("/{ledger_id}/members", response_model=LedgerMemberPublic)
 def share_ledger(
     *,
