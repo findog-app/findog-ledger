@@ -287,6 +287,15 @@ def update_manual_obligation(
         if next_issue_date > next_due_date:
             raise ValueError("issue_date cannot be later than due_date")
 
+    has_manual_changes = (
+        (
+            not isinstance(current_amount, _Unset)
+            and current_amount != obligation.current_amount
+        )
+        or (not isinstance(issue_date, _Unset) and issue_date != obligation.issue_date)
+        or (not isinstance(due_date, _Unset) and due_date != obligation.due_date)
+        or (not isinstance(notes, _Unset) and notes != obligation.notes)
+    )
     if not isinstance(current_amount, _Unset):
         _set_manual_value(
             obligation=obligation,
@@ -314,6 +323,8 @@ def update_manual_obligation(
     if not isinstance(notes, _Unset):
         obligation.notes = notes
 
+    if has_manual_changes and obligation.lifecycle is ObligationLifecycle.DRAFT:
+        obligation.lifecycle = ObligationLifecycle.COLLECTING_DATA
     _update_effective_value_source(obligation)
     session.commit()
     session.refresh(obligation)

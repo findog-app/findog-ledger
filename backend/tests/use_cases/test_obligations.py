@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from sqlalchemy.orm import Session
 
-from app.domain import BillingPeriod, ObligationLifecycle
+from app.domain import BillingPeriod, ObligationKey, ObligationLifecycle
 from app.use_cases import obligations as obligation_use_cases
 from tests.utils.ledger_domain import create_category_with_recurrence
 
@@ -63,3 +63,24 @@ def test_create_manual_obligation_rejects_negative_current_amount(db: Session) -
             period=BillingPeriod(2026, 8),
             current_amount=Decimal("-1.00"),
         )
+
+
+def test_manual_update_moves_draft_obligation_to_collecting_data(db: Session) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    period = BillingPeriod(2026, 8)
+    created = obligation_use_cases.ensure_obligations_for_period(
+        session=db, ledger_id=ledger.id, period=period
+    )
+    draft = next(item for item in created if item.period_year == period.year)
+
+    updated = obligation_use_cases.update_manual_obligation(
+        session=db,
+        ledger_id=ledger.id,
+        key=ObligationKey(
+            category_code=category.code,
+            period=BillingPeriod(draft.period_year, draft.period_month),
+        ),
+        notes="Manual follow-up",
+    )
+
+    assert updated.lifecycle is ObligationLifecycle.COLLECTING_DATA
