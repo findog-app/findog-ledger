@@ -28,6 +28,13 @@ from app.use_cases.exceptions import (
 )
 
 
+class _Unset:
+    pass
+
+
+UNSET = _Unset()
+
+
 def _require_ledger(*, session: Session, ledger_id: uuid.UUID) -> Ledger:
     ledger = session.get(Ledger, ledger_id)
     if ledger is None:
@@ -197,6 +204,117 @@ def create_manual_obligation(
         obligation.due_date_state = value_state
         obligation.due_date_source = CurrentValueSource.MANUAL
 
+    session.commit()
+    session.refresh(obligation)
+    return obligation
+
+
+def _set_manual_value(
+    *,
+    obligation: Obligation,
+    value_attribute: str,
+    state_attribute: str,
+    source_attribute: str,
+    value: Decimal | date | None,
+) -> None:
+    setattr(obligation, value_attribute, value)
+    if value is None:
+        setattr(obligation, state_attribute, ValueState.UNKNOWN)
+        setattr(obligation, source_attribute, CurrentValueSource.UNKNOWN)
+        return
+
+    previous_state = getattr(obligation, state_attribute)
+    setattr(obligation, source_attribute, CurrentValueSource.MANUAL)
+    if previous_state is ValueState.CONFIRMED:
+        setattr(obligation, state_attribute, ValueState.OVERRIDDEN)
+    elif previous_state is ValueState.UNKNOWN:
+        setattr(obligation, state_attribute, ValueState.ESTIMATED)
+
+
+def _update_effective_value_source(obligation: Obligation) -> None:
+    sources = {
+        source
+        for value, source in (
+            (obligation.current_amount, obligation.amount_source),
+            (obligation.issue_date, obligation.issue_date_source),
+            (obligation.due_date, obligation.due_date_source),
+        )
+        if value is not None and source is not CurrentValueSource.UNKNOWN
+    }
+    if not sources:
+        obligation.effective_value_source = EffectiveValueSourceMode.UNKNOWN
+    elif sources == {CurrentValueSource.MANUAL}:
+        obligation.effective_value_source = EffectiveValueSourceMode.MANUAL
+    elif sources == {CurrentValueSource.AUTOMATIC}:
+        obligation.effective_value_source = EffectiveValueSourceMode.AUTOMATIC
+    else:
+        obligation.effective_value_source = EffectiveValueSourceMode.MIXED
+
+
+def update_manual_obligation(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    current_amount: Decimal | None | _Unset = UNSET,
+    issue_date: date | None | _Unset = UNSET,
+    due_date: date | None | _Unset = UNSET,
+    notes: str | None | _Unset = UNSET,
+) -> Obligation:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+
+    next_current_amount = (
+        obligation.current_amount
+        if isinstance(current_amount, _Unset)
+        else current_amount
+    )
+    next_issue_date = (
+        obligation.issue_date if isinstance(issue_date, _Unset) else issue_date
+    )
+    next_due_date = obligation.due_date if isinstance(due_date, _Unset) else due_date
+    if next_current_amount is not None and next_current_amount < 0:
+        raise ValueError("current_amount must be greater than or equal to zero")
+    if next_due_date is not None:
+        minimum, maximum = due_date_range(
+            BillingPeriod(obligation.period_year, obligation.period_month)
+        )
+        if not minimum <= next_due_date <= maximum:
+            raise ValueError(
+                "due_date must be within the billing period or the first "
+                "seven business days after it"
+            )
+    if next_issue_date is not None and next_due_date is not None:
+        if next_issue_date > next_due_date:
+            raise ValueError("issue_date cannot be later than due_date")
+
+    if not isinstance(current_amount, _Unset):
+        _set_manual_value(
+            obligation=obligation,
+            value_attribute="current_amount",
+            state_attribute="amount_state",
+            source_attribute="amount_source",
+            value=current_amount,
+        )
+    if not isinstance(issue_date, _Unset):
+        _set_manual_value(
+            obligation=obligation,
+            value_attribute="issue_date",
+            state_attribute="issue_date_state",
+            source_attribute="issue_date_source",
+            value=issue_date,
+        )
+    if not isinstance(due_date, _Unset):
+        _set_manual_value(
+            obligation=obligation,
+            value_attribute="due_date",
+            state_attribute="due_date_state",
+            source_attribute="due_date_source",
+            value=due_date,
+        )
+    if not isinstance(notes, _Unset):
+        obligation.notes = notes
+
+    _update_effective_value_source(obligation)
     session.commit()
     session.refresh(obligation)
     return obligation

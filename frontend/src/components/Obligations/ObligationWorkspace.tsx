@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import {
   CategoriesService,
   type ObligationLifecycle,
+  type ObligationPublic,
   ObligationsService,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
@@ -298,6 +299,12 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                     </Badge>
                   </div>
                 </div>
+                <EditObligationDialog
+                  ledgerId={ledgerId}
+                  obligation={selected.data}
+                  onError={showErrorToast}
+                  onSuccess={showSuccessToast}
+                />
                 {selected.data.notes ? (
                   <div className="space-y-1">
                     <p className="text-muted-foreground font-medium">Notes</p>
@@ -346,6 +353,186 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
         </Dialog>
       </CardContent>
     </Card>
+  )
+}
+
+function EditObligationDialog({
+  ledgerId,
+  obligation,
+  onSuccess,
+  onError,
+}: {
+  ledgerId: string
+  obligation: ObligationPublic
+  onSuccess: (message: string) => void
+  onError: (message: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [currentAmount, setCurrentAmount] = useState("")
+  const [issueDate, setIssueDate] = useState("")
+  const [dueDate, setDueDate] = useState("")
+  const [notes, setNotes] = useState("")
+  const queryClient = useQueryClient()
+  const dueDateLimits = dueDateRange(
+    obligation.period.year,
+    obligation.period.month,
+  )
+  const originalCurrentAmount = obligation.current_amount?.toString() ?? ""
+  const originalIssueDate = obligation.issue_date ?? ""
+  const originalDueDate = obligation.due_date ?? ""
+  const originalNotes = obligation.notes ?? ""
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    setCurrentAmount(originalCurrentAmount)
+    setIssueDate(originalIssueDate)
+    setDueDate(originalDueDate)
+    setNotes(originalNotes)
+  }, [
+    open,
+    originalCurrentAmount,
+    originalDueDate,
+    originalIssueDate,
+    originalNotes,
+  ])
+
+  const dueDateOutOfRange =
+    dueDate !== "" &&
+    (dueDate < dueDateLimits.min || dueDate > dueDateLimits.max)
+  const issueDateAfterDueDate =
+    issueDate !== "" && dueDate !== "" && issueDate > dueDate
+  const hasChanges =
+    currentAmount !== originalCurrentAmount ||
+    issueDate !== originalIssueDate ||
+    dueDate !== originalDueDate ||
+    notes !== originalNotes
+  const mutation = useMutation({
+    mutationFn: () => {
+      const requestBody: {
+        current_amount?: string | null
+        issue_date?: string | null
+        due_date?: string | null
+        notes?: string | null
+      } = {}
+      if (currentAmount !== originalCurrentAmount) {
+        requestBody.current_amount = currentAmount || null
+      }
+      if (issueDate !== originalIssueDate) {
+        requestBody.issue_date = issueDate || null
+      }
+      if (dueDate !== originalDueDate) {
+        requestBody.due_date = dueDate || null
+      }
+      if (notes !== originalNotes) {
+        requestBody.notes = notes || null
+      }
+      return ObligationsService.updateObligation({
+        ledgerId,
+        obligationKey: obligation.key,
+        requestBody,
+      })
+    },
+    onError: handleError.bind(onError),
+    onSuccess: () => {
+      onSuccess("Obligation updated")
+      setOpen(false)
+      void queryClient.invalidateQueries({
+        queryKey: ["obligation", ledgerId, obligation.key],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["obligations", ledgerId],
+      })
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Pencil />
+          Edit
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit obligation</DialogTitle>
+          <DialogDescription>
+            Update manually entered values and notes.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="edit-obligation-current-amount">
+                Current amount
+              </Label>
+              <div className="relative">
+                <Input
+                  id="edit-obligation-current-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className="pr-14 text-right tabular-nums"
+                  value={currentAmount}
+                  onChange={(event) => setCurrentAmount(event.target.value)}
+                />
+                <span className="text-muted-foreground pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium">
+                  {obligation.currency ?? "—"}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-obligation-issue-date">Issue date</Label>
+              <Input
+                id="edit-obligation-issue-date"
+                type="date"
+                max={dueDate || undefined}
+                value={issueDate}
+                onChange={(event) => setIssueDate(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-obligation-due-date">Due date</Label>
+              <Input
+                id="edit-obligation-due-date"
+                type="date"
+                min={
+                  issueDate && issueDate > dueDateLimits.min
+                    ? issueDate
+                    : dueDateLimits.min
+                }
+                max={dueDateLimits.max}
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+              />
+              <p className="text-muted-foreground text-xs">
+                Between {dueDateLimits.min} and {dueDateLimits.max}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-obligation-notes">Notes</Label>
+            <textarea
+              id="edit-obligation-notes"
+              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:bg-input/30 flex min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </div>
+          <LoadingButton
+            className="w-full"
+            loading={mutation.isPending}
+            disabled={!hasChanges || dueDateOutOfRange || issueDateAfterDueDate}
+            onClick={() => mutation.mutate()}
+          >
+            Save changes
+          </LoadingButton>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

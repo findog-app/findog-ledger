@@ -188,6 +188,116 @@ def test_create_obligation_with_incomplete_data_marks_values_as_estimated(
     assert created["due_date_source"] == CurrentValueSource.UNKNOWN.value
 
 
+def test_update_obligation_overrides_confirmed_values_and_updates_notes(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    create_response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "data_ready": True,
+            "current_amount": "100.00",
+            "issue_date": "2026-08-02",
+            "due_date": "2026-08-20",
+            "notes": "Initial notes",
+        },
+    )
+    assert create_response.status_code == 200
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ELEC-2026-08",
+        headers=headers,
+        json={
+            "current_amount": "125.50",
+            "issue_date": "2026-08-03",
+            "due_date": "2026-08-21",
+            "notes": "Corrected manually",
+        },
+    )
+
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated["current_amount"] == "125.50"
+    assert updated["amount_state"] == ValueState.OVERRIDDEN.value
+    assert updated["amount_source"] == CurrentValueSource.MANUAL.value
+    assert updated["issue_date"] == "2026-08-03"
+    assert updated["issue_date_state"] == ValueState.OVERRIDDEN.value
+    assert updated["issue_date_source"] == CurrentValueSource.MANUAL.value
+    assert updated["due_date"] == "2026-08-21"
+    assert updated["due_date_state"] == ValueState.OVERRIDDEN.value
+    assert updated["due_date_source"] == CurrentValueSource.MANUAL.value
+    assert updated["notes"] == "Corrected manually"
+
+
+def test_update_obligation_validates_resulting_dates_and_allows_clearing_values(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    create_response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "issue_date": "2026-08-20",
+            "due_date": "2026-08-21",
+        },
+    )
+    assert create_response.status_code == 200
+
+    invalid_response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ELEC-2026-08",
+        headers=headers,
+        json={"due_date": "2026-08-19"},
+    )
+    assert invalid_response.status_code == 422
+    assert invalid_response.json() == {
+        "detail": "issue_date cannot be later than due_date"
+    }
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ELEC-2026-08",
+        headers=headers,
+        json={"issue_date": None},
+    )
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated["issue_date"] is None
+    assert updated["issue_date_state"] == ValueState.UNKNOWN.value
+    assert updated["issue_date_source"] == CurrentValueSource.UNKNOWN.value
+
+
 def test_create_ready_obligation_requires_amount_and_due_date(
     client: TestClient, db: Session
 ) -> None:

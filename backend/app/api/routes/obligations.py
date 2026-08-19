@@ -14,6 +14,7 @@ from app.schemas import (
     ObligationPeriodPublic,
     ObligationPublic,
     ObligationsPublic,
+    ObligationUpdate,
 )
 from app.use_cases import obligations as obligation_use_cases
 from app.use_cases.exceptions import (
@@ -110,6 +111,37 @@ def create_obligation(
         )
     except DuplicateObligationError:
         raise HTTPException(status_code=409, detail="Obligation already exists")
+
+    return _to_obligation_public(obligation)
+
+
+@router.patch(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}",
+    response_model=ObligationPublic,
+)
+def update_obligation(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    obligation_in: ObligationUpdate,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        key = ObligationKey.parse(obligation_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid obligation key") from exc
+
+    try:
+        obligation = obligation_use_cases.update_manual_obligation(
+            session=session,
+            ledger_id=ledger.id,
+            key=key,
+            **obligation_in.model_dump(exclude_unset=True),
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return _to_obligation_public(obligation)
 

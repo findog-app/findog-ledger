@@ -25,6 +25,7 @@ from app.schemas.obligations import (
     ObligationPeriodPublic,
     ObligationPublic,
     ObligationsPublic,
+    ObligationUpdate,
 )
 from app.schemas.users import (
     UpdatePassword,
@@ -61,6 +62,7 @@ __all__ = [
     "ObligationCreate",
     "ObligationPeriodPublic",
     "ObligationPublic",
+    "ObligationUpdate",
     "ObligationsPublic",
     "UpdatePassword",
     "UserCreate",

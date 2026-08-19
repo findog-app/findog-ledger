@@ -49,6 +49,15 @@ class ObligationCreate(BaseModel):
         return self
 
 
+class ObligationUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_amount: Decimal | None = Field(default=None, ge=0)
+    issue_date: date | None = None
+    due_date: date | None = None
+    notes: str | None = None
+
+
 class ObligationPeriodPublic(BillingPeriodInput):
     pass
 

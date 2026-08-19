@@ -202,6 +202,13 @@ export type ObligationsPublic = {
     count: number;
 };
 
+export type ObligationUpdate = {
+    current_amount?: (number | string | null);
+    issue_date?: (string | null);
+    due_date?: (string | null);
+    notes?: (string | null);
+};
+
 export type RecurrenceUnit = 'month' | 'year';
 
 export type Token = {
@@ -413,6 +420,14 @@ export type ObligationsCreateObligationData = {
 };
 
 export type ObligationsCreateObligationResponse = (ObligationPublic);
+
+export type ObligationsUpdateObligationData = {
+    ledgerId: string;
+    obligationKey: string;
+    requestBody: ObligationUpdate;
+};
+
+export type ObligationsUpdateObligationResponse = (ObligationPublic);
 
 export type ObligationsReadObligationData = {
     ledgerId: string;

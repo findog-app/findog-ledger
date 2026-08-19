@@ -1015,6 +1015,65 @@ export const ObligationPublicSchema = {
     title: 'ObligationPublic'
 } as const;
 
+export const ObligationUpdateSchema = {
+    properties: {
+        current_amount: {
+            anyOf: [
+                {
+                    type: 'number',
+                    minimum: 0
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Amount'
+        },
+        issue_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Issue Date'
+        },
+        due_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Date'
+        },
+        notes: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Notes'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    title: 'ObligationUpdate'
+} as const;
+
 export const ObligationsPublicSchema = {
     properties: {
         data: {
