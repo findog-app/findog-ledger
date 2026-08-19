@@ -21,6 +21,7 @@ from app.schemas.ledgers import (
 )
 from app.schemas.obligations import (
     BillingPeriodInput,
+    EnsuredObligationsPublic,
     ObligationCreate,
     ObligationPeriodPublic,
     ObligationPublic,
@@ -59,6 +60,7 @@ __all__ = [
     "LedgerUpdate",
     "LedgersPublic",
     "BillingPeriodInput",
+    "EnsuredObligationsPublic",
     "ObligationCreate",
     "ObligationPeriodPublic",
     "ObligationPublic",

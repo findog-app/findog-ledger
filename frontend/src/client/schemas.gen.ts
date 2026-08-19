@@ -518,6 +518,25 @@ export const EffectiveValueSourceModeSchema = {
     title: 'EffectiveValueSourceMode'
 } as const;
 
+export const EnsuredObligationsPublicSchema = {
+    properties: {
+        created_keys: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Created Keys'
+        },
+        created_count: {
+            type: 'integer',
+            title: 'Created Count'
+        }
+    },
+    type: 'object',
+    required: ['created_keys', 'created_count'],
+    title: 'EnsuredObligationsPublic'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {

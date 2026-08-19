@@ -101,6 +101,12 @@ def delete_all_categories(*, session: Session, ledger_id: uuid.UUID) -> None:
     session.commit()
 
 
+def delete_all_obligations(*, session: Session, ledger_id: uuid.UUID) -> None:
+    _require_ledger(session=session, ledger_id=ledger_id)
+    session.execute(delete(Obligation).where(Obligation.ledger_id == ledger_id))
+    session.commit()
+
+
 def share_ledger(
     *,
     session: Session,

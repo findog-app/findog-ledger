@@ -92,3 +92,8 @@ class ObligationPublic(BaseModel):
 class ObligationsPublic(BaseModel):
     data: list[ObligationPublic]
     count: int
+
+
+class EnsuredObligationsPublic(BaseModel):
+    created_keys: list[str]
+    created_count: int

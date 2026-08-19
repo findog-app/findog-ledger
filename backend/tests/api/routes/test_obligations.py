@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -6,7 +8,9 @@ from app.domain import (
     BillingPeriod,
     CurrentValueSource,
     DataSourcePolicy,
+    LedgerAccessRole,
     ObligationLifecycle,
+    RecurrenceUnit,
     ValueState,
 )
 from app.use_cases import categories as category_use_cases
@@ -14,6 +18,121 @@ from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases import obligations as obligation_use_cases
 from tests.utils.user import authentication_token_from_email, create_random_user
 from tests.utils.utils import random_lower_string
+
+
+def test_ensure_obligations_creates_current_and_next_period_for_active_categories(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+        recurrence_interval=1,
+        recurrence_unit=RecurrenceUnit.MONTH,
+        recurrence_anchor=date(2026, 3, 1),
+    )
+    inactive_category = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Inactive electricity",
+        code="INAC",
+        recurrence_interval=1,
+        recurrence_unit=RecurrenceUnit.MONTH,
+        recurrence_anchor=date(2026, 3, 1),
+    )
+    inactive_category.is_active = False
+    db.commit()
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ensure",
+        headers=headers,
+        params={"year": 2026, "month": 3},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "created_keys": ["ELEC-2026-03", "ELEC-2026-04"],
+        "created_count": 2,
+    }
+    current_response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        params={"year": 2026, "month": 3},
+    )
+    next_response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        params={"year": 2026, "month": 4},
+    )
+    assert current_response.json()["data"][0]["lifecycle"] == "collecting_data"
+    assert next_response.json()["data"][0]["lifecycle"] == "draft"
+
+
+def test_ensure_obligations_is_idempotent(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Gas",
+        code="GASS",
+        recurrence_interval=1,
+        recurrence_unit=RecurrenceUnit.MONTH,
+        recurrence_anchor=date(2026, 3, 1),
+    )
+    url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ensure"
+
+    first = client.post(url, headers=headers, params={"year": 2026, "month": 3})
+    second = client.post(url, headers=headers, params={"year": 2026, "month": 3})
+
+    assert first.status_code == 200
+    assert first.json()["created_count"] == 2
+    assert second.status_code == 200
+    assert second.json() == {"created_keys": [], "created_count": 0}
+
+
+def test_ensure_obligations_rejects_viewer(client: TestClient, db: Session) -> None:
+    owner = create_random_user(db)
+    viewer = create_random_user(db)
+    viewer_headers = authentication_token_from_email(
+        client=client, email=viewer.email, db=db
+    )
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    ledger_use_cases.share_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        target_user_id=viewer.id,
+        role=LedgerAccessRole.VIEWER,
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ensure",
+        headers=viewer_headers,
+        params={"year": 2026, "month": 3},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Ledger not found"}
 
 
 def test_obligations_endpoints_happy_path_and_filters(

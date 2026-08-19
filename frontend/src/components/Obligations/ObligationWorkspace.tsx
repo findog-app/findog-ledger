@@ -139,6 +139,16 @@ function parseMonthInput(value: string) {
   return { year: String(year), month: String(month) }
 }
 
+function canMarkObligationReady(obligation: ObligationPublic) {
+  return (
+    obligation.lifecycle === "collecting_data" &&
+    obligation.current_amount !== null &&
+    obligation.due_date !== null &&
+    obligation.amount_state !== "unknown" &&
+    obligation.due_date_state !== "unknown"
+  )
+}
+
 export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const period = currentPeriod()
   const [year, setYear] = useState(String(period.year))
@@ -344,14 +354,26 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                     </Badge>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingObligation(selected.data)}
-                >
-                  <Pencil />
-                  Edit
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  {canMarkObligationReady(selected.data) ? (
+                    <Button
+                      size="sm"
+                      disabled={markReady.isPending}
+                      onClick={() => markReady.mutate(selected.data)}
+                    >
+                      <CircleCheck />
+                      Mark as ready
+                    </Button>
+                  ) : null}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingObligation(selected.data)}
+                  >
+                    <Pencil />
+                    Edit
+                  </Button>
+                </div>
                 {selected.data.notes ? (
                   <div className="space-y-1">
                     <p className="text-muted-foreground font-medium">Notes</p>
@@ -467,12 +489,7 @@ function ObligationTile({
       ? `${obligation.current_amount} ${obligation.currency ?? ""}`.trim()
       : "Amount unknown"
   const dueDateStatus = businessDaysUntil(obligation.due_date)
-  const canMarkReady =
-    obligation.lifecycle === "collecting_data" &&
-    obligation.current_amount !== null &&
-    obligation.due_date !== null &&
-    obligation.amount_state !== "unknown" &&
-    obligation.due_date_state !== "unknown"
+  const canMarkReady = canMarkObligationReady(obligation)
 
   return (
     <div className="group rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">

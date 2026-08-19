@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,6 +11,7 @@ from app.api.deps import (
 from app.domain import BillingPeriod, ObligationKey, ObligationLifecycle
 from app.models import Ledger, Obligation
 from app.schemas import (
+    EnsuredObligationsPublic,
     ObligationCreate,
     ObligationPeriodPublic,
     ObligationPublic,
@@ -54,6 +56,33 @@ def _to_obligation_public(obligation: Obligation) -> ObligationPublic:
         currency=obligation.currency,
         created_at=obligation.created_at,
         updated_at=obligation.updated_at,
+    )
+
+
+@router.post(
+    "/ledgers/{ledger_id}/obligations/ensure",
+    response_model=EnsuredObligationsPublic,
+)
+def ensure_obligations(
+    *,
+    session: SessionDep,
+    year: int | None = Query(default=None, ge=1, le=9999),
+    month: int | None = Query(default=None, ge=1, le=12),
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    today = date.today()
+    period = BillingPeriod(
+        year=year if year is not None else today.year,
+        month=month if month is not None else today.month,
+    )
+    created = obligation_use_cases.ensure_obligations_for_period(
+        session=session,
+        ledger_id=ledger.id,
+        period=period,
+    )
+    return EnsuredObligationsPublic(
+        created_keys=[obligation.business_key for obligation in created],
+        created_count=len(created),
     )
 
 

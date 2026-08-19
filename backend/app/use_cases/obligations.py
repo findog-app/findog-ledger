@@ -186,13 +186,9 @@ def create_manual_obligation(
     )
     obligation.current_amount = current_amount
     obligation.issue_date = issue_date
-    obligation.due_date = due_date
+    if due_date is not None:
+        obligation.due_date = due_date
     obligation.notes = notes
-    obligation.effective_value_source = (
-        EffectiveValueSourceMode.MANUAL
-        if any(value is not None for value in (current_amount, issue_date, due_date))
-        else EffectiveValueSourceMode.UNKNOWN
-    )
     value_state = ValueState.CONFIRMED if data_ready else ValueState.ESTIMATED
     if current_amount is not None:
         obligation.amount_state = value_state
@@ -203,6 +199,8 @@ def create_manual_obligation(
     if due_date is not None:
         obligation.due_date_state = value_state
         obligation.due_date_source = CurrentValueSource.MANUAL
+
+    _update_effective_value_source(obligation)
 
     session.commit()
     session.refresh(obligation)

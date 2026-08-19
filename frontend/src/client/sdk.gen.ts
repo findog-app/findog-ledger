@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesUpdateCategoryData, CategoriesUpdateCategoryResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersUpdateLedgerData, LedgersUpdateLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LedgersDeleteAllCategoriesData, LedgersDeleteAllCategoriesResponse, LedgersUpdateLedgerMemberData, LedgersUpdateLedgerMemberResponse, LedgersRemoveLedgerMemberData, LedgersRemoveLedgerMemberResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ObligationsReadObligationsData, ObligationsReadObligationsResponse, ObligationsCreateObligationData, ObligationsCreateObligationResponse, ObligationsUpdateObligationData, ObligationsUpdateObligationResponse, ObligationsReadObligationData, ObligationsReadObligationResponse, ObligationsMarkObligationReadyData, ObligationsMarkObligationReadyResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesUpdateCategoryData, CategoriesUpdateCategoryResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersUpdateLedgerData, LedgersUpdateLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LedgersDeleteAllCategoriesData, LedgersDeleteAllCategoriesResponse, LedgersDeleteAllObligationsData, LedgersDeleteAllObligationsResponse, LedgersUpdateLedgerMemberData, LedgersUpdateLedgerMemberResponse, LedgersRemoveLedgerMemberData, LedgersRemoveLedgerMemberResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ObligationsReadObligationsData, ObligationsReadObligationsResponse, ObligationsCreateObligationData, ObligationsCreateObligationResponse, ObligationsEnsureObligationsData, ObligationsEnsureObligationsResponse, ObligationsUpdateObligationData, ObligationsUpdateObligationResponse, ObligationsReadObligationData, ObligationsReadObligationResponse, ObligationsMarkObligationReadyData, ObligationsMarkObligationReadyResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class CategoriesService {
     /**
@@ -336,6 +336,26 @@ export class LedgersService {
     }
     
     /**
+     * Delete All Obligations
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteAllObligations(data: LedgersDeleteAllObligationsData): CancelablePromise<LedgersDeleteAllObligationsResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/ledgers/{ledger_id}/obligations',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
      * Update Ledger Member
      * @param data The data for the request.
      * @param data.userId
@@ -534,6 +554,32 @@ export class ObligationsService {
         });
     }
     
+    /**
+     * Ensure Obligations
+     * @param data The data for the request.
+     * @param data.ledgerId
+     * @param data.year
+     * @param data.month
+     * @returns EnsuredObligationsPublic Successful Response
+     * @throws ApiError
+     */
+    public static ensureObligations(data: ObligationsEnsureObligationsData): CancelablePromise<ObligationsEnsureObligationsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ledgers/{ledger_id}/obligations/ensure',
+            path: {
+                ledger_id: data.ledgerId
+            },
+            query: {
+                year: data.year,
+                month: data.month
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
     /**
      * Update Obligation
      * @param data The data for the request.

@@ -92,6 +92,11 @@ export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
 
 export type EffectiveValueSourceMode = 'unknown' | 'automatic' | 'manual' | 'mixed';
 
+export type EnsuredObligationsPublic = {
+    created_keys: Array<(string)>;
+    created_count: number;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -363,6 +368,12 @@ export type LedgersDeleteAllCategoriesData = {
 
 export type LedgersDeleteAllCategoriesResponse = (Message);
 
+export type LedgersDeleteAllObligationsData = {
+    ledgerId: string;
+};
+
+export type LedgersDeleteAllObligationsResponse = (Message);
+
 export type LedgersUpdateLedgerMemberData = {
     ledgerId: string;
     requestBody: LedgerMemberUpdate;
@@ -420,6 +431,14 @@ export type ObligationsCreateObligationData = {
 };
 
 export type ObligationsCreateObligationResponse = (ObligationPublic);
+
+export type ObligationsEnsureObligationsData = {
+    ledgerId: string;
+    month?: (number | null);
+    year?: (number | null);
+};
+
+export type ObligationsEnsureObligationsResponse = (EnsuredObligationsPublic);
 
 export type ObligationsUpdateObligationData = {
     ledgerId: string;

@@ -9,7 +9,7 @@ from app.use_cases import obligations as obligation_use_cases
 from tests.utils.ledger_domain import create_category_with_recurrence
 
 
-def test_ensure_obligations_for_period_creates_current_and_next_drafts(
+def test_ensure_obligations_for_period_creates_current_and_next_periods(
     db: Session,
 ) -> None:
     ledger, _, category = create_category_with_recurrence(db)
@@ -18,6 +18,12 @@ def test_ensure_obligations_for_period_creates_current_and_next_drafts(
     )
     assert len(created) == 2
     assert all(item.category_id == category.id for item in created)
+    assert {
+        (item.period_year, item.period_month): item.lifecycle for item in created
+    } == {
+        (2026, 3): ObligationLifecycle.COLLECTING_DATA,
+        (2026, 4): ObligationLifecycle.DRAFT,
+    }
 
 
 def test_list_obligations_for_period_filters_by_category_id(db: Session) -> None:
@@ -71,7 +77,9 @@ def test_manual_update_moves_draft_obligation_to_collecting_data(db: Session) ->
     created = obligation_use_cases.ensure_obligations_for_period(
         session=db, ledger_id=ledger.id, period=period
     )
-    draft = next(item for item in created if item.period_year == period.year)
+    draft = next(
+        item for item in created if item.lifecycle is ObligationLifecycle.DRAFT
+    )
 
     updated = obligation_use_cases.update_manual_obligation(
         session=db,

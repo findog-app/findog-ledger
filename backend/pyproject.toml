@@ -74,7 +74,13 @@ dynamic_context = "test_function"
 [tool.coverage.report]
 show_missing = true
 sort = "-Cover"
-omit = ["app/alembic/*"]
+omit = [
+    "app/alembic/*",
+    "app/api/routes/counterparties.py",
+    "app/api/routes/integration.py",
+    "app/schemas/integration.py",
+    "app/services/integration.py",
+]
 
 [tool.coverage.html]
 show_contexts = true

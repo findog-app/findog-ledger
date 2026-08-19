@@ -6,9 +6,11 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain import LedgerAccessRole
-from app.models import LedgerMembership
+from app.domain import BillingPeriod, LedgerAccessRole
+from app.models import LedgerMembership, Obligation
+from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
+from app.use_cases import obligations as obligation_use_cases
 from app.use_cases.exceptions import (
     LedgerAccessConflictError,
     LedgerNotFoundError,
@@ -102,6 +104,36 @@ def test_delete_all_categories_succeeds_for_empty_ledger(db: Session) -> None:
     )
 
     ledger_use_cases.delete_all_categories(session=db, ledger_id=ledger.id)
+
+
+def test_delete_all_obligations_removes_ledger_obligations(db: Session) -> None:
+    owner = create_random_user(db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="Ledger"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="Group"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    obligation_use_cases.create_manual_obligation(
+        session=db,
+        ledger_id=ledger.id,
+        category_code="ELEC",
+        period=BillingPeriod(2026, 3),
+    )
+
+    ledger_use_cases.delete_all_obligations(session=db, ledger_id=ledger.id)
+
+    assert (
+        db.scalar(select(Obligation.id).where(Obligation.ledger_id == ledger.id))
+        is None
+    )
 
 
 def test_share_ledger_updates_existing_membership_role(db: Session) -> None:
