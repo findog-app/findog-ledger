@@ -133,6 +133,8 @@ def create_manual_obligation(
     issue_date: date | None = None,
     due_date: date | None = None,
 ) -> Obligation:
+    if current_amount is not None and current_amount < 0:
+        raise ValueError("current_amount must be greater than or equal to zero")
     if data_ready and (current_amount is None or due_date is None):
         raise ValueError(
             "current_amount and due_date are required when data_ready is true"

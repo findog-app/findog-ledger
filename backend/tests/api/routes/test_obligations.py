@@ -228,6 +228,56 @@ def test_create_obligation_rejects_duplicate(client: TestClient, db: Session) ->
     assert response.json() == {"detail": "Obligation already exists"}
 
 
+def test_create_obligation_rejects_negative_current_amount(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        json={
+            "category_code": "ELEC",
+            "period": {"year": 2026, "month": 8},
+            "current_amount": "-1.00",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_read_obligations_rejects_invalid_period_filters(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        params={"year": 0, "month": 13},
+    )
+
+    assert response.status_code == 422
+
+
 def test_create_obligation_rejects_automatic_category(
     client: TestClient, db: Session
 ) -> None:

@@ -23,7 +23,7 @@ class ObligationCreate(BaseModel):
     category_code: str = Field(pattern=r"^[A-Z]{4}$")
     period: BillingPeriodInput
     data_ready: bool = False
-    current_amount: Decimal | None = None
+    current_amount: Decimal | None = Field(default=None, ge=0)
     issue_date: date | None = None
     due_date: date | None = None
 

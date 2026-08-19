@@ -1,3 +1,7 @@
+import uuid
+from decimal import Decimal
+
+import pytest
 from sqlalchemy.orm import Session
 
 from app.domain import BillingPeriod, ObligationLifecycle
@@ -48,3 +52,14 @@ def test_list_obligations_for_period_filters_by_lifecycle(db: Session) -> None:
         lifecycle=ObligationLifecycle.READY,
     )
     assert len(obligations) == 1
+
+
+def test_create_manual_obligation_rejects_negative_current_amount(db: Session) -> None:
+    with pytest.raises(ValueError, match="current_amount"):
+        obligation_use_cases.create_manual_obligation(
+            session=db,
+            ledger_id=uuid.uuid4(),
+            category_code="ELEC",
+            period=BillingPeriod(2026, 8),
+            current_amount=Decimal("-1.00"),
+        )

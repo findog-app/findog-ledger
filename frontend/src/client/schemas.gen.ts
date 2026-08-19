@@ -805,7 +805,8 @@ export const ObligationCreateSchema = {
         current_amount: {
             anyOf: [
                 {
-                    type: 'number'
+                    type: 'number',
+                    minimum: 0
                 },
                 {
                     type: 'string',

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import {
   CategoriesService,
@@ -79,6 +79,17 @@ function dueDateRange(year: number, month: number) {
   }
 }
 
+function isValidPeriod(year: number, month: number) {
+  return (
+    Number.isInteger(year) &&
+    year >= 1 &&
+    year <= 9999 &&
+    Number.isInteger(month) &&
+    month >= 1 &&
+    month <= 12
+  )
+}
+
 export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const period = currentPeriod()
   const [year, setYear] = useState(String(period.year))
@@ -87,16 +98,20 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const [lifecycle, setLifecycle] = useState<ObligationLifecycle | "">("")
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const { showErrorToast, showSuccessToast } = useCustomToast()
+  const filterYear = Number(year)
+  const filterMonth = Number(month)
+  const hasValidPeriodFilter = isValidPeriod(filterYear, filterMonth)
 
   const obligations = useQuery({
     queryFn: () =>
       ObligationsService.readObligations({
         ledgerId,
-        year: year ? Number(year) : undefined,
-        month: month ? Number(month) : undefined,
+        year: filterYear,
+        month: filterMonth,
         categoryCode: categoryCode || undefined,
         lifecycle: lifecycle || undefined,
       }),
+    enabled: hasValidPeriodFilter,
     queryKey: ["obligations", ledgerId, year, month, categoryCode, lifecycle],
   })
   const selected = useQuery({
@@ -120,7 +135,11 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
         </div>
         <CreateObligationDialog
           ledgerId={ledgerId}
-          defaultPeriod={{ year: Number(year), month: Number(month) }}
+          defaultPeriod={
+            hasValidPeriodFilter
+              ? { year: filterYear, month: filterMonth }
+              : period
+          }
           onError={showErrorToast}
           onSuccess={showSuccessToast}
         />
@@ -168,29 +187,52 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
             ))}
           </select>
         </div>
-        {obligations.isLoading ? (
+        {!hasValidPeriodFilter ? (
+          <p className="text-sm text-muted-foreground">
+            Enter a valid year and month to load obligations.
+          </p>
+        ) : null}
+        {hasValidPeriodFilter && obligations.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading obligations…</p>
         ) : null}
-        {obligations.data?.data.length === 0 ? (
+        {hasValidPeriodFilter && obligations.isError ? (
+          <div className="flex items-center gap-3 text-sm text-destructive">
+            <span>Unable to load obligations.</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void obligations.refetch()}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : null}
+        {hasValidPeriodFilter &&
+        !obligations.isError &&
+        obligations.data?.data.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No obligations match these filters.
           </p>
         ) : null}
         <div className="space-y-2">
-          {obligations.data?.data.map((obligation) => (
-            <button
-              key={obligation.key}
-              type="button"
-              className="flex w-full items-center justify-between rounded-md border p-3 text-left hover:bg-muted/50"
-              onClick={() => setSelectedKey(obligation.key)}
-            >
-              <span>
-                <strong>{obligation.name}</strong>{" "}
-                <span className="text-muted-foreground">{obligation.key}</span>
-              </span>
-              <Badge variant="secondary">{obligation.lifecycle}</Badge>
-            </button>
-          ))}
+          {!obligations.isError
+            ? obligations.data?.data.map((obligation) => (
+                <button
+                  key={obligation.key}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-md border p-3 text-left hover:bg-muted/50"
+                  onClick={() => setSelectedKey(obligation.key)}
+                >
+                  <span>
+                    <strong>{obligation.name}</strong>{" "}
+                    <span className="text-muted-foreground">
+                      {obligation.key}
+                    </span>
+                  </span>
+                  <Badge variant="secondary">{obligation.lifecycle}</Badge>
+                </button>
+              ))
+            : null}
         </div>
         <Dialog
           open={selectedKey !== null}
@@ -327,6 +369,13 @@ function CreateObligationDialog({
   const [currentAmount, setCurrentAmount] = useState("")
   const [issueDate, setIssueDate] = useState("")
   const [dueDate, setDueDate] = useState("")
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    setYear(String(defaultPeriod.year))
+    setMonth(String(defaultPeriod.month))
+  }, [defaultPeriod.month, defaultPeriod.year, open])
   const queryClient = useQueryClient()
   const categories = useQuery({
     queryFn: () => CategoriesService.readCategories({ ledgerId }),
