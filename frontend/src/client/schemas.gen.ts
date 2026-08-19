@@ -841,6 +841,17 @@ export const ObligationCreateSchema = {
                 }
             ],
             title: 'Due Date'
+        },
+        notes: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Notes'
         }
     },
     type: 'object',

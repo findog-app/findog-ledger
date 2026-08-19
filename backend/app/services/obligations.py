@@ -36,7 +36,6 @@ def get_or_create_obligation(
     obligation = Obligation(
         ledger_id=category.ledger_id,
         category_id=category.id,
-        name=category.name,
         lifecycle=ObligationLifecycle.DRAFT,
         period_year=period.year,
         period_month=period.month,

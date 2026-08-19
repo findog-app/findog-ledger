@@ -27,7 +27,7 @@ def test_obligations_endpoints_happy_path_and_filters(
     category_group = category_use_cases.create_category_group(
         session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
     )
-    category_use_cases.create_category(
+    category = category_use_cases.create_category(
         session=db,
         ledger_id=ledger.id,
         category_group_id=category_group.id,
@@ -45,6 +45,7 @@ def test_obligations_endpoints_happy_path_and_filters(
             "current_amount": "123.45",
             "issue_date": "2026-08-02",
             "due_date": "2026-08-20",
+            "notes": "Created manually",
         },
     )
 
@@ -60,6 +61,7 @@ def test_obligations_endpoints_happy_path_and_filters(
     assert created["issue_date"] == "2026-08-02"
     assert created["issue_date_state"] == ValueState.CONFIRMED.value
     assert created["issue_date_source"] == CurrentValueSource.MANUAL.value
+    assert created["notes"] == "Created manually"
     assert created["due_date"] == "2026-08-20"
     assert created["due_date_state"] == ValueState.CONFIRMED.value
     assert created["due_date_source"] == CurrentValueSource.MANUAL.value
@@ -86,6 +88,62 @@ def test_obligations_endpoints_happy_path_and_filters(
 
     assert detail_response.status_code == 200
     assert detail_response.json()["id"] == created["id"]
+
+    category.name = "Updated electricity"
+    db.commit()
+
+    detail_response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ELEC-2026-08",
+        headers=headers,
+    )
+
+    assert detail_response.status_code == 200
+    assert detail_response.json()["name"] == "Updated electricity"
+
+    list_response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+        params={"year": 2026, "month": 8},
+    )
+
+    assert list_response.status_code == 200
+    assert list_response.json()["data"][0]["name"] == "Updated electricity"
+
+
+def test_read_obligations_without_period_filter_returns_all_periods(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name=f"group-{random_lower_string()}"
+    )
+    category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+
+    for month in (8, 9):
+        response = client.post(
+            f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+            headers=headers,
+            json={"category_code": "ELEC", "period": {"year": 2026, "month": month}},
+        )
+        assert response.status_code == 200
+
+    response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["count"] == 2
 
 
 def test_create_obligation_with_incomplete_data_marks_values_as_estimated(

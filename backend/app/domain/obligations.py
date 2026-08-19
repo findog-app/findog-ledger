@@ -121,7 +121,7 @@ class Obligation:
     category_id: uuid.UUID
     category_code: str
     period: BillingPeriod
-    name: str
+    notes: str | None
     lifecycle: ObligationLifecycle
     effective_value_source: EffectiveValueSourceMode
     current_amount: Decimal | None

@@ -90,29 +90,56 @@ function isValidPeriod(year: number, month: number) {
   )
 }
 
+function monthInputValue(year: string, month: string) {
+  const parsedYear = Number(year)
+  const parsedMonth = Number(month)
+  if (!isValidPeriod(parsedYear, parsedMonth)) {
+    return ""
+  }
+  return `${String(parsedYear).padStart(4, "0")}-${String(parsedMonth).padStart(2, "0")}`
+}
+
+function parseMonthInput(value: string) {
+  const [year, month] = value.split("-").map(Number)
+  if (!isValidPeriod(year, month)) {
+    return null
+  }
+  return { year: String(year), month: String(month) }
+}
+
 export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const period = currentPeriod()
   const [year, setYear] = useState(String(period.year))
   const [month, setMonth] = useState(String(period.month))
+  const [filterByPeriod, setFilterByPeriod] = useState(true)
   const [categoryCode, setCategoryCode] = useState("")
   const [lifecycle, setLifecycle] = useState<ObligationLifecycle | "">("")
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const { showErrorToast, showSuccessToast } = useCustomToast()
   const filterYear = Number(year)
   const filterMonth = Number(month)
-  const hasValidPeriodFilter = isValidPeriod(filterYear, filterMonth)
+  const hasValidPeriodFilter =
+    !filterByPeriod || isValidPeriod(filterYear, filterMonth)
 
   const obligations = useQuery({
     queryFn: () =>
       ObligationsService.readObligations({
         ledgerId,
-        year: filterYear,
-        month: filterMonth,
+        year: filterByPeriod ? filterYear : undefined,
+        month: filterByPeriod ? filterMonth : undefined,
         categoryCode: categoryCode || undefined,
         lifecycle: lifecycle || undefined,
       }),
     enabled: hasValidPeriodFilter,
-    queryKey: ["obligations", ledgerId, year, month, categoryCode, lifecycle],
+    queryKey: [
+      "obligations",
+      ledgerId,
+      filterByPeriod,
+      year,
+      month,
+      categoryCode,
+      lifecycle,
+    ],
   })
   const selected = useQuery({
     enabled: selectedKey !== null,
@@ -136,7 +163,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
         <CreateObligationDialog
           ledgerId={ledgerId}
           defaultPeriod={
-            hasValidPeriodFilter
+            filterByPeriod && hasValidPeriodFilter
               ? { year: filterYear, month: filterMonth }
               : period
           }
@@ -145,20 +172,17 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
         />
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Input
-            aria-label="Year"
-            type="number"
-            value={year}
-            onChange={(event) => setYear(event.target.value)}
-          />
-          <Input
-            aria-label="Month"
-            type="number"
-            min="1"
-            max="12"
-            value={month}
-            onChange={(event) => setMonth(event.target.value)}
+            aria-label="Billing period"
+            type="month"
+            disabled={!filterByPeriod}
+            value={monthInputValue(year, month)}
+            onChange={(event) => {
+              const selectedPeriod = parseMonthInput(event.target.value)
+              setYear(selectedPeriod?.year ?? "")
+              setMonth(selectedPeriod?.month ?? "")
+            }}
           />
           <Input
             aria-label="Category code"
@@ -187,7 +211,15 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
             ))}
           </select>
         </div>
-        {!hasValidPeriodFilter ? (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="obligation-filter-by-period"
+            checked={filterByPeriod}
+            onCheckedChange={(checked) => setFilterByPeriod(checked === true)}
+          />
+          <Label htmlFor="obligation-filter-by-period">Filter by period</Label>
+        </div>
+        {filterByPeriod && !hasValidPeriodFilter ? (
           <p className="text-sm text-muted-foreground">
             Enter a valid year and month to load obligations.
           </p>
@@ -266,6 +298,12 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                     </Badge>
                   </div>
                 </div>
+                {selected.data.notes ? (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground font-medium">Notes</p>
+                    <p className="whitespace-pre-wrap">{selected.data.notes}</p>
+                  </div>
+                ) : null}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="text-muted-foreground border-b text-xs uppercase">
@@ -369,6 +407,7 @@ function CreateObligationDialog({
   const [currentAmount, setCurrentAmount] = useState("")
   const [issueDate, setIssueDate] = useState("")
   const [dueDate, setDueDate] = useState("")
+  const [notes, setNotes] = useState("")
   useEffect(() => {
     if (!open) {
       return
@@ -413,6 +452,7 @@ function CreateObligationDialog({
           current_amount: currentAmount || undefined,
           issue_date: issueDate || undefined,
           due_date: dueDate || undefined,
+          notes: notes || undefined,
         },
       }),
     onError: handleError.bind(onError),
@@ -462,27 +502,18 @@ function CreateObligationDialog({
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="obligation-year">Year</Label>
-              <Input
-                id="obligation-year"
-                type="number"
-                value={year}
-                onChange={(event) => setYear(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="obligation-month">Month</Label>
-              <Input
-                id="obligation-month"
-                type="number"
-                min="1"
-                max="12"
-                value={month}
-                onChange={(event) => setMonth(event.target.value)}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="obligation-period">Billing period</Label>
+            <Input
+              id="obligation-period"
+              type="month"
+              value={monthInputValue(year, month)}
+              onChange={(event) => {
+                const selectedPeriod = parseMonthInput(event.target.value)
+                setYear(selectedPeriod?.year ?? "")
+                setMonth(selectedPeriod?.month ?? "")
+              }}
+            />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -543,6 +574,15 @@ function CreateObligationDialog({
                 Between {dueDateLimits.min} and {dueDateLimits.max}
               </p>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="obligation-notes">Notes</Label>
+            <textarea
+              id="obligation-notes"
+              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:bg-input/30 flex min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+            />
           </div>
           <LoadingButton
             className="w-full"

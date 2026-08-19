@@ -64,10 +64,14 @@ def list_obligations_for_period(
 ) -> list[Obligation]:
     _require_ledger(session=session, ledger_id=ledger_id)
 
-    statement = select(Obligation).where(
-        Obligation.ledger_id == ledger_id,
-        Obligation.period_year == period.year,
-        Obligation.period_month == period.month,
+    statement = (
+        select(Obligation)
+        .join(Obligation.category)
+        .where(
+            Obligation.ledger_id == ledger_id,
+            Obligation.period_year == period.year,
+            Obligation.period_month == period.month,
+        )
     )
     if lifecycle is not None:
         statement = statement.where(Obligation.lifecycle == lifecycle)
@@ -77,7 +81,7 @@ def list_obligations_for_period(
     return list(
         session.scalars(
             statement.order_by(
-                Obligation.name.asc(),
+                Category.name.asc(),
                 Obligation.category_id.asc(),
                 Obligation.id.asc(),
             )
@@ -115,7 +119,7 @@ def list_obligations_for_ledger(
             statement.order_by(
                 Obligation.period_year.desc(),
                 Obligation.period_month.desc(),
-                Obligation.name.asc(),
+                Category.name.asc(),
                 Obligation.id.asc(),
             )
         ).all()
@@ -132,6 +136,7 @@ def create_manual_obligation(
     current_amount: Decimal | None = None,
     issue_date: date | None = None,
     due_date: date | None = None,
+    notes: str | None = None,
 ) -> Obligation:
     if current_amount is not None and current_amount < 0:
         raise ValueError("current_amount must be greater than or equal to zero")
@@ -175,6 +180,7 @@ def create_manual_obligation(
     obligation.current_amount = current_amount
     obligation.issue_date = issue_date
     obligation.due_date = due_date
+    obligation.notes = notes
     obligation.effective_value_source = (
         EffectiveValueSourceMode.MANUAL
         if any(value is not None for value in (current_amount, issue_date, due_date))

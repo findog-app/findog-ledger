@@ -26,6 +26,7 @@ class ObligationCreate(BaseModel):
     current_amount: Decimal | None = Field(default=None, ge=0)
     issue_date: date | None = None
     due_date: date | None = None
+    notes: str | None = None
 
     @model_validator(mode="after")
     def require_confirmed_values_when_data_is_ready(self) -> "ObligationCreate":

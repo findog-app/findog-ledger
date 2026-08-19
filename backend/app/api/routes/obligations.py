@@ -33,7 +33,7 @@ def _to_obligation_public(obligation: Obligation) -> ObligationPublic:
         category_id=obligation.category_id,
         category_code=obligation.category.code,
         key=obligation.business_key,
-        name=obligation.name,
+        name=obligation.category.name,
         notes=obligation.notes,
         lifecycle=obligation.lifecycle,
         period=ObligationPeriodPublic(
@@ -99,6 +99,7 @@ def create_obligation(
             current_amount=obligation_in.current_amount,
             issue_date=obligation_in.issue_date,
             due_date=obligation_in.due_date,
+            notes=obligation_in.notes,
         )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")

@@ -162,6 +162,7 @@ export type ObligationCreate = {
     current_amount?: (number | string | null);
     issue_date?: (string | null);
     due_date?: (string | null);
+    notes?: (string | null);
 };
 
 export type ObligationLifecycle = 'draft' | 'collecting_data' | 'ready' | 'paid' | 'canceled' | 'error';

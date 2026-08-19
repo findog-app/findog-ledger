@@ -63,7 +63,6 @@ class Obligation(Base):
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), nullable=False, index=True
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     lifecycle: Mapped[ObligationLifecycle] = mapped_column(nullable=False)
     period_year: Mapped[int] = mapped_column(nullable=False)
