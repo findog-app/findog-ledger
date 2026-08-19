@@ -19,6 +19,7 @@ import { Route as LayoutLedgersRouteImport } from './routes/_layout/ledgers'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutLedgersIndexRouteImport } from './routes/_layout/ledgers.index'
 import { Route as LayoutLedgersLedgerIdRouteImport } from './routes/_layout/ledgers.$ledgerId'
+import { Route as LayoutLedgersLedgerIdCategoriesRouteImport } from './routes/_layout/ledgers.$ledgerId.categories'
 import { Route as LayoutLedgersLedgerIdSettingsRouteImport } from './routes/_layout/ledgers.$ledgerId.settings'
 
 const LayoutRoute = LayoutRouteImport.update({
@@ -70,6 +71,12 @@ const LayoutLedgersLedgerIdRoute = LayoutLedgersLedgerIdRouteImport.update({
   path: '/$ledgerId',
   getParentRoute: () => LayoutLedgersRoute,
 } as any)
+const LayoutLedgersLedgerIdCategoriesRoute =
+  LayoutLedgersLedgerIdCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => LayoutLedgersLedgerIdRoute,
+  } as any)
 const LayoutLedgersLedgerIdSettingsRoute =
   LayoutLedgersLedgerIdSettingsRouteImport.update({
     id: '/settings',
@@ -87,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRoute
   '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/ledgers/': typeof LayoutLedgersIndexRoute
+  '/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
   '/': typeof LayoutIndexRoute
   '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/ledgers': typeof LayoutLedgersIndexRoute
+  '/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
 }
 export interface FileRoutesById {
@@ -112,6 +121,7 @@ export interface FileRoutesById {
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/_layout/ledgers/': typeof LayoutLedgersIndexRoute
+  '/_layout/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/_layout/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/ledgers/$ledgerId'
     | '/ledgers/'
+    | '/ledgers/$ledgerId/categories'
     | '/ledgers/$ledgerId/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ledgers/$ledgerId'
     | '/ledgers'
+    | '/ledgers/$ledgerId/categories'
     | '/ledgers/$ledgerId/settings'
   id:
     | '__root__'
@@ -150,6 +162,7 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/ledgers/$ledgerId'
     | '/_layout/ledgers/'
+    | '/_layout/ledgers/$ledgerId/categories'
     | '/_layout/ledgers/$ledgerId/settings'
   fileRoutesById: FileRoutesById
 }
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLedgersLedgerIdRouteImport
       parentRoute: typeof LayoutLedgersRoute
     }
+    '/_layout/ledgers/$ledgerId/categories': {
+      id: '/_layout/ledgers/$ledgerId/categories'
+      path: '/categories'
+      fullPath: '/ledgers/$ledgerId/categories'
+      preLoaderRoute: typeof LayoutLedgersLedgerIdCategoriesRouteImport
+      parentRoute: typeof LayoutLedgersLedgerIdRoute
+    }
     '/_layout/ledgers/$ledgerId/settings': {
       id: '/_layout/ledgers/$ledgerId/settings'
       path: '/settings'
@@ -243,10 +263,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface LayoutLedgersLedgerIdRouteChildren {
+  LayoutLedgersLedgerIdCategoriesRoute: typeof LayoutLedgersLedgerIdCategoriesRoute
   LayoutLedgersLedgerIdSettingsRoute: typeof LayoutLedgersLedgerIdSettingsRoute
 }
 
 const LayoutLedgersLedgerIdRouteChildren: LayoutLedgersLedgerIdRouteChildren = {
+  LayoutLedgersLedgerIdCategoriesRoute: LayoutLedgersLedgerIdCategoriesRoute,
   LayoutLedgersLedgerIdSettingsRoute: LayoutLedgersLedgerIdSettingsRoute,
 }
 

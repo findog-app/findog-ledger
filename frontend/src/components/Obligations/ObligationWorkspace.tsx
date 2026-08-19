@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Ban,
   CircleCheck,
+  CreditCard,
   EllipsisVertical,
   Landmark,
   Pencil,
@@ -40,8 +41,11 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const lifecycleOptions: Array<ObligationLifecycle | ""> = [
+type LifecycleFilter = ObligationLifecycle | "" | "unpaid"
+
+const lifecycleOptions: LifecycleFilter[] = [
   "",
+  "unpaid",
   "draft",
   "collecting_data",
   "ready",
@@ -162,6 +166,10 @@ function canCancelObligation(obligation: ObligationPublic) {
   return obligation.lifecycle === "collecting_data"
 }
 
+function canMarkObligationPaid(obligation: ObligationPublic) {
+  return obligation.lifecycle === "ready"
+}
+
 function canReopenObligation(obligation: ObligationPublic) {
   return ["ready", "paid", "canceled", "error"].includes(obligation.lifecycle)
 }
@@ -172,7 +180,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const [month, setMonth] = useState(String(period.month))
   const [filterByPeriod, setFilterByPeriod] = useState(true)
   const [categoryCode, setCategoryCode] = useState("")
-  const [lifecycle, setLifecycle] = useState<ObligationLifecycle | "">("")
+  const [lifecycle, setLifecycle] = useState<LifecycleFilter>("")
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [editingObligation, setEditingObligation] =
     useState<ObligationPublic | null>(null)
@@ -190,7 +198,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
         year: filterByPeriod ? filterYear : undefined,
         month: filterByPeriod ? filterMonth : undefined,
         categoryCode: categoryCode || undefined,
-        lifecycle: lifecycle || undefined,
+        lifecycle: lifecycle === "unpaid" ? undefined : lifecycle || undefined,
       }),
     enabled: hasValidPeriodFilter,
     queryKey: [
@@ -212,6 +220,11 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
       }),
     queryKey: ["obligation", ledgerId, selectedKey],
   })
+  const visibleObligations = obligations.data?.data.filter(
+    (obligation) =>
+      lifecycle !== "unpaid" ||
+      (obligation.lifecycle !== "paid" && obligation.lifecycle !== "canceled"),
+  )
   const markReady = useMutation({
     mutationFn: (obligation: ObligationPublic) =>
       ObligationsService.markObligationReady({
@@ -255,6 +268,23 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
     onError: handleError.bind(showErrorToast),
     onSuccess: (_, obligation) => {
       showSuccessToast("Obligation canceled")
+      void queryClient.invalidateQueries({
+        queryKey: ["obligation", ledgerId, obligation.key],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: ["obligations", ledgerId],
+      })
+    },
+  })
+  const markPaid = useMutation({
+    mutationFn: (obligation: ObligationPublic) =>
+      ObligationsService.markObligationPaid({
+        ledgerId,
+        obligationKey: obligation.key,
+      }),
+    onError: handleError.bind(showErrorToast),
+    onSuccess: (_, obligation) => {
+      showSuccessToast("Obligation marked as paid")
       void queryClient.invalidateQueries({
         queryKey: ["obligation", ledgerId, obligation.key],
       })
@@ -310,7 +340,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
             className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
             value={lifecycle}
             onChange={(event) =>
-              setLifecycle(event.target.value as ObligationLifecycle | "")
+              setLifecycle(event.target.value as LifecycleFilter)
             }
           >
             {lifecycleOptions.map((option) => (
@@ -319,7 +349,11 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                 value={option}
                 className="bg-background text-foreground"
               >
-                {option || "All lifecycles"}
+                {option === ""
+                  ? "All lifecycles"
+                  : option === "unpaid"
+                    ? "Unpaid"
+                    : option}
               </option>
             ))}
           </select>
@@ -354,24 +388,26 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
         ) : null}
         {hasValidPeriodFilter &&
         !obligations.isError &&
-        obligations.data?.data.length === 0 ? (
+        visibleObligations?.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No obligations match these filters.
           </p>
         ) : null}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {!obligations.isError
-            ? obligations.data?.data.map((obligation) => (
+            ? visibleObligations?.map((obligation) => (
                 <ObligationTile
                   key={obligation.key}
                   obligation={obligation}
                   onEdit={() => setEditingObligation(obligation)}
                   onCancel={() => cancel.mutate(obligation)}
+                  onMarkPaid={() => markPaid.mutate(obligation)}
                   onMarkReady={() => markReady.mutate(obligation)}
                   onReopen={() => reopen.mutate(obligation)}
                   onSelect={() => setSelectedKey(obligation.key)}
                   markingReady={markReady.isPending}
                   canceling={cancel.isPending}
+                  markingPaid={markPaid.isPending}
                   reopening={reopen.isPending}
                 />
               ))
@@ -429,6 +465,16 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                     >
                       <Ban />
                       Cancel
+                    </Button>
+                  ) : null}
+                  {canMarkObligationPaid(selected.data) ? (
+                    <Button
+                      size="sm"
+                      disabled={markPaid.isPending}
+                      onClick={() => markPaid.mutate(selected.data)}
+                    >
+                      <CreditCard />
+                      Mark as paid
                     </Button>
                   ) : null}
                   {canReopenObligation(selected.data) ? (
@@ -519,6 +565,7 @@ function businessDaysUntil(dueDate: string | null) {
     return {
       label: "Due date unknown",
       className: dueDateStatusClasses.unknown,
+      isUrgent: false,
     }
   }
   const [year, month, day] = dueDate.split("-").map(Number)
@@ -528,7 +575,11 @@ function businessDaysUntil(dueDate: string | null) {
     Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
   )
   if (dueAt < today) {
-    return { label: "Overdue", className: dueDateStatusClasses.urgent }
+    return {
+      label: "Overdue",
+      className: dueDateStatusClasses.urgent,
+      isUrgent: true,
+    }
   }
 
   let businessDays = 0
@@ -547,28 +598,37 @@ function businessDaysUntil(dueDate: string | null) {
         : businessDays <= 5
           ? dueDateStatusClasses.soon
           : dueDateStatusClasses.safe,
+    isUrgent: businessDays <= 2,
   }
+}
+
+function paidDateLabel(paidAt: string | null) {
+  return paidAt ? paidAt.slice(0, 10) : "Date unavailable"
 }
 
 function ObligationTile({
   obligation,
   onEdit,
   onCancel,
+  onMarkPaid,
   onMarkReady,
   onReopen,
   onSelect,
   markingReady,
   canceling,
+  markingPaid,
   reopening,
 }: {
   obligation: ObligationPublic
   onEdit: () => void
   onCancel: () => void
+  onMarkPaid: () => void
   onMarkReady: () => void
   onReopen: () => void
   onSelect: () => void
   markingReady: boolean
   canceling: boolean
+  markingPaid: boolean
   reopening: boolean
 }) {
   const amount =
@@ -576,13 +636,23 @@ function ObligationTile({
       ? `${obligation.current_amount} ${obligation.currency ?? ""}`.trim()
       : "Amount unknown"
   const dueDateStatus = businessDaysUntil(obligation.due_date)
+  const isPaid = obligation.lifecycle === "paid"
   const canCancel = canCancelObligation(obligation)
+  const canMarkPaid = canMarkObligationPaid(obligation)
   const canMarkReady = canMarkObligationReady(obligation)
   const canEdit = canEditObligation(obligation)
   const canReopen = canReopenObligation(obligation)
 
   return (
-    <div className="group rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">
+    <div
+      className={`group rounded-xl border p-4 text-card-foreground shadow-sm transition-colors focus-within:ring-2 focus-within:ring-ring ${
+        isPaid
+          ? "border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/15"
+          : dueDateStatus.isUrgent
+            ? "border-destructive/70 bg-destructive/10 hover:bg-destructive/15"
+            : "bg-card hover:bg-muted/50"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"
@@ -627,6 +697,12 @@ function ObligationTile({
                 Cancel
               </DropdownMenuItem>
             ) : null}
+            {canMarkPaid ? (
+              <DropdownMenuItem disabled={markingPaid} onSelect={onMarkPaid}>
+                <CreditCard />
+                Mark as paid
+              </DropdownMenuItem>
+            ) : null}
             {canReopen ? (
               <DropdownMenuItem disabled={reopening} onSelect={onReopen}>
                 <RotateCcw />
@@ -652,21 +728,32 @@ function ObligationTile({
             {obligation.lifecycle}
           </Badge>
         </div>
-        <div className="mt-4 border-t pt-3">
-          <p className="text-muted-foreground text-xs font-medium uppercase">
-            Due date
-          </p>
-          <div className="mt-1 flex items-baseline justify-between gap-3">
-            <p className="font-medium tabular-nums">
-              {obligation.due_date ?? "Unknown"}
+        {isPaid ? (
+          <div className="mt-4 border-t pt-3">
+            <p className="text-muted-foreground text-xs font-medium uppercase">
+              Paid on
             </p>
-            <p
-              className={`text-xs whitespace-nowrap ${dueDateStatus.className}`}
-            >
-              {dueDateStatus.label}
+            <p className="mt-1 font-medium tabular-nums">
+              {paidDateLabel(obligation.paid_at)}
             </p>
           </div>
-        </div>
+        ) : (
+          <div className="mt-4 border-t pt-3">
+            <p className="text-muted-foreground text-xs font-medium uppercase">
+              Due date
+            </p>
+            <div className="mt-1 flex items-baseline justify-between gap-3">
+              <p className="font-medium tabular-nums">
+                {obligation.due_date ?? "Unknown"}
+              </p>
+              <p
+                className={`text-xs whitespace-nowrap ${dueDateStatus.className}`}
+              >
+                {dueDateStatus.label}
+              </p>
+            </div>
+          </div>
+        )}
       </button>
     </div>
   )
