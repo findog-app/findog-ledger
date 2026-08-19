@@ -1,20 +1,21 @@
-# Cykl życia zobowiązania
+# Obligation lifecycle
 
-Ten dokument jest źródłem prawdy dla `Obligation.lifecycle`. Zmiany stanu
-wykonują use case'y; zwykły `PATCH` nigdy nie przyjmuje pola `lifecycle`.
+This document is the source of truth for `Obligation.lifecycle`. State changes
+belong to use cases; the ordinary `PATCH` endpoint never accepts a `lifecycle`
+field.
 
-## Stany
+## States
 
-| Stan | Znaczenie | Edycja przez `PATCH` |
+| State | Meaning | Editable through `PATCH` |
 | --- | --- | --- |
-| `DRAFT` | Zobowiązanie utworzone dla przyszłego okresu; dane nie są jeszcze zbierane. | Tak |
-| `COLLECTING_DATA` | Dane są zbierane lub korygowane. | Tak |
-| `READY` | Kwota i termin są potwierdzone, gotowe do zapłaty. | Nie |
-| `PAID` | Zobowiązanie zostało oznaczone jako opłacone. | Nie |
-| `CANCELED` | Zobowiązanie anulowane; może zostać ponownie otwarte. | Nie |
-| `ERROR` | Problem wykryty przez integrację lub proces automatyczny. | Nie |
+| `DRAFT` | An obligation created for a future period; data collection has not started. | Yes |
+| `COLLECTING_DATA` | Payment data is being collected or corrected. | Yes |
+| `READY` | Amount and due date are confirmed; the obligation is ready to be paid. | No |
+| `PAID` | The obligation has been marked as paid. | No |
+| `CANCELED` | The obligation was canceled and may be reopened. | No |
+| `ERROR` | An integration or automated process detected a problem. | No |
 
-## Dozwolone przejścia
+## Allowed transitions
 
 ```mermaid
 stateDiagram-v2
@@ -33,55 +34,53 @@ stateDiagram-v2
     ERROR --> COLLECTING_DATA
 ```
 
-Pełna lista:
-
-| Z | Do | Mechanizm | Status |
+| From | To | Mechanism | Status |
 | --- | --- | --- | --- |
-| `DRAFT` | `COLLECTING_DATA` | `update_manual_obligation` po faktycznej ręcznej zmianie danych | zaimplementowane |
-| `DRAFT` | `ERROR` | wewnętrzny use case integracji | planowane |
-| `COLLECTING_DATA` | `READY` | `mark_obligation_ready` | zaimplementowane |
-| `COLLECTING_DATA` | `CANCELED` | `cancel_obligation` | zaimplementowane |
-| `COLLECTING_DATA` | `ERROR` | wewnętrzny use case integracji | planowane |
-| `READY` | `PAID` | `mark_obligation_paid` | zaimplementowane |
-| `READY` | `COLLECTING_DATA` | `reopen_obligation` | zaimplementowane |
-| `READY` | `ERROR` | wewnętrzny use case integracji | planowane |
-| `PAID` | `COLLECTING_DATA` | `reopen_obligation` | zaimplementowane |
-| `PAID` | `ERROR` | wewnętrzny use case integracji | planowane |
-| `CANCELED` | `COLLECTING_DATA` | `reopen_obligation` | zaimplementowane |
-| `ERROR` | `COLLECTING_DATA` | `reopen_obligation` | zaimplementowane |
+| `DRAFT` | `COLLECTING_DATA` | `update_manual_obligation` after an actual manual change | Implemented |
+| `DRAFT` | `ERROR` | Internal integration use case | Planned |
+| `COLLECTING_DATA` | `READY` | `mark_obligation_ready` | Implemented |
+| `COLLECTING_DATA` | `CANCELED` | `cancel_obligation` | Implemented |
+| `COLLECTING_DATA` | `ERROR` | Internal integration use case | Planned |
+| `READY` | `PAID` | `mark_obligation_paid` | Implemented |
+| `READY` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
+| `READY` | `ERROR` | Internal integration use case | Planned |
+| `PAID` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
+| `PAID` | `ERROR` | Internal integration use case | Planned |
+| `CANCELED` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
+| `ERROR` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
 
-Nie ma innych przejść. W szczególności `READY`, `PAID`, `CANCELED` i `ERROR`
-nie są edytowalne przez zwykły `PATCH`.
+No other transitions are allowed. In particular, `READY`, `PAID`, `CANCELED`,
+and `ERROR` cannot be changed through the ordinary `PATCH` endpoint.
 
-## Use case'y i skutki zmian
+## Use cases and their effects
 
-| Use case | Dozwolony stan wejściowy | Wynik | Zmieniane pola |
+| Use case | Allowed input state | Result | Fields changed |
 | --- | --- | --- | --- |
-| `ensure_obligations_for_period` | — (tworzenie) | bieżący okres: `COLLECTING_DATA`; następny: `DRAFT` | tworzy rekord i ustawia wartości inicjalne; nie zmienia istniejącego rekordu |
-| `create_manual_obligation` | — (tworzenie) | `COLLECTING_DATA` albo `READY`, gdy `data_ready=true` | `lifecycle`, ręcznie podane wartości i ich `*_state`/`*_source`, `effective_value_source`, `notes` |
-| `update_manual_obligation` | `DRAFT`, `COLLECTING_DATA` | po zmianie `DRAFT → COLLECTING_DATA`; w drugim stanie pozostaje `COLLECTING_DATA` | ręcznie podane wartości, ich `*_state`/`*_source`, `effective_value_source`, `notes`; przy faktycznej zmianie również `lifecycle` |
+| `ensure_obligations_for_period` | — (creation) | Current period: `COLLECTING_DATA`; next period: `DRAFT` | Creates missing records with initial values; does not change existing ones |
+| `create_manual_obligation` | — (creation) | `COLLECTING_DATA`, or `READY` when `data_ready=true` | `lifecycle`, supplied manual values, their `*_state`/`*_source`, `effective_value_source`, and `notes` |
+| `update_manual_obligation` | `DRAFT`, `COLLECTING_DATA` | An edited `DRAFT` moves to `COLLECTING_DATA`; the latter remains unchanged | Supplied manual values, their `*_state`/`*_source`, `effective_value_source`, `notes`, and—after an actual draft change—`lifecycle` |
 | `mark_obligation_ready` | `COLLECTING_DATA` | `READY` | `lifecycle`, `amount_state=CONFIRMED`, `due_date_state=CONFIRMED` |
-| `mark_obligation_paid` | `READY`; powtórzenie dla `PAID` jest idempotentne | `PAID` | przy pierwszym wywołaniu `lifecycle`, `paid_at=now(UTC)` |
-| `reopen_obligation` | `READY`, `PAID`, `CANCELED`, `ERROR` | `COLLECTING_DATA` | `lifecycle`, `paid_at=None`; nie zmienia kwoty, dat, ich stanów ani źródeł |
+| `mark_obligation_paid` | `READY`; repeated calls for `PAID` are idempotent | `PAID` | On the first call: `lifecycle`, `paid_at=now(UTC)` |
 | `cancel_obligation` | `COLLECTING_DATA` | `CANCELED` | `lifecycle` |
-| use case błędu integracji | `DRAFT`, `COLLECTING_DATA`, `READY`, `PAID` | `ERROR` | planowane; zanim powstanie, trzeba zdefiniować pola diagnostyczne, np. kod, komunikat i czas błędu |
+| `reopen_obligation` | `READY`, `PAID`, `CANCELED`, `ERROR` | `COLLECTING_DATA` | `lifecycle`, `paid_at=None`; does not change amount, dates, their states, or sources |
+| Integration error use case | `DRAFT`, `COLLECTING_DATA`, `READY`, `PAID` | `ERROR` | Planned; diagnostic fields such as error code, message, and timestamp must be defined first |
 
-`*_state` oznacza `amount_state`, `issue_date_state` lub `due_date_state`, a
-`*_source` — odpowiadające im źródło wartości. Ręczna edycja ustawia źródło na
-`MANUAL`; stan przechodzi zgodnie z regułami use case'u między `UNKNOWN`,
-`ESTIMATED` i `OVERRIDDEN`.
+`*_state` refers to `amount_state`, `issue_date_state`, or `due_date_state`.
+`*_source` refers to the matching value source. Manual changes set the source to
+`MANUAL`; the use case moves the state between `UNKNOWN`, `ESTIMATED`, and
+`OVERRIDDEN` as appropriate.
 
-## Endpointy HTTP
+## HTTP actions
 
-Wszystkie aktualne akcje wymagają roli `EDITOR` albo `OWNER` ledgera.
+All current actions require the ledger's `EDITOR` or `OWNER` role.
 
-| Endpoint | Use case | Uwagi |
+| Endpoint | Use case | Notes |
 | --- | --- | --- |
-| `PATCH /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}` | `update_manual_obligation` | tylko `DRAFT` i `COLLECTING_DATA` |
-| `PATCH /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/ready` | `mark_obligation_ready` | wymaga co najmniej szacowanej kwoty i terminu |
-| `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/mark-paid` | `mark_obligation_paid` | idempotentny dla `PAID` |
-| `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/cancel` | `cancel_obligation` | tylko `COLLECTING_DATA` |
-| `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/reopen` | `reopen_obligation` | otwiera `READY`, `PAID`, `CANCELED` lub `ERROR` |
+| `PATCH /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}` | `update_manual_obligation` | Only `DRAFT` and `COLLECTING_DATA` |
+| `PATCH /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/ready` | `mark_obligation_ready` | Requires at least an estimated amount and due date |
+| `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/mark-paid` | `mark_obligation_paid` | Idempotent for `PAID` |
+| `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/cancel` | `cancel_obligation` | Only `COLLECTING_DATA` |
+| `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/reopen` | `reopen_obligation` | Reopens `READY`, `PAID`, `CANCELED`, or `ERROR` |
 
-Przejścia do `ERROR` nie powinny być wystawiane jako zwykła akcja HTTP — będą wykonywane przez
-przyszłe use case'y integracyjne bez zależności od routera.
+Transitions to `ERROR` should not be exposed as ordinary HTTP actions. They
+will be executed by future integration use cases, independently of a router.
