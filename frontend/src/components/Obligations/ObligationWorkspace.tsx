@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Pencil, Plus } from "lucide-react"
+import { EllipsisVertical, Landmark, Pencil, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import {
@@ -20,6 +20,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
@@ -116,6 +122,8 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const [categoryCode, setCategoryCode] = useState("")
   const [lifecycle, setLifecycle] = useState<ObligationLifecycle | "">("")
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [editingObligation, setEditingObligation] =
+    useState<ObligationPublic | null>(null)
   const { showErrorToast, showSuccessToast } = useCustomToast()
   const filterYear = Number(year)
   const filterMonth = Number(month)
@@ -247,23 +255,15 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
             No obligations match these filters.
           </p>
         ) : null}
-        <div className="space-y-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {!obligations.isError
             ? obligations.data?.data.map((obligation) => (
-                <button
+                <ObligationTile
                   key={obligation.key}
-                  type="button"
-                  className="flex w-full items-center justify-between rounded-md border p-3 text-left hover:bg-muted/50"
-                  onClick={() => setSelectedKey(obligation.key)}
-                >
-                  <span>
-                    <strong>{obligation.name}</strong>{" "}
-                    <span className="text-muted-foreground">
-                      {obligation.key}
-                    </span>
-                  </span>
-                  <Badge variant="secondary">{obligation.lifecycle}</Badge>
-                </button>
+                  obligation={obligation}
+                  onEdit={() => setEditingObligation(obligation)}
+                  onSelect={() => setSelectedKey(obligation.key)}
+                />
               ))
             : null}
         </div>
@@ -299,12 +299,14 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                     </Badge>
                   </div>
                 </div>
-                <EditObligationDialog
-                  ledgerId={ledgerId}
-                  obligation={selected.data}
-                  onError={showErrorToast}
-                  onSuccess={showSuccessToast}
-                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingObligation(selected.data)}
+                >
+                  <Pencil />
+                  Edit
+                </Button>
                 {selected.data.notes ? (
                   <div className="space-y-1">
                     <p className="text-muted-foreground font-medium">Notes</p>
@@ -351,23 +353,135 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
             )}
           </DialogContent>
         </Dialog>
+        {editingObligation ? (
+          <EditObligationDialog
+            ledgerId={ledgerId}
+            obligation={editingObligation}
+            open={editingObligation !== null}
+            onError={showErrorToast}
+            onOpenChange={(open) => !open && setEditingObligation(null)}
+            onSuccess={showSuccessToast}
+          />
+        ) : null}
       </CardContent>
     </Card>
+  )
+}
+
+function businessDaysUntil(dueDate: string | null) {
+  if (dueDate === null) {
+    return "Due date unknown"
+  }
+  const [year, month, day] = dueDate.split("-").map(Number)
+  const dueAt = new Date(Date.UTC(year, month - 1, day))
+  const now = new Date()
+  const today = new Date(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
+  )
+  if (dueAt < today) {
+    return "Overdue"
+  }
+
+  let businessDays = 0
+  const cursor = new Date(today)
+  while (cursor < dueAt) {
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+    if (cursor.getUTCDay() !== 0 && cursor.getUTCDay() !== 6) {
+      businessDays += 1
+    }
+  }
+  return `${businessDays} business ${businessDays === 1 ? "day" : "days"} left`
+}
+
+function ObligationTile({
+  obligation,
+  onEdit,
+  onSelect,
+}: {
+  obligation: ObligationPublic
+  onEdit: () => void
+  onSelect: () => void
+}) {
+  const amount =
+    obligation.current_amount !== null
+      ? `${obligation.current_amount} ${obligation.currency ?? ""}`.trim()
+      : "Amount unknown"
+
+  return (
+    <div className="group rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">
+      <div className="flex items-start justify-between gap-3">
+        <button
+          type="button"
+          className="flex min-w-0 items-center gap-3 text-left"
+          onClick={onSelect}
+        >
+          <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg border">
+            <Landmark className="size-5" aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{obligation.name}</p>
+            <p className="text-muted-foreground truncate text-xs">
+              {obligation.key}
+            </p>
+          </div>
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Actions for ${obligation.name}`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <EllipsisVertical />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onEdit}>
+              <Pencil />
+              Edit
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <button type="button" className="w-full text-left" onClick={onSelect}>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <p className="text-xl font-semibold tabular-nums">{amount}</p>
+          <Badge variant="secondary">{obligation.lifecycle}</Badge>
+        </div>
+        <div className="mt-4 border-t pt-3">
+          <p className="text-muted-foreground text-xs font-medium uppercase">
+            Due date
+          </p>
+          <div className="mt-1 flex items-baseline justify-between gap-3">
+            <p className="font-medium tabular-nums">
+              {obligation.due_date ?? "Unknown"}
+            </p>
+            <p className="text-muted-foreground text-xs whitespace-nowrap">
+              {businessDaysUntil(obligation.due_date)}
+            </p>
+          </div>
+        </div>
+      </button>
+    </div>
   )
 }
 
 function EditObligationDialog({
   ledgerId,
   obligation,
+  open,
   onSuccess,
   onError,
+  onOpenChange,
 }: {
   ledgerId: string
   obligation: ObligationPublic
+  open: boolean
   onSuccess: (message: string) => void
   onError: (message: string) => void
+  onOpenChange: (open: boolean) => void
 }) {
-  const [open, setOpen] = useState(false)
   const [currentAmount, setCurrentAmount] = useState("")
   const [issueDate, setIssueDate] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -437,7 +551,7 @@ function EditObligationDialog({
     onError: handleError.bind(onError),
     onSuccess: () => {
       onSuccess("Obligation updated")
-      setOpen(false)
+      onOpenChange(false)
       void queryClient.invalidateQueries({
         queryKey: ["obligation", ledgerId, obligation.key],
       })
@@ -448,13 +562,7 @@ function EditObligationDialog({
   })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Pencil />
-          Edit
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit obligation</DialogTitle>
