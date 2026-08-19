@@ -62,6 +62,25 @@ const sourceBadgeClasses: Record<string, string> = {
     "border-violet-500/30 bg-violet-500/15 text-violet-800 dark:text-violet-300",
 }
 
+const lifecycleBadgeClasses: Record<ObligationLifecycle, string> = {
+  draft:
+    "border-slate-500/30 bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  collecting_data:
+    "border-amber-500/30 bg-amber-500/15 text-amber-800 dark:text-amber-300",
+  ready: "border-sky-500/30 bg-sky-500/15 text-sky-800 dark:text-sky-300",
+  paid: "border-emerald-500/30 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
+  canceled:
+    "border-slate-500/30 bg-slate-500/15 text-slate-700 dark:text-slate-300",
+  error: "border-red-500/30 bg-red-500/15 text-red-800 dark:text-red-300",
+}
+
+const dueDateStatusClasses = {
+  unknown: "text-muted-foreground",
+  safe: "text-emerald-700 dark:text-emerald-300",
+  soon: "text-amber-700 dark:text-amber-300",
+  urgent: "text-red-700 dark:text-red-300",
+}
+
 function currentPeriod() {
   const now = new Date()
   return { year: now.getFullYear(), month: now.getMonth() + 1 }
@@ -370,7 +389,10 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
 
 function businessDaysUntil(dueDate: string | null) {
   if (dueDate === null) {
-    return "Due date unknown"
+    return {
+      label: "Due date unknown",
+      className: dueDateStatusClasses.unknown,
+    }
   }
   const [year, month, day] = dueDate.split("-").map(Number)
   const dueAt = new Date(Date.UTC(year, month - 1, day))
@@ -379,7 +401,7 @@ function businessDaysUntil(dueDate: string | null) {
     Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
   )
   if (dueAt < today) {
-    return "Overdue"
+    return { label: "Overdue", className: dueDateStatusClasses.urgent }
   }
 
   let businessDays = 0
@@ -390,7 +412,15 @@ function businessDaysUntil(dueDate: string | null) {
       businessDays += 1
     }
   }
-  return `${businessDays} business ${businessDays === 1 ? "day" : "days"} left`
+  return {
+    label: `${businessDays} business ${businessDays === 1 ? "day" : "days"} left`,
+    className:
+      businessDays <= 2
+        ? dueDateStatusClasses.urgent
+        : businessDays <= 5
+          ? dueDateStatusClasses.soon
+          : dueDateStatusClasses.safe,
+  }
 }
 
 function ObligationTile({
@@ -406,6 +436,7 @@ function ObligationTile({
     obligation.current_amount !== null
       ? `${obligation.current_amount} ${obligation.currency ?? ""}`.trim()
       : "Amount unknown"
+  const dueDateStatus = businessDaysUntil(obligation.due_date)
 
   return (
     <div className="group rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring">
@@ -447,7 +478,12 @@ function ObligationTile({
       <button type="button" className="w-full text-left" onClick={onSelect}>
         <div className="mt-5 flex items-center justify-between gap-3">
           <p className="text-xl font-semibold tabular-nums">{amount}</p>
-          <Badge variant="secondary">{obligation.lifecycle}</Badge>
+          <Badge
+            variant="outline"
+            className={lifecycleBadgeClasses[obligation.lifecycle]}
+          >
+            {obligation.lifecycle}
+          </Badge>
         </div>
         <div className="mt-4 border-t pt-3">
           <p className="text-muted-foreground text-xs font-medium uppercase">
@@ -457,8 +493,10 @@ function ObligationTile({
             <p className="font-medium tabular-nums">
               {obligation.due_date ?? "Unknown"}
             </p>
-            <p className="text-muted-foreground text-xs whitespace-nowrap">
-              {businessDaysUntil(obligation.due_date)}
+            <p
+              className={`text-xs whitespace-nowrap ${dueDateStatus.className}`}
+            >
+              {dueDateStatus.label}
             </p>
           </div>
         </div>
