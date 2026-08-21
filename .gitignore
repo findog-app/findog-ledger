@@ -13,6 +13,7 @@ frontend/.env
 frontend/.env.*
 
 zzz.patch
+backend/config/legacy-import.yaml
 
 .env
 .env.*

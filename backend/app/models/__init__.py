@@ -1,6 +1,7 @@
 from app.models.base import Base
 from app.models.category import Category, CategoryGroup
 from app.models.ledger import Ledger, LedgerMembership
+from app.models.legacy_import_job import LegacyImportJob
 from app.models.obligation import Obligation
 from app.models.user import User
 
@@ -10,6 +11,7 @@ __all__ = [
     "CategoryGroup",
     "Ledger",
     "LedgerMembership",
+    "LegacyImportJob",
     "Obligation",
     "User",
 ]
