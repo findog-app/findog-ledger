@@ -1,3 +1,22 @@
+## v0.0.1a4 (2026-08-21)
+
+### Fix
+
+- **ci**: publish container images under the repository owner
+
+## v0.0.1a3 (2026-08-21)
+
+### Feat
+
+- **system-run**: add obligation ensure controls
+- **system-run**: add legacy import controls
+- **legacy-import**: add asynchronous workbook migration
+
+### Fix
+
+- **backend**: resolve email typing errors
+- migrate TanStack Table to v9
+
 ## v0.0.1a2 (2026-08-19)
 
 ### Feat
