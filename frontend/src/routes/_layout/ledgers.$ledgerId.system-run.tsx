@@ -14,6 +14,7 @@ import {
   ApiError,
   type LegacyImportJobPublic,
   LegacyImportService,
+  ObligationsService,
 } from "@/client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -35,6 +36,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
@@ -52,6 +54,26 @@ function formatDateTime(value: string | null) {
     dateStyle: "medium",
     timeStyle: "medium",
   }).format(new Date(value))
+}
+
+function currentPeriodValue() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+}
+
+function parsePeriod(value: string) {
+  const [year, month] = value.split("-").map(Number)
+  if (
+    !Number.isInteger(year) ||
+    year < 1 ||
+    year > 9999 ||
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12
+  ) {
+    return null
+  }
+  return { year, month }
 }
 
 function statusDetails(job: LegacyImportJobPublic | null) {
@@ -91,6 +113,8 @@ function SystemRun() {
   const queryClient = useQueryClient()
   const { showErrorToast, showSuccessToast } = useCustomToast()
   const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [ensurePeriod, setEnsurePeriod] = useState(currentPeriodValue)
+  const [lastEnsureCount, setLastEnsureCount] = useState<number | null>(null)
   const jobQuery = useQuery({
     queryKey: ["legacy-import-job", ledgerId],
     queryFn: async (): Promise<LegacyImportJobPublic | null> => {
@@ -113,9 +137,22 @@ function SystemRun() {
       showSuccessToast("Legacy import started")
     },
   })
+  const ensureMutation = useMutation({
+    mutationFn: (period: { year: number; month: number }) =>
+      ObligationsService.ensureObligations({ ledgerId, ...period }),
+    onError: handleError.bind(showErrorToast),
+    onSuccess: (result) => {
+      setLastEnsureCount(result.created_count)
+      showSuccessToast(`Created ${result.created_count} obligations`)
+      void queryClient.invalidateQueries({
+        queryKey: ["obligations", ledgerId],
+      })
+    },
+  })
   const job = jobQuery.data ?? null
   const status = statusDetails(job)
   const isActive = job !== null && activeStatuses.has(job.status)
+  const selectedEnsurePeriod = parsePeriod(ensurePeriod)
   const progress =
     job !== null && job.total_obligations > 0
       ? Math.round((job.processed_obligations / job.total_obligations) * 100)
@@ -151,6 +188,45 @@ function SystemRun() {
           </p>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Ensure obligations</CardTitle>
+          <CardDescription>
+            Create missing recurring obligations for the selected period and the
+            following one. Existing obligations are left unchanged.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="ensure-period">
+              Billing period
+            </label>
+            <Input
+              id="ensure-period"
+              type="month"
+              value={ensurePeriod}
+              onChange={(event) => setEnsurePeriod(event.target.value)}
+            />
+          </div>
+          <LoadingButton
+            loading={ensureMutation.isPending}
+            disabled={selectedEnsurePeriod === null || isActive}
+            onClick={() => {
+              if (selectedEnsurePeriod !== null) {
+                ensureMutation.mutate(selectedEnsurePeriod)
+              }
+            }}
+          >
+            Ensure obligations
+          </LoadingButton>
+          {lastEnsureCount !== null && (
+            <p className="text-sm text-muted-foreground">
+              Last run created {lastEnsureCount} obligations.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
