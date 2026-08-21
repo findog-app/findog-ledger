@@ -41,6 +41,28 @@ Make sure your editor is using the correct Python virtual environment, with the 
 - Payment obligations support lifecycle actions for data collection, readiness,
   payment, cancellation, and reopening.
 
+## Temporary legacy workbook import
+
+For the migration window, a ledger owner can start a legacy import with
+`POST /api/v1/ledgers/{ledger_id}/legacy-import`. It returns `202 Accepted`
+immediately. Read progress and the final counts with
+`GET /api/v1/ledgers/{ledger_id}/legacy-import`, which returns the most recent
+job for that ledger. Only one legacy import can be active at a time; progress
+is logged every 50 obligations. The
+backend downloads the workbook from Dropbox with `DROPBOX_API_KEY`. Configure
+its path and monitored columns in YAML; start from
+[`config/legacy-import.example.yaml`](config/legacy-import.example.yaml), store
+the real file outside the repository, and set `LEGACY_IMPORT_CONFIG_PATH` to it.
+Each monitored category header must have a unique four-letter category code in
+its comment.
+
+The selected ledger is the legacy PaymentBook, worksheets become category
+groups, and payment categories become categories. Existing categories are
+matched by code; their obligations are replaced atomically. The importer keeps
+only the current and earlier periods, marks unpaid entries as `ready` with
+confirmed values, and paid entries as `paid`. Imported values have source
+`legacy`.
+
 ## Database
 
 - Use Alembic migrations for schema changes.

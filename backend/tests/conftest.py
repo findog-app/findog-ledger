@@ -17,6 +17,7 @@ from app.models import (
     CategoryGroup,
     Ledger,
     LedgerMembership,
+    LegacyImportJob,
     Obligation,
     User,
 )
@@ -62,6 +63,7 @@ def run_test_migrations() -> None:
 def db() -> Generator[Session, None, None]:
     run_test_migrations()
     with TestingSessionLocal() as session:
+        session.execute(delete(LegacyImportJob))
         session.execute(delete(Obligation))
         session.execute(delete(Category))
         session.execute(delete(CategoryGroup))
@@ -71,6 +73,7 @@ def db() -> Generator[Session, None, None]:
         session.commit()
         init_db(session)
         yield session
+        session.execute(delete(LegacyImportJob))
         session.execute(delete(Obligation))
         session.execute(delete(Category))
         session.execute(delete(CategoryGroup))

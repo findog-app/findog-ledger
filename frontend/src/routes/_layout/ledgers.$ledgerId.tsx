@@ -5,7 +5,7 @@ import {
   Outlet,
   useLocation,
 } from "@tanstack/react-router"
-import { Settings, Tags } from "lucide-react"
+import { Play, Settings, Tags } from "lucide-react"
 import { Suspense } from "react"
 
 import { LedgersService } from "@/client"
@@ -13,6 +13,7 @@ import { ObligationWorkspace } from "@/components/Obligations/ObligationWorkspac
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/ledgers/$ledgerId")({
   component: LedgerDetails,
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_layout/ledgers/$ledgerId")({
 function LedgerDetails() {
   const { ledgerId } = Route.useParams()
   const location = useLocation()
+  const { user: currentUser } = useAuth()
   const { data: ledger } = useSuspenseQuery({
     queryFn: () => LedgersService.readLedger({ ledgerId }),
     queryKey: ["ledger", ledgerId],
@@ -43,6 +45,14 @@ function LedgerDetails() {
             </p>
           </div>
           <div className="flex gap-2">
+            {ledger.owner_user_id === currentUser?.id && (
+              <Button variant="outline" asChild>
+                <Link to="/ledgers/$ledgerId/system-run" params={{ ledgerId }}>
+                  <Play />
+                  System Run
+                </Link>
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <Link to="/ledgers/$ledgerId/categories" params={{ ledgerId }}>
                 <Tags />

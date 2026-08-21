@@ -86,11 +86,11 @@ export type CategoryUpdate = {
 
 export type Currency = 'PLN' | 'EUR' | 'USD' | 'GBP' | 'CHF';
 
-export type CurrentValueSource = 'unknown' | 'automatic' | 'manual';
+export type CurrentValueSource = 'unknown' | 'automatic' | 'manual' | 'legacy';
 
 export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
 
-export type EffectiveValueSourceMode = 'unknown' | 'automatic' | 'manual' | 'mixed';
+export type EffectiveValueSourceMode = 'unknown' | 'automatic' | 'manual' | 'legacy' | 'mixed';
 
 export type EnsuredObligationsPublic = {
     created_keys: Array<(string)>;
@@ -150,6 +150,24 @@ export type LedgerUpdate = {
     name: string;
     description?: (string | null);
 };
+
+export type LegacyImportJobPublic = {
+    id: string;
+    ledger_id: string;
+    status: LegacyImportJobStatus;
+    processed_obligations: number;
+    total_obligations: number;
+    created_category_groups: (number | null);
+    created_categories: (number | null);
+    replaced_categories: (number | null);
+    imported_obligations: (number | null);
+    error: (string | null);
+    created_at: string;
+    started_at: (string | null);
+    finished_at: (string | null);
+};
+
+export type LegacyImportJobStatus = 'pending' | 'running' | 'succeeded' | 'failed';
 
 export type Message = {
     message: string;
@@ -389,6 +407,18 @@ export type LedgersRemoveLedgerMemberData = {
 };
 
 export type LedgersRemoveLedgerMemberResponse = (Message);
+
+export type LegacyImportStartLegacyImportData = {
+    ledgerId: string;
+};
+
+export type LegacyImportStartLegacyImportResponse = (LegacyImportJobPublic);
+
+export type LegacyImportReadLegacyImportJobData = {
+    ledgerId: string;
+};
+
+export type LegacyImportReadLegacyImportJobResponse = (LegacyImportJobPublic);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;

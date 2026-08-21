@@ -40,13 +40,22 @@ class CurrentValueSource(StrEnum):
     UNKNOWN = "unknown"
     AUTOMATIC = "automatic"
     MANUAL = "manual"
+    LEGACY = "legacy"
 
 
 class EffectiveValueSourceMode(StrEnum):
     UNKNOWN = "unknown"
     AUTOMATIC = "automatic"
     MANUAL = "manual"
+    LEGACY = "legacy"
     MIXED = "mixed"
+
+
+class LegacyImportJobStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 
 @dataclass(frozen=True, slots=True)
