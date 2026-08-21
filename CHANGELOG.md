@@ -1,3 +1,9 @@
+## v0.0.1a2 (2026-08-19)
+
+### Feat
+
+- **obligations**: complete ledger obligation workflow
+
 ## v0.0.1a1 (2026-08-16)
 
 ### Feat
