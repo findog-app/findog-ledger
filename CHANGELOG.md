@@ -1,3 +1,9 @@
+## v0.0.1a4 (2026-08-21)
+
+### Fix
+
+- **ci**: publish container images under the repository owner
+
 ## v0.0.1a3 (2026-08-21)
 
 ### Feat
