@@ -180,7 +180,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   const [month, setMonth] = useState(String(period.month))
   const [filterByPeriod, setFilterByPeriod] = useState(true)
   const [categoryCode, setCategoryCode] = useState("")
-  const [lifecycle, setLifecycle] = useState<LifecycleFilter>("")
+  const [lifecycle, setLifecycle] = useState<LifecycleFilter>("unpaid")
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [editingObligation, setEditingObligation] =
     useState<ObligationPublic | null>(null)
@@ -220,11 +220,18 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
       }),
     queryKey: ["obligation", ledgerId, selectedKey],
   })
-  const visibleObligations = obligations.data?.data.filter(
-    (obligation) =>
-      lifecycle !== "unpaid" ||
-      (obligation.lifecycle !== "paid" && obligation.lifecycle !== "canceled"),
-  )
+  const visibleObligations = obligations.data?.data
+    .filter(
+      (obligation) =>
+        lifecycle !== "unpaid" ||
+        (obligation.lifecycle !== "paid" &&
+          obligation.lifecycle !== "canceled"),
+    )
+    .sort((first, second) => {
+      if (first.due_date === null) return second.due_date === null ? 0 : -1
+      if (second.due_date === null) return 1
+      return first.due_date.localeCompare(second.due_date)
+    })
   const markReady = useMutation({
     mutationFn: (obligation: ObligationPublic) =>
       ObligationsService.markObligationReady({

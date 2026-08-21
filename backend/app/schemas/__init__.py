@@ -19,6 +19,7 @@ from app.schemas.ledgers import (
     LedgersPublic,
     LedgerUpdate,
 )
+from app.schemas.legacy_import import LegacyImportJobPublic, LegacyImportPublic
 from app.schemas.obligations import (
     BillingPeriodInput,
     EnsuredObligationsPublic,
@@ -59,6 +60,8 @@ __all__ = [
     "LedgerShare",
     "LedgerUpdate",
     "LedgersPublic",
+    "LegacyImportPublic",
+    "LegacyImportJobPublic",
     "BillingPeriodInput",
     "EnsuredObligationsPublic",
     "ObligationCreate",

@@ -502,7 +502,7 @@ export const CurrencySchema = {
 
 export const CurrentValueSourceSchema = {
     type: 'string',
-    enum: ['unknown', 'automatic', 'manual'],
+    enum: ['unknown', 'automatic', 'manual', 'legacy'],
     title: 'CurrentValueSource'
 } as const;
 
@@ -514,7 +514,7 @@ export const DataSourcePolicySchema = {
 
 export const EffectiveValueSourceModeSchema = {
     type: 'string',
-    enum: ['unknown', 'automatic', 'manual', 'mixed'],
+    enum: ['unknown', 'automatic', 'manual', 'legacy', 'mixed'],
     title: 'EffectiveValueSourceMode'
 } as const;
 
@@ -774,6 +774,125 @@ export const LedgersPublicSchema = {
     type: 'object',
     required: ['data', 'count'],
     title: 'LedgersPublic'
+} as const;
+
+export const LegacyImportJobPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        ledger_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Ledger Id'
+        },
+        status: {
+            '$ref': '#/components/schemas/LegacyImportJobStatus'
+        },
+        processed_obligations: {
+            type: 'integer',
+            title: 'Processed Obligations'
+        },
+        total_obligations: {
+            type: 'integer',
+            title: 'Total Obligations'
+        },
+        created_category_groups: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created Category Groups'
+        },
+        created_categories: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created Categories'
+        },
+        replaced_categories: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Replaced Categories'
+        },
+        imported_obligations: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Imported Obligations'
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        started_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Started At'
+        },
+        finished_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Finished At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'ledger_id', 'status', 'processed_obligations', 'total_obligations', 'created_category_groups', 'created_categories', 'replaced_categories', 'imported_obligations', 'error', 'created_at', 'started_at', 'finished_at'],
+    title: 'LegacyImportJobPublic'
+} as const;
+
+export const LegacyImportJobStatusSchema = {
+    type: 'string',
+    enum: ['pending', 'running', 'succeeded', 'failed'],
+    title: 'LegacyImportJobStatus'
 } as const;
 
 export const MessageSchema = {
