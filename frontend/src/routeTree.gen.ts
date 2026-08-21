@@ -21,6 +21,7 @@ import { Route as LayoutLedgersIndexRouteImport } from './routes/_layout/ledgers
 import { Route as LayoutLedgersLedgerIdRouteImport } from './routes/_layout/ledgers.$ledgerId'
 import { Route as LayoutLedgersLedgerIdCategoriesRouteImport } from './routes/_layout/ledgers.$ledgerId.categories'
 import { Route as LayoutLedgersLedgerIdSettingsRouteImport } from './routes/_layout/ledgers.$ledgerId.settings'
+import { Route as LayoutLedgersLedgerIdSystemRunRouteImport } from './routes/_layout/ledgers.$ledgerId.system-run'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -83,6 +84,12 @@ const LayoutLedgersLedgerIdSettingsRoute =
     path: '/settings',
     getParentRoute: () => LayoutLedgersLedgerIdRoute,
   } as any)
+const LayoutLedgersLedgerIdSystemRunRoute =
+  LayoutLedgersLedgerIdSystemRunRouteImport.update({
+    id: '/system-run',
+    path: '/system-run',
+    getParentRoute: () => LayoutLedgersLedgerIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/ledgers/': typeof LayoutLedgersIndexRoute
   '/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
+  '/ledgers/$ledgerId/system-run': typeof LayoutLedgersLedgerIdSystemRunRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
   '/ledgers': typeof LayoutLedgersIndexRoute
   '/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
+  '/ledgers/$ledgerId/system-run': typeof LayoutLedgersLedgerIdSystemRunRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,6 +132,7 @@ export interface FileRoutesById {
   '/_layout/ledgers/': typeof LayoutLedgersIndexRoute
   '/_layout/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/_layout/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
+  '/_layout/ledgers/$ledgerId/system-run': typeof LayoutLedgersLedgerIdSystemRunRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/ledgers/'
     | '/ledgers/$ledgerId/categories'
     | '/ledgers/$ledgerId/settings'
+    | '/ledgers/$ledgerId/system-run'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/ledgers'
     | '/ledgers/$ledgerId/categories'
     | '/ledgers/$ledgerId/settings'
+    | '/ledgers/$ledgerId/system-run'
   id:
     | '__root__'
     | '/_layout'
@@ -164,6 +176,7 @@ export interface FileRouteTypes {
     | '/_layout/ledgers/'
     | '/_layout/ledgers/$ledgerId/categories'
     | '/_layout/ledgers/$ledgerId/settings'
+    | '/_layout/ledgers/$ledgerId/system-run'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -259,17 +272,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLedgersLedgerIdSettingsRouteImport
       parentRoute: typeof LayoutLedgersLedgerIdRoute
     }
+    '/_layout/ledgers/$ledgerId/system-run': {
+      id: '/_layout/ledgers/$ledgerId/system-run'
+      path: '/system-run'
+      fullPath: '/ledgers/$ledgerId/system-run'
+      preLoaderRoute: typeof LayoutLedgersLedgerIdSystemRunRouteImport
+      parentRoute: typeof LayoutLedgersLedgerIdRoute
+    }
   }
 }
 
 interface LayoutLedgersLedgerIdRouteChildren {
   LayoutLedgersLedgerIdCategoriesRoute: typeof LayoutLedgersLedgerIdCategoriesRoute
   LayoutLedgersLedgerIdSettingsRoute: typeof LayoutLedgersLedgerIdSettingsRoute
+  LayoutLedgersLedgerIdSystemRunRoute: typeof LayoutLedgersLedgerIdSystemRunRoute
 }
 
 const LayoutLedgersLedgerIdRouteChildren: LayoutLedgersLedgerIdRouteChildren = {
   LayoutLedgersLedgerIdCategoriesRoute: LayoutLedgersLedgerIdCategoriesRoute,
   LayoutLedgersLedgerIdSettingsRoute: LayoutLedgersLedgerIdSettingsRoute,
+  LayoutLedgersLedgerIdSystemRunRoute: LayoutLedgersLedgerIdSystemRunRoute,
 }
 
 const LayoutLedgersLedgerIdRouteWithChildren =
