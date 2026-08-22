@@ -51,6 +51,24 @@ jobs:
       - name: Run tests
         run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
         working-directory: backend
+      - name: Export integration OpenAPI schema
+        run: uv run python scripts/export_integration_openapi.py
+        working-directory: backend
+      - name: Validate integration OpenAPI schema
+        shell: bash
+        run: |
+          python -m json.tool openapi/integration.json >/dev/null
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          spec = json.loads(Path("openapi/integration.json").read_text())
+          assert "openapi" in spec, "Missing OpenAPI version"
+          paths = spec.get("paths", {})
+          assert paths, "No paths exported"
+          unexpected = [path for path in paths if not path.startswith("/api/v1/integration")]
+          assert not unexpected, f"Unexpected non-integration paths: {unexpected}"
+          PY
       - run: docker compose down -v --remove-orphans
       - name: Store coverage files
         uses: actions/upload-artifact@v7
