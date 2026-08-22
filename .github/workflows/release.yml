@@ -34,12 +34,15 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Sync dependencies
+        run: uv sync --frozen
+
       - name: Determine next version
         id: version
         shell: bash
         run: |
           set +e
-          next_version="$(uv run cz bump --dry-run --yes --get-next 2>&1)"
+          next_version="$(uv run --frozen cz bump --dry-run --yes --get-next)"
           status=$?
           set -e
 
@@ -50,10 +53,11 @@ jobs:
           fi
 
           if [[ $status -ne 0 ]]; then
-            echo "$next_version" >&2
+            echo "Commitizen failed with exit code $status" >&2
             exit "$status"
           fi
 
+          echo "Next version: $next_version"
           echo "should_release=true" >> "$GITHUB_OUTPUT"
           echo "version=$next_version" >> "$GITHUB_OUTPUT"
 
