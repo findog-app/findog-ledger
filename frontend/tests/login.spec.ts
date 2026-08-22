@@ -112,7 +112,6 @@ test("Redirects to /login when token is wrong", async ({ page }) => {
     localStorage.setItem("access_token", "invalid_token")
   })
   await page.goto("/settings")
-  await page.waitForURL("/login")
   await expect(page).toHaveURL("/login")
 })
 
