@@ -31,7 +31,7 @@ from app.use_cases.exceptions import (
 router = APIRouter(tags=["obligations"])
 
 
-def _to_obligation_public(obligation: Obligation) -> ObligationPublic:
+def to_obligation_public(obligation: Obligation) -> ObligationPublic:
     return ObligationPublic(
         id=obligation.id,
         ledger_id=obligation.ledger_id,
@@ -107,7 +107,7 @@ def read_obligations(
         lifecycle=lifecycle,
     )
     return ObligationsPublic(
-        data=[_to_obligation_public(obligation) for obligation in obligations],
+        data=[to_obligation_public(obligation) for obligation in obligations],
         count=len(obligations),
     )
 
@@ -144,7 +144,7 @@ def create_obligation(
     except DuplicateObligationError:
         raise HTTPException(status_code=409, detail="Obligation already exists")
 
-    return _to_obligation_public(obligation)
+    return to_obligation_public(obligation)
 
 
 @router.patch(
@@ -180,7 +180,7 @@ def update_obligation(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    return _to_obligation_public(obligation)
+    return to_obligation_public(obligation)
 
 
 @router.patch(
@@ -209,7 +209,7 @@ def mark_obligation_ready(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    return _to_obligation_public(obligation)
+    return to_obligation_public(obligation)
 
 
 @router.post(
@@ -241,7 +241,7 @@ def mark_obligation_paid(
             detail="Only ready obligations can be marked as paid",
         )
 
-    return _to_obligation_public(obligation)
+    return to_obligation_public(obligation)
 
 
 @router.post(
@@ -273,7 +273,7 @@ def cancel_obligation(
             detail="Only obligations collecting data can be canceled",
         )
 
-    return _to_obligation_public(obligation)
+    return to_obligation_public(obligation)
 
 
 @router.post(
@@ -305,7 +305,7 @@ def reopen_obligation(
             detail="Only ready, paid, canceled, or error obligations can be reopened",
         )
 
-    return _to_obligation_public(obligation)
+    return to_obligation_public(obligation)
 
 
 @router.get(
@@ -332,4 +332,4 @@ def read_obligation(
     except ObligationNotFoundError:
         raise HTTPException(status_code=404, detail="Obligation not found")
 
-    return _to_obligation_public(obligation)
+    return to_obligation_public(obligation)

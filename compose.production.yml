@@ -3,7 +3,7 @@
 # externally managed database configured in .env.
 services:
   prestart:
-    image: ghcr.io/wini83/findog-ledger-backend:${TAG?Set TAG in .env}
+    image: ghcr.io/findog-app/findog-ledger-backend:${TAG?Set TAG in .env}
     restart: "no"
     command: bash scripts/prestart.sh
     env_file:
@@ -12,13 +12,15 @@ services:
       - firefly_net
 
   backend:
-    image: ghcr.io/wini83/findog-ledger-backend:${TAG?Set TAG in .env}
+    image: ghcr.io/findog-app/findog-ledger-backend:${TAG?Set TAG in .env}
     restart: always
     depends_on:
       prestart:
         condition: service_completed_successfully
     env_file:
       - .env
+    volumes:
+      - ./backend/config/legacy-import.yaml:/app/backend/config/legacy-import.yaml:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
       interval: 10s
@@ -30,7 +32,7 @@ services:
           - findog-ledger-backend
 
   frontend:
-    image: ghcr.io/wini83/findog-ledger-frontend:${TAG?Set TAG in .env}
+    image: ghcr.io/findog-app/findog-ledger-frontend:${TAG?Set TAG in .env}
     restart: always
     env_file:
       - .env

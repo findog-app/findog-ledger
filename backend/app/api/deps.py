@@ -1,10 +1,16 @@
 import uuid
-from collections.abc import Generator
+from collections.abc import Callable, Generator
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Annotated
 
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+    OAuth2PasswordBearer,
+)
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlalchemy import and_, or_, select
@@ -14,8 +20,9 @@ from app.core import security
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.domain import LedgerAccessRole
-from app.models import Ledger, LedgerMembership, User
+from app.models import ApiKey, Ledger, LedgerMembership, User
 from app.schemas import TokenPayload
+from app.services import api_keys as api_key_service
 from app.services import users as user_service
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -30,6 +37,22 @@ def get_db() -> Generator[Session, None, None]:
 
 SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
+integration_bearer = HTTPBearer(
+    auto_error=False,
+    scheme_name="IntegrationApiKey",
+    description="A ledger-scoped API key, for example fdg_live_…",
+)
+IntegrationTokenDep = Annotated[
+    HTTPAuthorizationCredentials | None, Depends(integration_bearer)
+]
+
+
+@dataclass(frozen=True, slots=True)
+class ApiContext:
+    session: Session
+    ledger: Ledger
+    api_key: ApiKey
+    scopes: frozenset[str]
 
 
 def get_current_user(session: SessionDep, token: TokenDep) -> User:
@@ -55,6 +78,51 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_api_context(session: SessionDep, token: IntegrationTokenDep) -> ApiContext:
+    if token is None or token.scheme.lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    key_hash = api_key_service.hash_api_key(token.credentials)
+    api_key = session.scalar(select(ApiKey).where(ApiKey.key_hash == key_hash))
+    if api_key is None or not api_key_service.verify_api_key(
+        token.credentials, api_key.key_hash
+    ):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    now = datetime.now(UTC)
+    if api_key.revoked_at is not None or (
+        api_key.expires_at is not None and api_key.expires_at <= now
+    ):
+        raise HTTPException(status_code=401, detail="API key is inactive")
+
+    ledger = session.get(Ledger, api_key.ledger_id)
+    if ledger is None or not ledger.is_active:
+        raise HTTPException(status_code=401, detail="API key is inactive")
+
+    api_key.last_used_at = now
+    session.commit()
+    return ApiContext(
+        session=session,
+        ledger=ledger,
+        api_key=api_key,
+        scopes=frozenset(api_key.scopes),
+    )
+
+
+ApiContextDep = Annotated[ApiContext, Depends(get_api_context)]
+
+
+def require_scope(scope: str) -> Callable[[ApiContext], ApiContext]:
+    def dependency(context: ApiContextDep) -> ApiContext:
+        if scope not in context.scopes:
+            raise HTTPException(
+                status_code=403, detail=f"Missing required scope: {scope}"
+            )
+        return context
+
+    return dependency
 
 
 def get_current_active_superuser(current_user: CurrentUser) -> User:

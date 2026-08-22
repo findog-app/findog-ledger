@@ -1,3 +1,9 @@
+from app.schemas.api_keys import (
+    ApiKeyCreate,
+    ApiKeyCreated,
+    ApiKeyPublic,
+    ApiKeysPublic,
+)
 from app.schemas.categories import (
     CategoriesPublic,
     CategoryCreate,
@@ -24,6 +30,8 @@ from app.schemas.obligations import (
     BillingPeriodInput,
     EnsuredObligationsPublic,
     ObligationCreate,
+    ObligationIntegrationUpdate,
+    ObligationNoteAppend,
     ObligationPeriodPublic,
     ObligationPublic,
     ObligationsPublic,
@@ -45,6 +53,10 @@ __all__ = [
     "Token",
     "TokenPayload",
     "CategoriesPublic",
+    "ApiKeyCreate",
+    "ApiKeyCreated",
+    "ApiKeyPublic",
+    "ApiKeysPublic",
     "CategoryCreate",
     "CategoryUpdate",
     "CategoryGroupCreate",
@@ -65,6 +77,8 @@ __all__ = [
     "BillingPeriodInput",
     "EnsuredObligationsPublic",
     "ObligationCreate",
+    "ObligationIntegrationUpdate",
+    "ObligationNoteAppend",
     "ObligationPeriodPublic",
     "ObligationPublic",
     "ObligationUpdate",

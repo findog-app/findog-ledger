@@ -58,6 +58,22 @@ class ObligationUpdate(BaseModel):
     notes: str | None = None
 
 
+class ObligationIntegrationUpdate(BaseModel):
+    """Values an API-key authenticated integration may update."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    current_amount: Decimal | None = Field(default=None, ge=0)
+    issue_date: date | None = None
+    due_date: date | None = None
+
+
+class ObligationNoteAppend(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=1)
+
+
 class ObligationPeriodPublic(BillingPeriodInput):
     pass
 
