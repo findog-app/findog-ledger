@@ -115,3 +115,24 @@ test("Redirects to /login when token is wrong", async ({ page }) => {
   await page.waitForURL("/login")
   await expect(page).toHaveURL("/login")
 })
+
+test("Redirects to /login when the token user no longer exists", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/users/me", (route) =>
+    route.fulfill({
+      status: 404,
+      body: JSON.stringify({ detail: "User not found" }),
+    }),
+  )
+  await page.goto("/settings")
+  await page.evaluate(() => {
+    localStorage.setItem("access_token", "token-for-a-removed-user")
+  })
+  await page.goto("/settings")
+
+  await expect(page).toHaveURL(/\/login/)
+  await expect(
+    page.evaluate(() => localStorage.getItem("access_token")),
+  ).resolves.toBeNull()
+})

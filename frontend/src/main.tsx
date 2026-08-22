@@ -26,9 +26,13 @@ OpenAPI.TOKEN = async () => {
 }
 
 const handleApiError = (error: Error) => {
-  if (error instanceof ApiError && [401, 403].includes(error.status)) {
+  if (!(error instanceof ApiError)) return
+
+  const invalidSession = [401, 403].includes(error.status)
+
+  if (invalidSession) {
     localStorage.removeItem("access_token")
-    window.location.href = "/login"
+    window.location.replace("/login")
   }
 }
 const queryClient = new QueryClient({

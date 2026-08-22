@@ -1,3 +1,9 @@
+from app.schemas.api_keys import (
+    ApiKeyCreate,
+    ApiKeyCreated,
+    ApiKeyPublic,
+    ApiKeysPublic,
+)
 from app.schemas.categories import (
     CategoriesPublic,
     CategoryCreate,
@@ -45,6 +51,10 @@ __all__ = [
     "Token",
     "TokenPayload",
     "CategoriesPublic",
+    "ApiKeyCreate",
+    "ApiKeyCreated",
+    "ApiKeyPublic",
+    "ApiKeysPublic",
     "CategoryCreate",
     "CategoryUpdate",
     "CategoryGroupCreate",
