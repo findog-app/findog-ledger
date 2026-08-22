@@ -131,7 +131,7 @@ test("Redirects to /login when the token user no longer exists", async ({
   })
   await page.goto("/settings")
 
-  await page.waitForURL("/login")
+  await expect(page).toHaveURL(/\/login/)
   await expect(
     page.evaluate(() => localStorage.getItem("access_token")),
   ).resolves.toBeNull()
