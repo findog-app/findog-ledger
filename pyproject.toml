@@ -10,6 +10,5 @@ version = "0.0.1a4"
 version_files = [
     "backend/pyproject.toml:^version = \"(?P<version>.*)\"",
     "pyproject.toml:^version = \"(?P<version>.*)\"",
-    "uv.lock:^version = \"(?P<version>.*)\"",
 ]
 annotated_tag = true

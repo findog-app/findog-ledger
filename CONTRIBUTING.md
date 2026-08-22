@@ -43,6 +43,20 @@ fix: validate recurring category due day
 docs: clarify local development setup
 ```
 
+Pull requests are squash-merged. The pull request title becomes the final
+commit on `main`, so it must also follow the Conventional Commits format. This
+allows automated release version calculation to treat one merged pull request
+as one release-relevant commit.
+
+Commitizen updates the canonical versions in `pyproject.toml` and
+`backend/pyproject.toml`. After a version bump, run `uv lock` to regenerate the
+lockfile instead of editing its version metadata directly. To determine the
+next version without changing files or prompting for input, run:
+
+```bash
+bash ./scripts/cz.sh bump --dry-run --yes --get-next
+```
+
 Describe the purpose of the pull request, the validation performed, and any
 configuration or migration steps required for reviewers. Do not include
 credentials, tokens, or production data.
