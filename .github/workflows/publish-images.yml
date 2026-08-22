@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to publish
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -99,9 +105,10 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/findog-ledger-${{ matrix.name }}
-          # A tag push such as v0.1.0 produces only ghcr.io/...:v0.1.0.
-          # Do not add `latest`: deployments should use the immutable release tag.
-          tags: type=ref,event=tag
+          # Publish only the immutable release tag. For an automated release the
+          # finalizer dispatches this workflow explicitly because pushes made with
+          # GITHUB_TOKEN do not trigger another workflow run.
+          tags: type=raw,value=${{ inputs.release_tag || github.ref_name }}
 
       - name: Build and publish ${{ matrix.name }} image
         uses: docker/build-push-action@v7
