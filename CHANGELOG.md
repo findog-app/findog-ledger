@@ -1,3 +1,18 @@
+## v0.1.0 (2026-08-22)
+
+### Feat
+
+- add obligation integration endpoints (#55)
+- add ledger-scoped integration API keys (#50)
+- **release**: automate version bumps on main (#52)
+
+### Fix
+
+- **ci**: allow explicit release image dispatch
+- **ci**: finalize releases after release PR merge
+- **ci**: prepare releases through pull requests
+- **ci**: stabilize release version detection
+
 ## v0.0.1a4 (2026-08-21)
 
 ### Fix
