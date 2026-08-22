@@ -28,12 +28,9 @@ OpenAPI.TOKEN = async () => {
 const handleApiError = (error: Error) => {
   if (!(error instanceof ApiError)) return
 
-  const isCurrentUserRequest = error.url.endsWith("/api/v1/users/me")
   const invalidSession = [401, 403].includes(error.status)
-  const missingOrInactiveCurrentUser =
-    isCurrentUserRequest && [400, 404].includes(error.status)
 
-  if (invalidSession || missingOrInactiveCurrentUser) {
+  if (invalidSession) {
     localStorage.removeItem("access_token")
     window.location.replace("/login")
   }
