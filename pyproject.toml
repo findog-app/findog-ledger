@@ -11,5 +11,6 @@ version = "0.1.0"
 version_files = [
     "backend/pyproject.toml:^version = \"(?P<version>.*)\"",
     "pyproject.toml:^version = \"(?P<version>.*)\"",
+    "frontend/package.json:^  \"version\": \"(?P<version>.*)\",",
 ]
 annotated_tag = true
