@@ -57,6 +57,15 @@ next version without changing files or prompting for input, run:
 bash ./scripts/cz.sh bump --dry-run --yes --get-next
 ```
 
+## Automated releases
+
+After an eligible Conventional Commit is squash-merged to `main`, the Release
+workflow uses Commitizen to determine the next version. It updates the
+canonical version files and changelog, runs `uv lock`, commits the release,
+pushes its `vX.Y.Z` tag, and creates a GitHub Release. Commits with no
+release-relevant type produce no release. The workflow uses its release commit
+guard in addition to GitHub's `GITHUB_TOKEN` event protection to avoid loops.
+
 Describe the purpose of the pull request, the validation performed, and any
 configuration or migration steps required for reviewers. Do not include
 credentials, tokens, or production data.

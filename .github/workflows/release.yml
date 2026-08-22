@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # GITHUB_TOKEN pushes do not trigger another workflow run, and this guard
+    # also protects the workflow if its release commit is pushed by another token.
+    if: >-
+      github.actor != 'github-actions[bot]' &&
+      !startsWith(github.event.head_commit.message, 'bump: version ')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Determine next version
+        id: version
+        shell: bash
+        run: |
+          set +e
+          next_version="$(uv run cz bump --dry-run --yes --get-next 2>&1)"
+          status=$?
+          set -e
+
+          if [[ $status -eq 3 || $status -eq 21 ]]; then
+            echo "No releasable Conventional Commit found. Skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ $status -ne 0 ]]; then
+            echo "$next_version" >&2
+            exit "$status"
+          fi
+
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "version=$next_version" >> "$GITHUB_OUTPUT"
+
+      - name: Configure release author
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version and create tag
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          uv run cz bump --yes --check-consistency
+          git push origin HEAD:main
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --generate-notes
