@@ -58,6 +58,25 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Generate integration OpenAPI schema
+        run: uv run python backend/scripts/export_integration_openapi.py
+
+      - name: Validate integration OpenAPI schema
+        shell: bash
+        run: |
+          python -m json.tool openapi/integration.json >/dev/null
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          spec = json.loads(Path("openapi/integration.json").read_text())
+          assert "openapi" in spec, "Missing OpenAPI version"
+          paths = spec.get("paths", {})
+          assert paths, "No paths exported"
+          unexpected = [path for path in paths if not path.startswith("/api/v1/integration")]
+          assert not unexpected, f"Unexpected non-integration paths: {unexpected}"
+          PY
+
       - name: Create and push release tag
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
@@ -69,9 +88,6 @@ jobs:
             git tag -a "$tag" -m "$tag"
           fi
           git push origin "$tag"
-
-      - name: Generate integration OpenAPI schema
-        run: uv run python backend/scripts/export_integration_openapi.py
 
       - name: Create GitHub Release
         env:
