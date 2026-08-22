@@ -125,7 +125,7 @@ test("Redirects to /login when the token user no longer exists", async ({
       body: JSON.stringify({ detail: "User not found" }),
     }),
   )
-  await page.goto("/")
+  await page.goto("/settings")
   await page.evaluate(() => {
     localStorage.setItem("access_token", "token-for-a-removed-user")
   })
