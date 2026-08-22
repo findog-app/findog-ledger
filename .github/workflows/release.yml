@@ -1,4 +1,4 @@
-name: Release
+name: Prepare release
 
 on:
   push:
@@ -7,18 +7,15 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
-  group: release-main
+  group: prepare-release-main
   cancel-in-progress: false
 
 jobs:
-  release:
-    # GITHUB_TOKEN pushes do not trigger another workflow run, and this guard
-    # also protects the workflow if its release commit is pushed by another token.
-    if: >-
-      github.actor != 'github-actions[bot]' &&
-      !startsWith(github.event.head_commit.message, 'bump: version ')
+  prepare-release:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout complete history
@@ -37,7 +34,23 @@ jobs:
       - name: Sync dependencies
         run: uv sync --frozen
 
+      - name: Check release state
+        id: state
+        shell: bash
+        run: |
+          current_version="$(uv run --frozen cz version -p)"
+          echo "Current project version: $current_version"
+
+          if ! git rev-parse -q --verify "refs/tags/v${current_version}" >/dev/null; then
+            echo "Current version v${current_version} is not tagged yet; release finalization is pending."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
       - name: Determine next version
+        if: steps.state.outputs.ready == 'true'
         id: version
         shell: bash
         run: |
@@ -67,18 +80,28 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version and create tag
+      - name: Prepare release commit
         if: steps.version.outputs.should_release == 'true'
         run: |
           uv run cz bump --yes --check-consistency
-          git push origin HEAD:main
-          git push origin "v${{ steps.version.outputs.version }}"
+          git tag -d "v${{ steps.version.outputs.version }}"
 
-      - name: Create GitHub Release
+      - name: Push release branch
+        if: steps.version.outputs.should_release == 'true'
+        env:
+          RELEASE_BRANCH: release/v${{ steps.version.outputs.version }}
+        run: |
+          git push origin HEAD:"refs/heads/${RELEASE_BRANCH}"
+
+      - name: Open release pull request
         if: steps.version.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: release/v${{ steps.version.outputs.version }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "v${{ steps.version.outputs.version }}" \
-            --title "v${{ steps.version.outputs.version }}" \
-            --generate-notes
+          gh pr create \
+            --base main \
+            --head "$RELEASE_BRANCH" \
+            --title "bump: version $RELEASE_VERSION" \
+            --body "Automated release preparation for v$RELEASE_VERSION.\n\nMerge this PR after required checks pass. After merge, the release finalizer will create the Git tag, GitHub Release, and trigger GHCR image publishing."
