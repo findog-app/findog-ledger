@@ -31,7 +31,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Create Category
      * @param data The data for the request.
@@ -54,7 +54,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Read Category Groups
      * @param data The data for the request.
@@ -78,7 +78,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Create Category Group
      * @param data The data for the request.
@@ -101,7 +101,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Update Category Group
      * @param data The data for the request.
@@ -354,7 +354,7 @@ export class LedgersService {
             }
         });
     }
-
+    
     /**
      * Update Ledger Member
      * @param data The data for the request.
@@ -423,7 +423,7 @@ export class LegacyImportService {
             }
         });
     }
-
+    
     /**
      * Read Legacy Import Job
      * @param data The data for the request.
@@ -621,7 +621,7 @@ export class ObligationsService {
             }
         });
     }
-
+    
     /**
      * Update Obligation
      * @param data The data for the request.
@@ -690,7 +690,7 @@ export class ObligationsService {
             }
         });
     }
-
+    
     /**
      * Mark Obligation Paid
      * @param data The data for the request.
@@ -712,7 +712,7 @@ export class ObligationsService {
             }
         });
     }
-
+    
     /**
      * Cancel Obligation
      * @param data The data for the request.
@@ -734,7 +734,7 @@ export class ObligationsService {
             }
         });
     }
-
+    
     /**
      * Reopen Obligation
      * @param data The data for the request.
