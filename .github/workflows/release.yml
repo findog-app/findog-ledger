@@ -74,32 +74,60 @@ jobs:
           echo "should_release=true" >> "$GITHUB_OUTPUT"
           echo "version=$next_version" >> "$GITHUB_OUTPUT"
 
-      - name: Configure release author
+      - name: Check release branch
         if: steps.version.outputs.should_release == 'true'
+        id: branch
+        env:
+          RELEASE_BRANCH: release/v${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          if git ls-remote --exit-code --heads origin "$RELEASE_BRANCH" >/dev/null 2>&1; then
+            echo "Release branch $RELEASE_BRANCH already exists; reusing it."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Release branch $RELEASE_BRANCH does not exist yet."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure release author
+        if: steps.version.outputs.should_release == 'true' && steps.branch.outputs.exists == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Prepare release commit
-        if: steps.version.outputs.should_release == 'true'
+        if: steps.version.outputs.should_release == 'true' && steps.branch.outputs.exists == 'false'
         run: |
           uv run cz bump --yes --check-consistency
           git tag -d "v${{ steps.version.outputs.version }}"
 
       - name: Push release branch
-        if: steps.version.outputs.should_release == 'true'
+        if: steps.version.outputs.should_release == 'true' && steps.branch.outputs.exists == 'false'
         env:
           RELEASE_BRANCH: release/v${{ steps.version.outputs.version }}
         run: |
           git push origin HEAD:"refs/heads/${RELEASE_BRANCH}"
 
-      - name: Open release pull request
+      - name: Ensure release pull request
         if: steps.version.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_BRANCH: release/v${{ steps.version.outputs.version }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
         run: |
+          existing_pr="$(gh pr list \
+            --base main \
+            --head "$RELEASE_BRANCH" \
+            --state open \
+            --json url \
+            --jq '.[0].url // empty')"
+
+          if [[ -n "$existing_pr" ]]; then
+            echo "Release PR already exists: $existing_pr"
+            exit 0
+          fi
+
           gh pr create \
             --base main \
             --head "$RELEASE_BRANCH" \
