@@ -40,6 +40,7 @@ class CurrentValueSource(StrEnum):
     UNKNOWN = "unknown"
     AUTOMATIC = "automatic"
     MANUAL = "manual"
+    INTEGRATION = "integration"
     LEGACY = "legacy"
 
 
@@ -47,6 +48,7 @@ class EffectiveValueSourceMode(StrEnum):
     UNKNOWN = "unknown"
     AUTOMATIC = "automatic"
     MANUAL = "manual"
+    INTEGRATION = "integration"
     LEGACY = "legacy"
     MIXED = "mixed"
 

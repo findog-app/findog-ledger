@@ -122,11 +122,11 @@ export type CategoryUpdate = {
 
 export type Currency = 'PLN' | 'EUR' | 'USD' | 'GBP' | 'CHF';
 
-export type CurrentValueSource = 'unknown' | 'automatic' | 'manual' | 'legacy';
+export type CurrentValueSource = 'unknown' | 'automatic' | 'manual' | 'integration' | 'legacy';
 
 export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
 
-export type EffectiveValueSourceMode = 'unknown' | 'automatic' | 'manual' | 'legacy' | 'mixed';
+export type EffectiveValueSourceMode = 'unknown' | 'automatic' | 'manual' | 'integration' | 'legacy' | 'mixed';
 
 export type EnsuredObligationsPublic = {
     created_keys: Array<(string)>;
@@ -224,7 +224,20 @@ export type ObligationCreate = {
     notes?: (string | null);
 };
 
+/**
+ * Values an API-key authenticated integration may update.
+ */
+export type ObligationIntegrationUpdate = {
+    current_amount?: (number | string | null);
+    issue_date?: (string | null);
+    due_date?: (string | null);
+};
+
 export type ObligationLifecycle = 'draft' | 'collecting_data' | 'ready' | 'paid' | 'canceled' | 'error';
+
+export type ObligationNoteAppend = {
+    text: string;
+};
 
 export type ObligationPeriodPublic = {
     year: number;
@@ -390,6 +403,65 @@ export type IntegrationUpdateIntegrationLedgerData = {
 };
 
 export type IntegrationUpdateIntegrationLedgerResponse = (LedgerPublic);
+
+export type IntegrationReadIntegrationObligationsData = {
+    categoryCode?: (string | null);
+    lifecycle?: (ObligationLifecycle | null);
+    month?: (number | null);
+    year?: (number | null);
+};
+
+export type IntegrationReadIntegrationObligationsResponse = (ObligationsPublic);
+
+export type IntegrationReadIntegrationObligationData = {
+    obligationKey: string;
+};
+
+export type IntegrationReadIntegrationObligationResponse = (ObligationPublic);
+
+export type IntegrationUpdateIntegrationObligationData = {
+    obligationKey: string;
+    requestBody: ObligationIntegrationUpdate;
+};
+
+export type IntegrationUpdateIntegrationObligationResponse = (ObligationPublic);
+
+export type IntegrationMarkIntegrationObligationReadyData = {
+    obligationKey: string;
+};
+
+export type IntegrationMarkIntegrationObligationReadyResponse = (ObligationPublic);
+
+export type IntegrationMarkIntegrationObligationPaidData = {
+    obligationKey: string;
+};
+
+export type IntegrationMarkIntegrationObligationPaidResponse = (ObligationPublic);
+
+export type IntegrationCancelIntegrationObligationData = {
+    obligationKey: string;
+};
+
+export type IntegrationCancelIntegrationObligationResponse = (ObligationPublic);
+
+export type IntegrationReopenIntegrationObligationData = {
+    obligationKey: string;
+};
+
+export type IntegrationReopenIntegrationObligationResponse = (ObligationPublic);
+
+export type IntegrationMarkIntegrationObligationErrorData = {
+    obligationKey: string;
+};
+
+export type IntegrationMarkIntegrationObligationErrorResponse = (ObligationPublic);
+
+export type IntegrationAppendIntegrationObligationNoteData = {
+    obligationKey: string;
+    requestBody: ObligationNoteAppend;
+};
+
+export type IntegrationAppendIntegrationObligationNoteResponse = (ObligationPublic);
 
 export type LedgersCreateApiKeyData = {
     ledgerId: string;

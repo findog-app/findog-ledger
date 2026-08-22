@@ -209,13 +209,14 @@ def create_manual_obligation(
     return obligation
 
 
-def _set_manual_value(
+def _set_value(
     *,
     obligation: Obligation,
     value_attribute: str,
     state_attribute: str,
     source_attribute: str,
     value: Decimal | date | None,
+    source: CurrentValueSource,
 ) -> None:
     setattr(obligation, value_attribute, value)
     if value is None:
@@ -224,7 +225,7 @@ def _set_manual_value(
         return
 
     previous_state = getattr(obligation, state_attribute)
-    setattr(obligation, source_attribute, CurrentValueSource.MANUAL)
+    setattr(obligation, source_attribute, source)
     if previous_state is ValueState.CONFIRMED:
         setattr(obligation, state_attribute, ValueState.OVERRIDDEN)
     elif previous_state is ValueState.UNKNOWN:
@@ -245,8 +246,12 @@ def _update_effective_value_source(obligation: Obligation) -> None:
         obligation.effective_value_source = EffectiveValueSourceMode.UNKNOWN
     elif sources == {CurrentValueSource.MANUAL}:
         obligation.effective_value_source = EffectiveValueSourceMode.MANUAL
+    elif sources == {CurrentValueSource.INTEGRATION}:
+        obligation.effective_value_source = EffectiveValueSourceMode.INTEGRATION
     elif sources == {CurrentValueSource.AUTOMATIC}:
         obligation.effective_value_source = EffectiveValueSourceMode.AUTOMATIC
+    elif sources == {CurrentValueSource.LEGACY}:
+        obligation.effective_value_source = EffectiveValueSourceMode.LEGACY
     else:
         obligation.effective_value_source = EffectiveValueSourceMode.MIXED
 
@@ -260,6 +265,49 @@ def update_manual_obligation(
     issue_date: date | None | _Unset = UNSET,
     due_date: date | None | _Unset = UNSET,
     notes: str | None | _Unset = UNSET,
+) -> Obligation:
+    return _update_obligation_values(
+        session=session,
+        ledger_id=ledger_id,
+        key=key,
+        current_amount=current_amount,
+        issue_date=issue_date,
+        due_date=due_date,
+        notes=notes,
+        source=CurrentValueSource.MANUAL,
+    )
+
+
+def update_integration_obligation(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    current_amount: Decimal | None | _Unset = UNSET,
+    issue_date: date | None | _Unset = UNSET,
+    due_date: date | None | _Unset = UNSET,
+) -> Obligation:
+    return _update_obligation_values(
+        session=session,
+        ledger_id=ledger_id,
+        key=key,
+        current_amount=current_amount,
+        issue_date=issue_date,
+        due_date=due_date,
+        source=CurrentValueSource.INTEGRATION,
+    )
+
+
+def _update_obligation_values(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    current_amount: Decimal | None | _Unset = UNSET,
+    issue_date: date | None | _Unset = UNSET,
+    due_date: date | None | _Unset = UNSET,
+    notes: str | None | _Unset = UNSET,
+    source: CurrentValueSource,
 ) -> Obligation:
     obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
     if obligation.lifecycle not in {
@@ -292,7 +340,7 @@ def update_manual_obligation(
         if next_issue_date > next_due_date:
             raise ValueError("issue_date cannot be later than due_date")
 
-    has_manual_changes = (
+    has_value_changes = (
         (
             not isinstance(current_amount, _Unset)
             and current_amount != obligation.current_amount
@@ -302,33 +350,36 @@ def update_manual_obligation(
         or (not isinstance(notes, _Unset) and notes != obligation.notes)
     )
     if not isinstance(current_amount, _Unset):
-        _set_manual_value(
+        _set_value(
             obligation=obligation,
             value_attribute="current_amount",
             state_attribute="amount_state",
             source_attribute="amount_source",
             value=current_amount,
+            source=source,
         )
     if not isinstance(issue_date, _Unset):
-        _set_manual_value(
+        _set_value(
             obligation=obligation,
             value_attribute="issue_date",
             state_attribute="issue_date_state",
             source_attribute="issue_date_source",
             value=issue_date,
+            source=source,
         )
     if not isinstance(due_date, _Unset):
-        _set_manual_value(
+        _set_value(
             obligation=obligation,
             value_attribute="due_date",
             state_attribute="due_date_state",
             source_attribute="due_date_source",
             value=due_date,
+            source=source,
         )
     if not isinstance(notes, _Unset):
         obligation.notes = notes
 
-    if has_manual_changes and obligation.lifecycle is ObligationLifecycle.DRAFT:
+    if has_value_changes and obligation.lifecycle is ObligationLifecycle.DRAFT:
         obligation.lifecycle = ObligationLifecycle.COLLECTING_DATA
     _update_effective_value_source(obligation)
     session.commit()
@@ -403,6 +454,40 @@ def reopen_obligation(
 
     obligation.lifecycle = ObligationLifecycle.COLLECTING_DATA
     obligation.paid_at = None
+    session.commit()
+    session.refresh(obligation)
+    return obligation
+
+
+def mark_obligation_error(
+    *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
+) -> Obligation:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    if obligation.lifecycle not in {
+        ObligationLifecycle.DRAFT,
+        ObligationLifecycle.COLLECTING_DATA,
+    }:
+        raise ObligationInvalidLifecycleError
+
+    obligation.lifecycle = ObligationLifecycle.ERROR
+    session.commit()
+    session.refresh(obligation)
+    return obligation
+
+
+def append_integration_note(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    integration_name: str,
+    text: str,
+    now: datetime | None = None,
+) -> Obligation:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    timestamp = (now or datetime.now(UTC)).astimezone(UTC).strftime("%Y-%m-%d %H:%M")
+    entry = f"[{timestamp}] {integration_name}: {text}"
+    obligation.notes = entry if not obligation.notes else f"{obligation.notes}\n{entry}"
     session.commit()
     session.refresh(obligation)
     return obligation

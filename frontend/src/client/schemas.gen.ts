@@ -711,7 +711,7 @@ export const CurrencySchema = {
 
 export const CurrentValueSourceSchema = {
     type: 'string',
-    enum: ['unknown', 'automatic', 'manual', 'legacy'],
+    enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy'],
     title: 'CurrentValueSource'
 } as const;
 
@@ -723,7 +723,7 @@ export const DataSourcePolicySchema = {
 
 export const EffectiveValueSourceModeSchema = {
     type: 'string',
-    enum: ['unknown', 'automatic', 'manual', 'legacy', 'mixed'],
+    enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy', 'mixed'],
     title: 'EffectiveValueSourceMode'
 } as const;
 
@@ -1206,10 +1206,73 @@ export const ObligationCreateSchema = {
     title: 'ObligationCreate'
 } as const;
 
+export const ObligationIntegrationUpdateSchema = {
+    properties: {
+        current_amount: {
+            anyOf: [
+                {
+                    type: 'number',
+                    minimum: 0
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Amount'
+        },
+        issue_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Issue Date'
+        },
+        due_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Date'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    title: 'ObligationIntegrationUpdate',
+    description: 'Values an API-key authenticated integration may update.'
+} as const;
+
 export const ObligationLifecycleSchema = {
     type: 'string',
     enum: ['draft', 'collecting_data', 'ready', 'paid', 'canceled', 'error'],
     title: 'ObligationLifecycle'
+} as const;
+
+export const ObligationNoteAppendSchema = {
+    properties: {
+        text: {
+            type: 'string',
+            minLength: 1,
+            title: 'Text'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['text'],
+    title: 'ObligationNoteAppend'
 } as const;
 
 export const ObligationPeriodPublicSchema = {
