@@ -128,6 +128,29 @@ jobs:
             openapi/integration.json#integration-openapi.json \
             --clobber
 
+      - name: Trigger Python client regeneration
+        env:
+          CLIENT_REPO_TOKEN: ${{ secrets.FINDOG_CLIENT_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          if [[ -z "$CLIENT_REPO_TOKEN" ]]; then
+            echo "FINDOG_CLIENT_TOKEN is not configured; skipping client regeneration trigger."
+            exit 0
+          fi
+
+          GH_TOKEN="$CLIENT_REPO_TOKEN" gh api \
+            --method POST \
+            repos/findog-app/findog-client-python/dispatches \
+            --input - <<EOF
+          {
+            "event_type": "ledger-release",
+            "client_payload": {
+              "tag_name": "v${RELEASE_VERSION}"
+            }
+          }
+          EOF
+
       - name: Trigger image publishing
         env:
           GH_TOKEN: ${{ github.token }}
