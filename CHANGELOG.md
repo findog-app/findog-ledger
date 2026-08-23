@@ -1,3 +1,9 @@
+## v0.2.1 (2026-08-23)
+
+### Fix
+
+- **ci**: upload canonical OpenAPI asset name
+
 ## v0.2.0 (2026-08-23)
 
 ### Feat
