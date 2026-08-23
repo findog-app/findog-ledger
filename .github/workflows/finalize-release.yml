@@ -16,6 +16,21 @@ concurrency:
   group: finalize-release-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
+env:
+  PROJECT_NAME: Findog Ledger
+  DOMAIN: localhost
+  FRONTEND_HOST: http://localhost:5173
+  ENVIRONMENT: local
+  BACKEND_CORS_ORIGINS: http://localhost,http://localhost:5173
+  SECRET_KEY: release-openapi-dummy-secret
+  FIRST_SUPERUSER: admin@example.com
+  FIRST_SUPERUSER_PASSWORD: ci-admin-password
+  POSTGRES_SERVER: localhost
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: findog
+  POSTGRES_USER: findog
+  POSTGRES_PASSWORD: ci-postgres-password
+
 jobs:
   finalize-release:
     if: >-
