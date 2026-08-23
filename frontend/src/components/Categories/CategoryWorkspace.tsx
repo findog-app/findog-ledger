@@ -161,6 +161,16 @@ function nextPaymentDate(
   return occurrence
 }
 
+function recurrencePreset(
+  interval: number | undefined,
+  unit: "month" | "year" | undefined,
+) {
+  if (interval === 1 && unit === "month") return "monthly"
+  if (interval === 2 && unit === "month") return "every-two-months"
+  if (interval === 1 && unit === "year") return "yearly"
+  return "custom"
+}
+
 function PaymentScheduleFields<T extends FieldValues>({
   control,
   onPresetChange,
@@ -180,15 +190,7 @@ function PaymentScheduleFields<T extends FieldValues>({
     control,
     name: "first_due_date" as Path<T>,
   }) as string | undefined
-  const initialPreset =
-    interval === 1 && unit === "month"
-      ? "monthly"
-      : interval === 2 && unit === "month"
-        ? "every-two-months"
-        : interval === 1 && unit === "year"
-          ? "yearly"
-          : "monthly"
-  const [preset, setPreset] = useState(initialPreset)
+  const preset = recurrencePreset(interval, unit)
   const nextDueDate = nextPaymentDate(
     firstDueDate,
     interval ?? 1,
@@ -224,7 +226,6 @@ function PaymentScheduleFields<T extends FieldValues>({
         <FormLabel>Repeat</FormLabel>
         <Select
           onValueChange={(value) => {
-            setPreset(value)
             onPresetChange(value)
           }}
           value={preset}
@@ -675,10 +676,13 @@ function CreateCategoryDialog({
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value)
-                          if (value === "manual") {
-                            form.setValue("recurrence_interval", undefined)
-                            form.setValue("recurrence_unit", undefined)
-                            form.setValue("first_due_date", "")
+                          if (
+                            value !== "manual" &&
+                            (!form.getValues("recurrence_interval") ||
+                              !form.getValues("recurrence_unit"))
+                          ) {
+                            form.setValue("recurrence_interval", 1)
+                            form.setValue("recurrence_unit", "month")
                           }
                         }}
                         value={field.value}
@@ -717,6 +721,9 @@ function CreateCategoryDialog({
                   } else if (preset === "yearly") {
                     form.setValue("recurrence_interval", 1)
                     form.setValue("recurrence_unit", "year")
+                  } else if (preset === "custom") {
+                    form.setValue("recurrence_interval", 3)
+                    form.setValue("recurrence_unit", "month")
                   }
                 }}
               />
@@ -856,10 +863,13 @@ function EditCategoryDialog({
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value)
-                        if (value === "manual") {
-                          form.setValue("recurrence_interval", undefined)
-                          form.setValue("recurrence_unit", undefined)
-                          form.setValue("first_due_date", "")
+                        if (
+                          value !== "manual" &&
+                          (!form.getValues("recurrence_interval") ||
+                            !form.getValues("recurrence_unit"))
+                        ) {
+                          form.setValue("recurrence_interval", 1)
+                          form.setValue("recurrence_unit", "month")
                         }
                       }}
                       value={field.value}
@@ -897,6 +907,9 @@ function EditCategoryDialog({
                   } else if (preset === "yearly") {
                     form.setValue("recurrence_interval", 1)
                     form.setValue("recurrence_unit", "year")
+                  } else if (preset === "custom") {
+                    form.setValue("recurrence_interval", 3)
+                    form.setValue("recurrence_unit", "month")
                   }
                 }}
               />
