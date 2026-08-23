@@ -11,6 +11,7 @@ import {
   type FieldValues,
   type Path,
   useForm,
+  useWatch,
 } from "react-hook-form"
 import { z } from "zod"
 
@@ -117,6 +118,200 @@ function CurrencyField<T extends FieldValues>({
         </FormItem>
       )}
     />
+  )
+}
+
+function obligationModeDescription(mode: "manual" | "automatic" | "hybrid") {
+  if (mode === "manual") {
+    return "Obligations for this category are created manually."
+  }
+  if (mode === "automatic") {
+    return "Obligations are created automatically from the payment schedule."
+  }
+  return "Obligations follow the schedule and can also be created manually."
+}
+
+function nextPaymentDate(
+  firstDueDate: string | undefined,
+  interval: number | undefined,
+  unit: "month" | "year" | undefined,
+): Date | undefined {
+  if (!firstDueDate || !interval || !unit) return undefined
+
+  const [year, month, day] = firstDueDate.split("-").map(Number)
+  if (!year || !month || !day) return undefined
+
+  const addMonths = (value: Date, months: number) => {
+    const targetMonth = value.getMonth() + months
+    const targetYear = value.getFullYear() + Math.floor(targetMonth / 12)
+    const normalizedMonth = ((targetMonth % 12) + 12) % 12
+    const lastDay = new Date(targetYear, normalizedMonth + 1, 0).getDate()
+    return new Date(targetYear, normalizedMonth, Math.min(day, lastDay))
+  }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  let occurrence = new Date(year, month - 1, day)
+  const monthsToAdd = unit === "year" ? interval * 12 : interval
+
+  while (occurrence <= today) {
+    occurrence = addMonths(occurrence, monthsToAdd)
+  }
+
+  return occurrence
+}
+
+function recurrencePreset(
+  interval: number | undefined,
+  unit: "month" | "year" | undefined,
+) {
+  if (interval === 1 && unit === "month") return "monthly"
+  if (interval === 2 && unit === "month") return "every-two-months"
+  if (interval === 1 && unit === "year") return "yearly"
+  return "custom"
+}
+
+function PaymentScheduleFields<T extends FieldValues>({
+  control,
+  onPresetChange,
+}: {
+  control: Control<T>
+  onPresetChange: (preset: string) => void
+}) {
+  const interval = useWatch({
+    control,
+    name: "recurrence_interval" as Path<T>,
+  }) as number | undefined
+  const unit = useWatch({
+    control,
+    name: "recurrence_unit" as Path<T>,
+  }) as "month" | "year" | undefined
+  const firstDueDate = useWatch({
+    control,
+    name: "first_due_date" as Path<T>,
+  }) as string | undefined
+  const preset = recurrencePreset(interval, unit)
+  const nextDueDate = nextPaymentDate(
+    firstDueDate,
+    interval ?? 1,
+    unit ?? "month",
+  )
+
+  return (
+    <section className="space-y-4 border-t pt-4">
+      <div>
+        <h3 className="text-sm font-semibold">Payment schedule</h3>
+        <p className="text-sm text-muted-foreground">
+          Set when the first payment is due and how often it repeats.
+        </p>
+      </div>
+      <FormField
+        control={control}
+        name={"first_due_date" as Path<T>}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>First payment due</FormLabel>
+            <FormControl>
+              <Input
+                type="date"
+                {...field}
+                value={(field.value as string) ?? ""}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormItem>
+        <FormLabel>Repeat</FormLabel>
+        <Select
+          onValueChange={(value) => {
+            onPresetChange(value)
+          }}
+          value={preset}
+        >
+          <FormControl>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            <SelectItem value="monthly">Every month</SelectItem>
+            <SelectItem value="every-two-months">Every 2 months</SelectItem>
+            <SelectItem value="yearly">Every year</SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+      </FormItem>
+      {preset === "custom" && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={control}
+            name={"recurrence_interval" as Path<T>}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Every</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={(field.value as number | undefined) ?? ""}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === ""
+                          ? undefined
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name={"recurrence_unit" as Path<T>}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Period</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value as string}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose a period" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="month">Months</SelectItem>
+                    <SelectItem value="year">Years</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      )}
+      <div className="rounded-md bg-muted p-3">
+        <p className="text-sm font-medium">Next payment</p>
+        {nextDueDate ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {new Intl.DateTimeFormat("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            }).format(nextDueDate)}
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Choose the first payment due date to see the next occurrence.
+          </p>
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -348,8 +543,8 @@ function CreateCategoryDialog({
       description: "",
       code: "",
       data_source_policy: "hybrid",
-      recurrence_interval: undefined,
-      recurrence_unit: undefined,
+      recurrence_interval: 1,
+      recurrence_unit: "month",
       first_due_date: "",
       currency: "PLN",
     },
@@ -393,6 +588,7 @@ function CreateCategoryDialog({
             )}
             className="space-y-4"
           >
+            <h3 className="text-sm font-semibold">Basic information</h3>
             <FormField
               control={form.control}
               name="category_group_id"
@@ -463,112 +659,75 @@ function CreateCategoryDialog({
                 </FormItem>
               )}
             />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
+            <section className="space-y-4 border-t pt-4">
+              <div>
+                <h3 className="text-sm font-semibold">Behavior</h3>
+                <p className="text-sm text-muted-foreground">
+                  Choose how obligations are created and managed.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="data_source_policy"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category mode</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value)
+                          if (
+                            value !== "manual" &&
+                            (!form.getValues("recurrence_interval") ||
+                              !form.getValues("recurrence_unit"))
+                          ) {
+                            form.setValue("recurrence_interval", 1)
+                            form.setValue("recurrence_unit", "month")
+                          }
+                        }}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="manual">Manual</SelectItem>
+                          <SelectItem value="automatic">Automatic</SelectItem>
+                          <SelectItem value="hybrid">Hybrid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <CurrencyField control={form.control} />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {obligationModeDescription(form.watch("data_source_policy"))}
+              </p>
+            </section>
+            {form.watch("data_source_policy") !== "manual" && (
+              <PaymentScheduleFields
                 control={form.control}
-                name="data_source_policy"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category mode</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value)
-                        if (value === "manual") {
-                          form.setValue("recurrence_interval", undefined)
-                          form.setValue("recurrence_unit", undefined)
-                          form.setValue("first_due_date", "")
-                        }
-                      }}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="manual">Manual</SelectItem>
-                        <SelectItem value="automatic">Automatic</SelectItem>
-                        <SelectItem value="hybrid">Hybrid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                onPresetChange={(preset) => {
+                  if (preset === "monthly") {
+                    form.setValue("recurrence_interval", 1)
+                    form.setValue("recurrence_unit", "month")
+                  } else if (preset === "every-two-months") {
+                    form.setValue("recurrence_interval", 2)
+                    form.setValue("recurrence_unit", "month")
+                  } else if (preset === "yearly") {
+                    form.setValue("recurrence_interval", 1)
+                    form.setValue("recurrence_unit", "year")
+                  } else if (preset === "custom") {
+                    form.setValue("recurrence_interval", 3)
+                    form.setValue("recurrence_unit", "month")
+                  }
+                }}
               />
-              <FormField
-                control={form.control}
-                name="recurrence_unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Repeat unit</FormLabel>
-                    <Select
-                      disabled={form.watch("data_source_policy") === "manual"}
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="month">Monthly</SelectItem>
-                        <SelectItem value="year">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="recurrence_interval"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Repeat every</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.watch("data_source_policy") === "manual"}
-                        type="number"
-                        min={1}
-                        placeholder="For example, 2"
-                        value={field.value ?? ""}
-                        onChange={(event) =>
-                          field.onChange(
-                            event.target.value === ""
-                              ? undefined
-                              : Number(event.target.value),
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="first_due_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First due date</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.watch("data_source_policy") === "manual"}
-                        type="date"
-                        {...field}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <CurrencyField control={form.control} />
+            )}
             <DialogFooter>
               <LoadingButton type="submit" loading={mutation.isPending}>
                 Create category
@@ -704,10 +863,13 @@ function EditCategoryDialog({
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value)
-                        if (value === "manual") {
-                          form.setValue("recurrence_interval", undefined)
-                          form.setValue("recurrence_unit", undefined)
-                          form.setValue("first_due_date", "")
+                        if (
+                          value !== "manual" &&
+                          (!form.getValues("recurrence_interval") ||
+                            !form.getValues("recurrence_unit"))
+                        ) {
+                          form.setValue("recurrence_interval", 1)
+                          form.setValue("recurrence_unit", "month")
                         }
                       }}
                       value={field.value}
@@ -727,79 +889,31 @@ function EditCategoryDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="recurrence_unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Repeat unit</FormLabel>
-                    <Select
-                      disabled={form.watch("data_source_policy") === "manual"}
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="month">Monthly</SelectItem>
-                        <SelectItem value="year">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <CurrencyField control={form.control} />
             </div>
-            <CurrencyField control={form.control} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
+            <p className="text-sm text-muted-foreground">
+              {obligationModeDescription(form.watch("data_source_policy"))}
+            </p>
+            {form.watch("data_source_policy") !== "manual" && (
+              <PaymentScheduleFields
                 control={form.control}
-                name="recurrence_interval"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Repeat every</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.watch("data_source_policy") === "manual"}
-                        type="number"
-                        min={1}
-                        placeholder="For example, 2"
-                        value={field.value ?? ""}
-                        onChange={(event) =>
-                          field.onChange(
-                            event.target.value === ""
-                              ? undefined
-                              : Number(event.target.value),
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                onPresetChange={(preset) => {
+                  if (preset === "monthly") {
+                    form.setValue("recurrence_interval", 1)
+                    form.setValue("recurrence_unit", "month")
+                  } else if (preset === "every-two-months") {
+                    form.setValue("recurrence_interval", 2)
+                    form.setValue("recurrence_unit", "month")
+                  } else if (preset === "yearly") {
+                    form.setValue("recurrence_interval", 1)
+                    form.setValue("recurrence_unit", "year")
+                  } else if (preset === "custom") {
+                    form.setValue("recurrence_interval", 3)
+                    form.setValue("recurrence_unit", "month")
+                  }
+                }}
               />
-              <FormField
-                control={form.control}
-                name="first_due_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First due date</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled={form.watch("data_source_policy") === "manual"}
-                        type="date"
-                        {...field}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            )}
             <DialogFooter>
               <LoadingButton type="submit" loading={mutation.isPending}>
                 Save changes
