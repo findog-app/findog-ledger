@@ -2,7 +2,7 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from app.domain import BillingPeriod, RecurrenceUnit
+from app.domain import BillingPeriod, DataSourcePolicy, RecurrenceUnit
 from app.models import Obligation
 from app.services import obligations as obligation_service
 from tests.utils.ledger_domain import create_category_with_recurrence
@@ -55,8 +55,38 @@ def test_ensure_obligations_is_idempotent(db: Session) -> None:
 
 def test_ensure_obligations_ignores_categories_without_recurrence(db: Session) -> None:
     ledger, _, _ = create_category_with_recurrence(
-        db, recurrence_interval=None, recurrence_unit=None, recurrence_anchor=None
+        db, recurrence_interval=None, recurrence_unit=None, first_due_date=None
     )
+
+    assert (
+        obligation_service.ensure_obligations_for_period(
+            session=db, ledger_id=ledger.id, current_period=BillingPeriod(2026, 3)
+        )
+        == []
+    )
+
+
+def test_ensure_obligations_requires_a_first_due_date_for_recurrence(
+    db: Session,
+) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    category.first_due_date = None
+    db.commit()
+
+    assert (
+        obligation_service.ensure_obligations_for_period(
+            session=db, ledger_id=ledger.id, current_period=BillingPeriod(2026, 3)
+        )
+        == []
+    )
+
+
+def test_ensure_obligations_ignores_manual_categories_with_recurrence(
+    db: Session,
+) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    category.data_source_policy = DataSourcePolicy.MANUAL
+    db.commit()
 
     assert (
         obligation_service.ensure_obligations_for_period(
@@ -71,7 +101,7 @@ def test_ensure_obligations_only_creates_periods_that_occur(db: Session) -> None
         db,
         recurrence_interval=2,
         recurrence_unit=RecurrenceUnit.MONTH,
-        recurrence_anchor=date(2026, 1, 1),
+        first_due_date=date(2026, 1, 10),
     )
 
     created = obligation_service.ensure_obligations_for_period(
@@ -81,11 +111,11 @@ def test_ensure_obligations_only_creates_periods_that_occur(db: Session) -> None
     assert {(item.period_year, item.period_month) for item in created} == {(2026, 3)}
 
 
-def test_ensure_obligations_derives_due_date_from_category_due_day(
+def test_ensure_obligations_derives_due_date_from_category_first_due_date(
     db: Session,
 ) -> None:
     ledger, _, category = create_category_with_recurrence(db)
-    category.due_day = 31
+    category.first_due_date = date(2026, 1, 31)
     db.commit()
 
     created = obligation_service.ensure_obligations_for_period(
@@ -108,7 +138,7 @@ def test_category_occurs_in_respects_month_and_year_recurrence(db: Session) -> N
         db,
         recurrence_interval=2,
         recurrence_unit=RecurrenceUnit.MONTH,
-        recurrence_anchor=date(2026, 1, 15),
+        first_due_date=date(2026, 1, 15),
     )
 
     assert category.occurs_in(BillingPeriod(2026, 1))
@@ -117,7 +147,7 @@ def test_category_occurs_in_respects_month_and_year_recurrence(db: Session) -> N
 
     category.recurrence_interval = 1
     category.recurrence_unit = RecurrenceUnit.YEAR
-    category.recurrence_anchor = date(2026, 3, 1)
+    category.first_due_date = date(2026, 3, 1)
 
     assert category.occurs_in(BillingPeriod(2027, 3))
     assert not category.occurs_in(BillingPeriod(2027, 4))

@@ -6,7 +6,12 @@ import {
 } from "@tanstack/react-query"
 import { Archive, FolderPlus, Pencil, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  useForm,
+} from "react-hook-form"
 import { z } from "zod"
 
 import {
@@ -66,9 +71,8 @@ const categoryConfigurationSchema = z.object({
   data_source_policy: z.enum(["manual", "automatic", "hybrid"]),
   recurrence_interval: z.number().int().positive().optional(),
   recurrence_unit: z.enum(["month", "year"]).optional(),
-  recurrence_anchor: z.string().optional(),
+  first_due_date: z.string().optional(),
   currency: z.enum(["PLN", "EUR", "USD", "GBP", "CHF"]),
-  due_day: z.number().int().min(1).max(31).optional(),
 })
 
 const categorySchema = categoryConfigurationSchema.extend({
@@ -82,6 +86,39 @@ const categorySchema = categoryConfigurationSchema.extend({
 type GroupFormData = z.infer<typeof groupSchema>
 type CategoryFormData = z.infer<typeof categorySchema>
 type CategoryUpdateFormData = z.infer<typeof categoryConfigurationSchema>
+
+function CurrencyField<T extends FieldValues>({
+  control,
+}: {
+  control: Control<T>
+}) {
+  return (
+    <FormField
+      control={control}
+      name={"currency" as Path<T>}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Currency</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value as string}>
+            <FormControl>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              <SelectItem value="PLN">PLN</SelectItem>
+              <SelectItem value="EUR">EUR</SelectItem>
+              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="GBP">GBP</SelectItem>
+              <SelectItem value="CHF">CHF</SelectItem>
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
 
 function useCategoryQueries(ledgerId: string, includeArchived: boolean) {
   const groups = useSuspenseQuery({
@@ -313,9 +350,8 @@ function CreateCategoryDialog({
       data_source_policy: "hybrid",
       recurrence_interval: undefined,
       recurrence_unit: undefined,
-      recurrence_anchor: "",
+      first_due_date: "",
       currency: "PLN",
-      due_day: undefined,
     },
   })
   const mutation = useMutation({
@@ -352,7 +388,7 @@ function CreateCategoryDialog({
               mutation.mutate({
                 ...data,
                 description: data.description || null,
-                recurrence_anchor: data.recurrence_anchor || null,
+                first_due_date: data.first_due_date || null,
               }),
             )}
             className="space-y-4"
@@ -433,14 +469,14 @@ function CreateCategoryDialog({
                 name="data_source_policy"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data source</FormLabel>
+                    <FormLabel>Category mode</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value)
                         if (value === "manual") {
                           form.setValue("recurrence_interval", undefined)
                           form.setValue("recurrence_unit", undefined)
-                          form.setValue("recurrence_anchor", "")
+                          form.setValue("first_due_date", "")
                         }
                       }}
                       value={field.value}
@@ -465,7 +501,7 @@ function CreateCategoryDialog({
                 name="recurrence_unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recurrence unit</FormLabel>
+                    <FormLabel>Repeat unit</FormLabel>
                     <Select
                       disabled={form.watch("data_source_policy") === "manual"}
                       onValueChange={field.onChange}
@@ -492,7 +528,7 @@ function CreateCategoryDialog({
                 name="recurrence_interval"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recurrence interval</FormLabel>
+                    <FormLabel>Repeat every</FormLabel>
                     <FormControl>
                       <Input
                         disabled={form.watch("data_source_policy") === "manual"}
@@ -515,10 +551,10 @@ function CreateCategoryDialog({
               />
               <FormField
                 control={form.control}
-                name="recurrence_anchor"
+                name="first_due_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recurrence anchor</FormLabel>
+                    <FormLabel>First due date</FormLabel>
                     <FormControl>
                       <Input
                         disabled={form.watch("data_source_policy") === "manual"}
@@ -532,59 +568,7 @@ function CreateCategoryDialog({
                 )}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Currency</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="PLN">PLN</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                        <SelectItem value="CHF">CHF</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="due_day"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due day</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={31}
-                        placeholder="Optional"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(event) =>
-                          field.onChange(
-                            event.target.value === ""
-                              ? undefined
-                              : Number(event.target.value),
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CurrencyField control={form.control} />
             <DialogFooter>
               <LoadingButton type="submit" loading={mutation.isPending}>
                 Create category
@@ -615,9 +599,8 @@ function EditCategoryDialog({
       data_source_policy: category.data_source_policy,
       recurrence_interval: category.recurrence_interval ?? undefined,
       recurrence_unit: category.recurrence_unit ?? undefined,
-      recurrence_anchor: category.recurrence_anchor ?? "",
+      first_due_date: category.first_due_date ?? "",
       currency: category.currency,
-      due_day: category.due_day ?? undefined,
     },
   })
 
@@ -629,9 +612,8 @@ function EditCategoryDialog({
         data_source_policy: category.data_source_policy,
         recurrence_interval: category.recurrence_interval ?? undefined,
         recurrence_unit: category.recurrence_unit ?? undefined,
-        recurrence_anchor: category.recurrence_anchor ?? "",
+        first_due_date: category.first_due_date ?? "",
         currency: category.currency,
-        due_day: category.due_day ?? undefined,
       })
     }
   }, [category, form, open])
@@ -676,9 +658,8 @@ function EditCategoryDialog({
                 data_source_policy: data.data_source_policy,
                 recurrence_interval: data.recurrence_interval,
                 recurrence_unit: data.recurrence_unit ?? null,
-                recurrence_anchor: data.recurrence_anchor || null,
+                first_due_date: data.first_due_date || null,
                 currency: data.currency,
-                due_day: data.due_day,
               }),
             )}
             className="space-y-4"
@@ -719,14 +700,14 @@ function EditCategoryDialog({
                 name="data_source_policy"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data source</FormLabel>
+                    <FormLabel>Category mode</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value)
                         if (value === "manual") {
                           form.setValue("recurrence_interval", undefined)
                           form.setValue("recurrence_unit", undefined)
-                          form.setValue("recurrence_anchor", "")
+                          form.setValue("first_due_date", "")
                         }
                       }}
                       value={field.value}
@@ -751,7 +732,7 @@ function EditCategoryDialog({
                 name="recurrence_unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recurrence unit</FormLabel>
+                    <FormLabel>Repeat unit</FormLabel>
                     <Select
                       disabled={form.watch("data_source_policy") === "manual"}
                       onValueChange={field.onChange}
@@ -772,66 +753,14 @@ function EditCategoryDialog({
                 )}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Currency</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="PLN">PLN</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                        <SelectItem value="CHF">CHF</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="due_day"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due day</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={31}
-                        placeholder="Optional"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(event) =>
-                          field.onChange(
-                            event.target.value === ""
-                              ? undefined
-                              : Number(event.target.value),
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CurrencyField control={form.control} />
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="recurrence_interval"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recurrence interval</FormLabel>
+                    <FormLabel>Repeat every</FormLabel>
                     <FormControl>
                       <Input
                         disabled={form.watch("data_source_policy") === "manual"}
@@ -854,10 +783,10 @@ function EditCategoryDialog({
               />
               <FormField
                 control={form.control}
-                name="recurrence_anchor"
+                name="first_due_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recurrence anchor</FormLabel>
+                    <FormLabel>First due date</FormLabel>
                     <FormControl>
                       <Input
                         disabled={form.watch("data_source_policy") === "manual"}
@@ -1051,9 +980,9 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
                           {category.currency && (
                             <Badge variant="outline">{category.currency}</Badge>
                           )}
-                          {category.due_day && (
+                          {category.first_due_date && (
                             <Badge variant="outline">
-                              due day {category.due_day}
+                              first due {category.first_due_date}
                             </Badge>
                           )}
                         </div>

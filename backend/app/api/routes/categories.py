@@ -30,7 +30,6 @@ from app.use_cases.exceptions import (
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
     InvalidCategoryCodeError,
-    InvalidCategoryDueDayError,
 )
 
 router = APIRouter(tags=["categories"])
@@ -174,9 +173,8 @@ def create_category(
             data_source_policy=category_in.data_source_policy,
             recurrence_interval=category_in.recurrence_interval,
             recurrence_unit=category_in.recurrence_unit,
-            recurrence_anchor=category_in.recurrence_anchor,
+            first_due_date=category_in.first_due_date,
             currency=category_in.currency,
-            due_day=category_in.due_day,
         )
     except CategoryGroupNotFoundError:
         raise HTTPException(status_code=404, detail="Category group not found")
@@ -191,8 +189,6 @@ def create_category(
             status_code=422,
             detail="Category code must contain exactly four uppercase English letters",
         )
-    except InvalidCategoryDueDayError:
-        raise HTTPException(status_code=422, detail="Due day must be between 1 and 31")
     except CategoryGroupArchivedError:
         raise HTTPException(status_code=409, detail="Category group is archived")
 
@@ -220,9 +216,8 @@ def update_category(
             data_source_policy=category_in.data_source_policy,
             recurrence_interval=category_in.recurrence_interval,
             recurrence_unit=category_in.recurrence_unit,
-            recurrence_anchor=category_in.recurrence_anchor,
+            first_due_date=category_in.first_due_date,
             currency=category_in.currency,
-            due_day=category_in.due_day,
         )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -235,8 +230,6 @@ def update_category(
             status_code=422,
             detail="Category code must contain exactly four uppercase English letters",
         )
-    except InvalidCategoryDueDayError:
-        raise HTTPException(status_code=422, detail="Due day must be between 1 and 31")
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 

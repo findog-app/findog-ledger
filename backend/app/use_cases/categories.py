@@ -20,7 +20,6 @@ from app.use_cases.exceptions import (
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
     InvalidCategoryCodeError,
-    InvalidCategoryDueDayError,
     LedgerNotFoundError,
 )
 
@@ -143,9 +142,8 @@ def create_category(
     data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
     recurrence_interval: int | None = None,
     recurrence_unit: RecurrenceUnit | None = None,
-    recurrence_anchor: date | None = None,
+    first_due_date: date | None = None,
     currency: Currency = Currency.PLN,
-    due_day: int | None = None,
 ) -> Category:
     _require_ledger(session=session, ledger_id=ledger_id)
     normalized_name = _normalize_name(name)
@@ -177,8 +175,6 @@ def create_category(
         raise DuplicateCategoryError
 
     normalized_code = _normalize_code(code)
-    if due_day is not None and not 1 <= due_day <= 31:
-        raise InvalidCategoryDueDayError
     while (
         session.scalar(
             select(Category.id).where(
@@ -190,7 +186,7 @@ def create_category(
         raise DuplicateCategoryCodeError
 
     if data_source_policy is DataSourcePolicy.MANUAL:
-        recurrence_interval = recurrence_unit = recurrence_anchor = None
+        recurrence_interval = recurrence_unit = first_due_date = None
 
     category = Category(
         ledger_id=ledger_id,
@@ -202,9 +198,8 @@ def create_category(
         data_source_policy=data_source_policy,
         recurrence_interval=recurrence_interval,
         recurrence_unit=recurrence_unit,
-        recurrence_anchor=recurrence_anchor,
+        first_due_date=first_due_date,
         currency=currency,
-        due_day=due_day,
     )
     session.add(category)
     session.commit()
@@ -222,9 +217,8 @@ def update_category(
     data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
     recurrence_interval: int | None = None,
     recurrence_unit: RecurrenceUnit | None = None,
-    recurrence_anchor: date | None = None,
+    first_due_date: date | None = None,
     currency: Currency = Currency.PLN,
-    due_day: int | None = None,
 ) -> Category:
     _require_ledger(session=session, ledger_id=ledger_id)
     category = session.scalar(
@@ -248,19 +242,15 @@ def update_category(
     if existing_name is not None:
         raise DuplicateCategoryError
 
-    if due_day is not None and not 1 <= due_day <= 31:
-        raise InvalidCategoryDueDayError
-
     category.name = normalized_name
     category.description = description
     category.data_source_policy = data_source_policy
     if data_source_policy is DataSourcePolicy.MANUAL:
-        recurrence_interval = recurrence_unit = recurrence_anchor = None
+        recurrence_interval = recurrence_unit = first_due_date = None
     category.recurrence_interval = recurrence_interval
     category.recurrence_unit = recurrence_unit
-    category.recurrence_anchor = recurrence_anchor
+    category.first_due_date = first_due_date
     category.currency = currency
-    category.due_day = due_day
     session.commit()
     session.refresh(category)
     return category

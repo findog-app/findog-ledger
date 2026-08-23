@@ -362,7 +362,7 @@ export const CategoryCreateSchema = {
                 }
             ]
         },
-        recurrence_anchor: {
+        first_due_date: {
             anyOf: [
                 {
                     type: 'string',
@@ -372,24 +372,11 @@ export const CategoryCreateSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Recurrence Anchor'
+            title: 'First Due Date'
         },
         currency: {
             '$ref': '#/components/schemas/Currency',
             default: 'PLN'
-        },
-        due_day: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    maximum: 31,
-                    minimum: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Due Day'
         }
     },
     type: 'object',
@@ -579,7 +566,7 @@ export const CategoryPublicSchema = {
                 }
             ]
         },
-        recurrence_anchor: {
+        first_due_date: {
             anyOf: [
                 {
                     type: 'string',
@@ -589,21 +576,10 @@ export const CategoryPublicSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Recurrence Anchor'
+            title: 'First Due Date'
         },
         currency: {
             '$ref': '#/components/schemas/Currency'
-        },
-        due_day: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Due Day'
         },
         archived_at: {
             anyOf: [
@@ -619,7 +595,7 @@ export const CategoryPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'recurrence_anchor', 'currency', 'due_day', 'archived_at'],
+    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'first_due_date', 'currency', 'archived_at'],
     title: 'CategoryPublic'
 } as const;
 
@@ -667,7 +643,7 @@ export const CategoryUpdateSchema = {
                 }
             ]
         },
-        recurrence_anchor: {
+        first_due_date: {
             anyOf: [
                 {
                     type: 'string',
@@ -677,24 +653,11 @@ export const CategoryUpdateSchema = {
                     type: 'null'
                 }
             ],
-            title: 'Recurrence Anchor'
+            title: 'First Due Date'
         },
         currency: {
             '$ref': '#/components/schemas/Currency',
             default: 'PLN'
-        },
-        due_day: {
-            anyOf: [
-                {
-                    type: 'integer',
-                    maximum: 31,
-                    minimum: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Due Day'
         }
     },
     additionalProperties: false,

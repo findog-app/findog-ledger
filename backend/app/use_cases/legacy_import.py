@@ -178,9 +178,8 @@ def import_legacy_payment_book(
                     data_source_policy=DataSourcePolicy.MANUAL,
                     recurrence_interval=None,
                     recurrence_unit=None,
-                    recurrence_anchor=None,
+                    first_due_date=None,
                     currency=Currency.PLN,
-                    due_day=None,
                 )
                 categories_by_code[category_code] = category
                 categories_by_group_and_name[(category_group.id, category_name)] = (
