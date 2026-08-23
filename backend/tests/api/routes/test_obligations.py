@@ -340,7 +340,7 @@ def test_ensure_obligations_creates_current_and_next_period_for_active_categorie
         code="ELEC",
         recurrence_interval=1,
         recurrence_unit=RecurrenceUnit.MONTH,
-        recurrence_anchor=date(2026, 3, 1),
+        first_due_date=date(2026, 3, 10),
     )
     inactive_category = category_use_cases.create_category(
         session=db,
@@ -350,7 +350,7 @@ def test_ensure_obligations_creates_current_and_next_period_for_active_categorie
         code="INAC",
         recurrence_interval=1,
         recurrence_unit=RecurrenceUnit.MONTH,
-        recurrence_anchor=date(2026, 3, 1),
+        first_due_date=date(2026, 3, 10),
     )
     inactive_category.is_active = False
     db.commit()
@@ -397,7 +397,7 @@ def test_ensure_obligations_is_idempotent(client: TestClient, db: Session) -> No
         code="GASS",
         recurrence_interval=1,
         recurrence_unit=RecurrenceUnit.MONTH,
-        recurrence_anchor=date(2026, 3, 1),
+        first_due_date=date(2026, 3, 10),
     )
     url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/ensure"
 

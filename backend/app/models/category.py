@@ -79,7 +79,6 @@ class Category(Base):
         UniqueConstraint("ledger_id", "category_group_id", "name"),
         UniqueConstraint("ledger_id", "code"),
         CheckConstraint("code ~ '^[A-Z]{4}$'"),
-        CheckConstraint("due_day IS NULL OR (due_day >= 1 AND due_day <= 31)"),
         CheckConstraint("recurrence_interval IS NULL OR recurrence_interval > 0"),
     )
 
@@ -102,11 +101,10 @@ class Category(Base):
     data_source_policy: Mapped[DataSourcePolicy] = mapped_column(nullable=False)
     recurrence_interval: Mapped[int | None] = mapped_column(nullable=True)
     recurrence_unit: Mapped[RecurrenceUnit | None] = mapped_column(nullable=True)
-    recurrence_anchor: Mapped[date | None] = mapped_column(Date, nullable=True)
+    first_due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     currency: Mapped[Currency] = mapped_column(
         String(3), default=Currency.PLN, nullable=False
     )
-    due_day: Mapped[int | None] = mapped_column(nullable=True)
     archived_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -135,13 +133,14 @@ class Category(Base):
 
     def occurs_in(self, period: BillingPeriod) -> bool:
         if (
-            self.recurrence_interval is None
+            self.data_source_policy is DataSourcePolicy.MANUAL
+            or self.recurrence_interval is None
             or self.recurrence_unit is None
-            or self.recurrence_anchor is None
+            or self.first_due_date is None
         ):
             return False
 
-        anchor_period = BillingPeriod.from_date(self.recurrence_anchor)
+        anchor_period = BillingPeriod.from_date(self.first_due_date)
         month_difference = (period.year - anchor_period.year) * 12 + (
             period.month - anchor_period.month
         )

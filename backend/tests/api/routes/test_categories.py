@@ -673,7 +673,7 @@ def test_patch_category_updates_category_and_returns_404_when_missing(
         "description": "Monthly bill",
         "data_source_policy": "hybrid",
         "currency": "PLN",
-        "due_day": 15,
+        "first_due_date": "2026-01-15",
     }
 
     updated = client.patch(
@@ -689,6 +689,6 @@ def test_patch_category_updates_category_and_returns_404_when_missing(
 
     assert updated.status_code == 200
     assert updated.json()["name"] == "Updated electricity"
-    assert updated.json()["due_day"] == 15
+    assert updated.json()["first_due_date"] == "2026-01-15"
     assert missing.status_code == 404
     assert missing.json() == {"detail": "Category not found"}

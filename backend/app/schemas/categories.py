@@ -24,9 +24,8 @@ class CategoryCreate(BaseModel):
     data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID
     recurrence_interval: int | None = Field(default=None, gt=0)
     recurrence_unit: RecurrenceUnit | None = None
-    recurrence_anchor: date | None = None
+    first_due_date: date | None = None
     currency: Currency = Currency.PLN
-    due_day: int | None = Field(default=None, ge=1, le=31)
 
 
 class CategoryUpdate(BaseModel):
@@ -37,9 +36,8 @@ class CategoryUpdate(BaseModel):
     data_source_policy: DataSourcePolicy
     recurrence_interval: int | None = Field(default=None, gt=0)
     recurrence_unit: RecurrenceUnit | None = None
-    recurrence_anchor: date | None = None
+    first_due_date: date | None = None
     currency: Currency = Currency.PLN
-    due_day: int | None = Field(default=None, ge=1, le=31)
 
 
 class CategoryGroupPublic(BaseModel):
@@ -71,9 +69,8 @@ class CategoryPublic(BaseModel):
     data_source_policy: DataSourcePolicy
     recurrence_interval: int | None
     recurrence_unit: RecurrenceUnit | None
-    recurrence_anchor: date | None
+    first_due_date: date | None
     currency: Currency
-    due_day: int | None
     archived_at: datetime | None
 
 
