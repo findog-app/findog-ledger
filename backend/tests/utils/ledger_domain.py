@@ -43,15 +43,14 @@ def create_category_with_recurrence(
     *,
     recurrence_interval: int | None = 1,
     recurrence_unit: RecurrenceUnit | None = RecurrenceUnit.MONTH,
-    recurrence_anchor: date | None = date(2026, 1, 1),
+    first_due_date: date | None = date(2026, 1, 10),
 ) -> tuple[Ledger, CategoryGroup, Category]:
     ledger, category_group, category = create_category_tree(db)
     category.data_source_policy = DataSourcePolicy.HYBRID
     category.recurrence_interval = recurrence_interval
     category.recurrence_unit = recurrence_unit
-    category.recurrence_anchor = recurrence_anchor
+    category.first_due_date = first_due_date
     category.currency = "PLN"
-    category.due_day = 10
     db.commit()
     db.refresh(category)
     return ledger, category_group, category

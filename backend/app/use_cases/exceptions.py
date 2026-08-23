@@ -66,10 +66,6 @@ class CrossLedgerReferenceError(ApplicationError):
     pass
 
 
-class InvalidCategoryDueDayError(ApplicationError):
-    pass
-
-
 class DuplicateObligationError(ApplicationError):
     pass
 

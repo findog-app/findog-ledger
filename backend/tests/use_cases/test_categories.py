@@ -192,9 +192,8 @@ def test_update_category_changes_details_and_obligation_configuration(
         data_source_policy=DataSourcePolicy.AUTOMATIC,
         recurrence_interval=2,
         recurrence_unit=RecurrenceUnit.MONTH,
-        recurrence_anchor=date(2026, 1, 1),
+        first_due_date=date(2026, 1, 20),
         currency="EUR",
-        due_day=20,
     )
 
     assert updated.name == "Updated category"
@@ -203,9 +202,8 @@ def test_update_category_changes_details_and_obligation_configuration(
     assert updated.data_source_policy == DataSourcePolicy.AUTOMATIC
     assert updated.recurrence_interval == 2
     assert updated.recurrence_unit == RecurrenceUnit.MONTH
-    assert updated.recurrence_anchor == date(2026, 1, 1)
+    assert updated.first_due_date == date(2026, 1, 20)
     assert updated.currency == "EUR"
-    assert updated.due_day == 20
 
 
 def test_create_category_defaults_currency_and_clears_manual_recurrence(
@@ -222,13 +220,13 @@ def test_create_category_defaults_currency_and_clears_manual_recurrence(
         data_source_policy=DataSourcePolicy.MANUAL,
         recurrence_interval=1,
         recurrence_unit=RecurrenceUnit.MONTH,
-        recurrence_anchor=date(2026, 1, 1),
+        first_due_date=date(2026, 1, 1),
     )
 
     assert category.currency == Currency.PLN
     assert category.recurrence_interval is None
     assert category.recurrence_unit is None
-    assert category.recurrence_anchor is None
+    assert category.first_due_date is None
 
 
 def test_category_code_is_immutable(db: Session) -> None:

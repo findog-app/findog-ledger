@@ -19,13 +19,13 @@ from app.models import Category, Obligation
 
 
 def _due_date_for_period(*, category: Category, period: BillingPeriod) -> date | None:
-    if category.due_day is None:
+    if category.first_due_date is None:
         return None
 
     due_date = date(
         period.year,
         period.month,
-        min(category.due_day, monthrange(period.year, period.month)[1]),
+        min(category.first_due_date.day, monthrange(period.year, period.month)[1]),
     )
     while due_date.weekday() >= 5:
         due_date -= timedelta(days=1)
