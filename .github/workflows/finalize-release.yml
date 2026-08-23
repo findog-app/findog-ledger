@@ -124,8 +124,9 @@ jobs:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           tag="v${RELEASE_VERSION}"
+          cp openapi/integration.json integration-openapi.json
           gh release upload "$tag" \
-            openapi/integration.json#integration-openapi.json \
+            integration-openapi.json \
             --clobber
 
       - name: Trigger Python client regeneration
