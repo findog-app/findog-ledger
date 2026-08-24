@@ -67,6 +67,43 @@ export type CategoryCreate = {
     currency?: Currency;
 };
 
+/**
+ * A partial category-data object supplied by an integration.
+ */
+export type CategoryDataPatch = {
+    [key: string]: unknown;
+};
+
+export type CategoryDataPublic = {
+    schema_version: number;
+    created_at: string;
+    updated_at: string;
+    data: {
+        [key: string]: unknown;
+    };
+};
+
+export type CategoryDataSchemaCreate = {
+    schema: {
+        [key: string]: unknown;
+    };
+};
+
+export type CategoryDataSchemaPublic = {
+    version: number;
+    schema: {
+        [key: string]: unknown;
+    };
+    is_active: boolean;
+    created_at: string;
+};
+
+export type CategoryDataUpdate = {
+    data: {
+        [key: string]: unknown;
+    };
+};
+
 export type CategoryGroupCreate = {
     name: string;
     description?: (string | null);
@@ -386,12 +423,61 @@ export type CategoriesUpdateCategoryData = {
 
 export type CategoriesUpdateCategoryResponse = (CategoryPublic);
 
+export type CategoriesReadCategoryDataData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoryDataResponse = (CategoryDataPublic);
+
+export type CategoriesUpdateCategoryDataData = {
+    categoryId: string;
+    ledgerId: string;
+    requestBody: CategoryDataUpdate;
+};
+
+export type CategoriesUpdateCategoryDataResponse = (CategoryDataPublic);
+
+export type CategoriesReadCategoryDataSchemaData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoryDataSchemaResponse = (CategoryDataSchemaPublic);
+
+export type CategoriesCreateCategoryDataSchemaData = {
+    categoryId: string;
+    ledgerId: string;
+    requestBody: CategoryDataSchemaCreate;
+};
+
+export type CategoriesCreateCategoryDataSchemaResponse = (CategoryDataSchemaPublic);
+
 export type CategoriesArchiveCategoryData = {
     categoryId: string;
     ledgerId: string;
 };
 
 export type CategoriesArchiveCategoryResponse = (CategoryPublic);
+
+export type IntegrationReadIntegrationCategoryDataData = {
+    categoryId: string;
+};
+
+export type IntegrationReadIntegrationCategoryDataResponse = (CategoryDataPublic);
+
+export type IntegrationPatchIntegrationCategoryDataData = {
+    categoryId: string;
+    requestBody: CategoryDataPatch;
+};
+
+export type IntegrationPatchIntegrationCategoryDataResponse = (CategoryDataPublic);
+
+export type IntegrationReadIntegrationCategoryDataSchemaData = {
+    categoryId: string;
+};
+
+export type IntegrationReadIntegrationCategoryDataSchemaResponse = (CategoryDataSchemaPublic);
 
 export type IntegrationReadIntegrationLedgerResponse = (LedgerPublic);
 

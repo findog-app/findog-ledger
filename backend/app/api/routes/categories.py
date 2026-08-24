@@ -8,10 +8,14 @@ from app.api.deps import (
     require_ledger_edit_access,
     require_ledger_view_access,
 )
-from app.models import Category, CategoryGroup, Ledger
+from app.models import Category, CategoryData, CategoryDataSchema, CategoryGroup, Ledger
 from app.schemas import (
     CategoriesPublic,
     CategoryCreate,
+    CategoryDataPublic,
+    CategoryDataSchemaCreate,
+    CategoryDataSchemaPublic,
+    CategoryDataUpdate,
     CategoryGroupCreate,
     CategoryGroupPublic,
     CategoryGroupsPublic,
@@ -21,6 +25,8 @@ from app.schemas import (
 )
 from app.use_cases import categories as category_use_cases
 from app.use_cases.exceptions import (
+    CategoryDataSchemaNotFoundError,
+    CategoryDataValidationError,
     CategoryGroupArchivedError,
     CategoryGroupHasActiveChildrenError,
     CategoryGroupNotFoundError,
@@ -29,7 +35,9 @@ from app.use_cases.exceptions import (
     DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
+    IncompatibleCategoryDataSchemaError,
     InvalidCategoryCodeError,
+    InvalidCategoryDataSchemaError,
 )
 
 router = APIRouter(tags=["categories"])
@@ -41,6 +49,26 @@ def _to_category_group_public(category_group: CategoryGroup) -> CategoryGroupPub
 
 def _to_category_public(category: Category) -> CategoryPublic:
     return CategoryPublic.model_validate(category)
+
+
+def _to_category_data_public(category_data: CategoryData) -> CategoryDataPublic:
+    return CategoryDataPublic(
+        schema_version=category_data.schema_version,
+        created_at=category_data.created_at,
+        updated_at=category_data.updated_at,
+        data=category_data.data,
+    )
+
+
+def _to_category_data_schema_public(
+    category_schema: CategoryDataSchema,
+) -> CategoryDataSchemaPublic:
+    return CategoryDataSchemaPublic(
+        version=category_schema.version,
+        definition=category_schema.schema,
+        is_active=category_schema.is_active,
+        created_at=category_schema.created_at,
+    )
 
 
 @router.get("/ledgers/{ledger_id}/category-groups", response_model=CategoryGroupsPublic)
@@ -234,6 +262,107 @@ def update_category(
         raise HTTPException(status_code=422, detail=str(exc))
 
     return _to_category_public(category)
+
+
+@router.get(
+    "/ledgers/{ledger_id}/categories/{category_id}/data",
+    response_model=CategoryDataPublic,
+)
+def read_category_data(
+    *,
+    session: SessionDep,
+    category_id: uuid.UUID,
+    ledger: Ledger = Depends(require_ledger_view_access),
+) -> Any:
+    try:
+        category_data = category_use_cases.get_category_data(
+            session=session, ledger_id=ledger.id, category_id=category_id
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except CategoryDataSchemaNotFoundError:
+        raise HTTPException(status_code=404, detail="Category data not found")
+    return _to_category_data_public(category_data)
+
+
+@router.put(
+    "/ledgers/{ledger_id}/categories/{category_id}/data",
+    response_model=CategoryDataPublic,
+)
+def update_category_data(
+    *,
+    session: SessionDep,
+    category_id: uuid.UUID,
+    category_data_in: CategoryDataUpdate,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        category_data = category_use_cases.update_category_data(
+            session=session,
+            ledger_id=ledger.id,
+            category_id=category_id,
+            data=category_data_in.data,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except CategoryDataSchemaNotFoundError:
+        raise HTTPException(
+            status_code=409, detail="Category data schema not configured"
+        )
+    except CategoryDataValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return _to_category_data_public(category_data)
+
+
+@router.get(
+    "/ledgers/{ledger_id}/categories/{category_id}/data-schema",
+    response_model=CategoryDataSchemaPublic,
+)
+def read_category_data_schema(
+    *,
+    session: SessionDep,
+    category_id: uuid.UUID,
+    ledger: Ledger = Depends(require_ledger_view_access),
+) -> Any:
+    try:
+        category_schema = category_use_cases.get_category_data_schema(
+            session=session, ledger_id=ledger.id, category_id=category_id
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except CategoryDataSchemaNotFoundError:
+        raise HTTPException(status_code=404, detail="Category data schema not found")
+    return _to_category_data_schema_public(category_schema)
+
+
+@router.post(
+    "/ledgers/{ledger_id}/categories/{category_id}/data-schema",
+    response_model=CategoryDataSchemaPublic,
+)
+def create_category_data_schema(
+    *,
+    session: SessionDep,
+    category_id: uuid.UUID,
+    category_schema_in: CategoryDataSchemaCreate,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        category_schema = category_use_cases.set_category_data_schema(
+            session=session,
+            ledger_id=ledger.id,
+            category_id=category_id,
+            schema=category_schema_in.definition,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except InvalidCategoryDataSchemaError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid JSON Schema: {exc}")
+    except IncompatibleCategoryDataSchemaError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Schema is incompatible with existing category data: {exc}",
+        )
+    return _to_category_data_schema_public(category_schema)
 
 
 @router.patch(

@@ -30,6 +30,22 @@ class CategoryNotFoundError(ApplicationError):
     pass
 
 
+class CategoryDataSchemaNotFoundError(ApplicationError):
+    pass
+
+
+class CategoryDataValidationError(ApplicationError):
+    pass
+
+
+class InvalidCategoryDataSchemaError(ApplicationError):
+    pass
+
+
+class IncompatibleCategoryDataSchemaError(ApplicationError):
+    pass
+
+
 class CategoryArchivedError(ApplicationError):
     pass
 

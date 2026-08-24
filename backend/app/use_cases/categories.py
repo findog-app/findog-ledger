@@ -3,14 +3,19 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import date
+from typing import Any
 
+from jsonschema import SchemaError, ValidationError
+from jsonschema.validators import validator_for
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain import Currency, DataSourcePolicy, RecurrenceUnit
-from app.models import Category, CategoryGroup, Ledger
+from app.models import Category, CategoryData, CategoryDataSchema, CategoryGroup, Ledger
 from app.services import categories as category_service
 from app.use_cases.exceptions import (
+    CategoryDataSchemaNotFoundError,
+    CategoryDataValidationError,
     CategoryGroupArchivedError,
     CategoryGroupHasActiveChildrenError,
     CategoryGroupNotFoundError,
@@ -19,7 +24,9 @@ from app.use_cases.exceptions import (
     DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
+    IncompatibleCategoryDataSchemaError,
     InvalidCategoryCodeError,
+    InvalidCategoryDataSchemaError,
     LedgerNotFoundError,
 )
 
@@ -43,6 +50,179 @@ def _normalize_code(value: str) -> str:
     if re.fullmatch(r"[A-Z]{4}", normalized) is None:
         raise InvalidCategoryCodeError
     return normalized
+
+
+def _require_category(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    for_update: bool = False,
+) -> Category:
+    statement = select(Category).where(
+        Category.id == category_id, Category.ledger_id == ledger_id
+    )
+    if for_update:
+        statement = statement.with_for_update()
+    category = session.scalar(statement)
+    if category is None:
+        raise CategoryNotFoundError
+    return category
+
+
+def _validate_schema(schema: dict[str, Any]) -> None:
+    if schema.get("type") != "object":
+        raise InvalidCategoryDataSchemaError(
+            "Category data schema root type must be object"
+        )
+    try:
+        validator_for(schema).check_schema(schema)
+    except SchemaError as exc:
+        raise InvalidCategoryDataSchemaError(str(exc.message)) from exc
+
+
+def _validate_data(*, schema: dict[str, Any], data: dict[str, Any]) -> None:
+    validator = validator_for(schema)
+    try:
+        validator(schema).validate(data)
+    except ValidationError as exc:
+        location = ".".join(str(part) for part in exc.absolute_path)
+        prefix = f"{location}: " if location else ""
+        raise CategoryDataValidationError(f"{prefix}{exc.message}") from exc
+
+
+def get_category_data_schema(
+    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+) -> CategoryDataSchema:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    schema = session.scalar(
+        select(CategoryDataSchema).where(
+            CategoryDataSchema.category_id == category_id,
+            CategoryDataSchema.is_active.is_(True),
+        )
+    )
+    if schema is None:
+        raise CategoryDataSchemaNotFoundError
+    return schema
+
+
+def set_category_data_schema(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    schema: dict[str, Any],
+) -> CategoryDataSchema:
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
+    _validate_schema(schema)
+    existing_data = session.get(CategoryData, category_id)
+    if existing_data is not None:
+        try:
+            _validate_data(schema=schema, data=existing_data.data)
+        except CategoryDataValidationError as exc:
+            raise IncompatibleCategoryDataSchemaError(str(exc)) from exc
+
+    current_schema = session.scalar(
+        select(CategoryDataSchema).where(
+            CategoryDataSchema.category_id == category_id,
+            CategoryDataSchema.is_active.is_(True),
+        )
+    )
+    latest_version = session.scalar(
+        select(CategoryDataSchema.version)
+        .where(CategoryDataSchema.category_id == category_id)
+        .order_by(CategoryDataSchema.version.desc())
+        .limit(1)
+    )
+    if current_schema is not None:
+        current_schema.is_active = False
+        session.flush()
+    category_schema = CategoryDataSchema(
+        category_id=category_id,
+        version=(latest_version or 0) + 1,
+        schema=schema,
+        is_active=True,
+    )
+    session.add(category_schema)
+    session.flush()
+    if existing_data is not None:
+        existing_data.schema_version = category_schema.version
+    session.commit()
+    session.refresh(category_schema)
+    return category_schema
+
+
+def get_category_data(
+    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+) -> CategoryData:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    category_data = session.get(CategoryData, category_id)
+    if category_data is None:
+        raise CategoryDataSchemaNotFoundError
+    return category_data
+
+
+def update_category_data(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    data: dict[str, Any],
+) -> CategoryData:
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
+    active_schema = get_category_data_schema(
+        session=session, ledger_id=ledger_id, category_id=category_id
+    )
+    _validate_data(schema=active_schema.schema, data=data)
+    category_data = session.get(CategoryData, category_id)
+    if category_data is None:
+        category_data = CategoryData(
+            category_id=category_id, schema_version=active_schema.version, data=data
+        )
+        session.add(category_data)
+    else:
+        category_data.schema_version = active_schema.version
+        category_data.data = data
+    session.commit()
+    session.refresh(category_data)
+    return category_data
+
+
+def patch_category_data(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    patch: dict[str, Any],
+) -> CategoryData:
+    """Merge an integration patch, then validate and persist the complete object."""
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
+    active_schema = get_category_data_schema(
+        session=session, ledger_id=ledger_id, category_id=category_id
+    )
+    category_data = session.get(CategoryData, category_id)
+    merged_data = {**(category_data.data if category_data is not None else {}), **patch}
+    _validate_data(schema=active_schema.schema, data=merged_data)
+
+    if category_data is None:
+        category_data = CategoryData(
+            category_id=category_id,
+            schema_version=active_schema.version,
+            data=merged_data,
+        )
+        session.add(category_data)
+    else:
+        category_data.schema_version = active_schema.version
+        category_data.data = merged_data
+    session.commit()
+    session.refresh(category_data)
+    return category_data
 
 
 def create_category_group(

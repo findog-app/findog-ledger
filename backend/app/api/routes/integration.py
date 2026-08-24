@@ -1,28 +1,100 @@
 """Ledger-scoped, API-key authenticated integration endpoints."""
 
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.deps import ApiContext, require_scope
+from app.api.routes.categories import (
+    _to_category_data_public,
+    _to_category_data_schema_public,
+)
 from app.api.routes.obligations import to_obligation_public
 from app.domain import ObligationKey, ObligationLifecycle
 from app.schemas import (
+    CategoryDataPatch,
+    CategoryDataPublic,
+    CategoryDataSchemaPublic,
     ObligationIntegrationUpdate,
     ObligationNoteAppend,
     ObligationPublic,
     ObligationsPublic,
 )
 from app.schemas.ledgers import LedgerPublic, LedgerUpdate
+from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases import obligations as obligation_use_cases
 from app.use_cases.exceptions import (
+    CategoryDataSchemaNotFoundError,
+    CategoryDataValidationError,
+    CategoryNotFoundError,
     ObligationInvalidLifecycleError,
     ObligationNotFoundError,
     ObligationReadOnlyError,
 )
 
 router = APIRouter(prefix="/integration", tags=["integration"])
+
+
+@router.get("/categories/{category_id}/data", response_model=CategoryDataPublic)
+def read_integration_category_data(
+    category_id: uuid.UUID,
+    context: ApiContext = Depends(require_scope("ledger:read")),
+) -> CategoryDataPublic:
+    try:
+        category_data = category_use_cases.get_category_data(
+            session=context.session,
+            ledger_id=context.ledger.id,
+            category_id=category_id,
+        )
+    except (CategoryNotFoundError, CategoryDataSchemaNotFoundError):
+        raise HTTPException(status_code=404, detail="Category data not found")
+    return _to_category_data_public(category_data)
+
+
+@router.patch("/categories/{category_id}/data", response_model=CategoryDataPublic)
+def patch_integration_category_data(
+    category_id: uuid.UUID,
+    category_data_in: CategoryDataPatch,
+    context: ApiContext = Depends(require_scope("ledger:write")),
+) -> CategoryDataPublic:
+    try:
+        category_data = category_use_cases.patch_category_data(
+            session=context.session,
+            ledger_id=context.ledger.id,
+            category_id=category_id,
+            patch=category_data_in.root,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except CategoryDataSchemaNotFoundError:
+        raise HTTPException(
+            status_code=409, detail="Category data schema not configured"
+        )
+    except CategoryDataValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return _to_category_data_public(category_data)
+
+
+@router.get(
+    "/categories/{category_id}/data-schema", response_model=CategoryDataSchemaPublic
+)
+def read_integration_category_data_schema(
+    category_id: uuid.UUID,
+    context: ApiContext = Depends(require_scope("ledger:read")),
+) -> CategoryDataSchemaPublic:
+    try:
+        category_schema = category_use_cases.get_category_data_schema(
+            session=context.session,
+            ledger_id=context.ledger.id,
+            category_id=category_id,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except CategoryDataSchemaNotFoundError:
+        raise HTTPException(status_code=404, detail="Category data schema not found")
+    return _to_category_data_schema_public(category_schema)
 
 
 @router.get("/ledger", response_model=LedgerPublic)
