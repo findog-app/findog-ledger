@@ -461,20 +461,20 @@ export type CategoriesArchiveCategoryData = {
 export type CategoriesArchiveCategoryResponse = (CategoryPublic);
 
 export type IntegrationReadIntegrationCategoryDataData = {
-    categoryId: string;
+    categoryCode: string;
 };
 
 export type IntegrationReadIntegrationCategoryDataResponse = (CategoryDataPublic);
 
 export type IntegrationPatchIntegrationCategoryDataData = {
-    categoryId: string;
+    categoryCode: string;
     requestBody: CategoryDataPatch;
 };
 
 export type IntegrationPatchIntegrationCategoryDataResponse = (CategoryDataPublic);
 
 export type IntegrationReadIntegrationCategoryDataSchemaData = {
-    categoryId: string;
+    categoryCode: string;
 };
 
 export type IntegrationReadIntegrationCategoryDataSchemaResponse = (CategoryDataSchemaPublic);

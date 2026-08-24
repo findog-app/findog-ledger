@@ -66,6 +66,36 @@ def test_category_data_rejects_unknown_fields_and_invalid_values(db: Session) ->
         )
 
 
+def test_category_data_enforces_date_format(db: Session) -> None:
+    ledger, _, category = create_category_tree(db)
+    category_use_cases.set_category_data_schema(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        schema={
+            "type": "object",
+            "properties": {"reading_date": {"type": "string", "format": "date"}},
+            "required": ["reading_date"],
+        },
+    )
+
+    saved_data = category_use_cases.update_category_data(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        data={"reading_date": "2026-08-24"},
+    )
+    assert saved_data.data == {"reading_date": "2026-08-24"}
+
+    with pytest.raises(CategoryDataValidationError, match="is not a 'date'"):
+        category_use_cases.update_category_data(
+            session=db,
+            ledger_id=ledger.id,
+            category_id=category.id,
+            data={"reading_date": "2026-02-30"},
+        )
+
+
 def test_new_schema_versions_are_immutable_and_compatible_with_saved_data(
     db: Session,
 ) -> None:
