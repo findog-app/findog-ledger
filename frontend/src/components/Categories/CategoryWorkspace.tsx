@@ -571,7 +571,7 @@ function CreateCategoryDialog({
           New category
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create category</DialogTitle>
           <DialogDescription>
