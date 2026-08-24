@@ -9,7 +9,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
   const groupName = uniqueName("Utilities")
   const categoryName = uniqueName("Electricity")
 
-  await page.goto("/")
+  await page.goto("/ledgers")
   await page.getByRole("button", { name: "New ledger" }).click()
   await page.getByLabel("Name").fill(ledgerName)
   await page.getByRole("button", { name: "Create ledger" }).click()
