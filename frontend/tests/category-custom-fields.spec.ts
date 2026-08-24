@@ -51,7 +51,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
   ).toBeVisible()
 
   await customFieldsButton.click()
-  await expect(page.getByDisplayValue("meter_reading_kwh")).toBeVisible()
+  await expect(page.getByLabel("Field name")).toHaveValue("meter_reading_kwh")
   await page.getByLabel("Field name").fill("current_reading_kwh")
   await saveCustomFieldsButton.scrollIntoViewIfNeeded()
   await saveCustomFieldsButton.click()
