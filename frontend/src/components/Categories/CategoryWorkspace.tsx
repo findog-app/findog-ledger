@@ -23,6 +23,7 @@ import {
   type CategoryPublic,
   type CategoryUpdate,
 } from "@/client"
+import { CategoryCustomFieldsDialog } from "@/components/Categories/CategoryCustomFieldsDialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -1102,6 +1103,10 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <CategoryCustomFieldsDialog
+                          ledgerId={ledgerId}
+                          category={category}
+                        />
                         <EditCategoryDialog
                           ledgerId={ledgerId}
                           category={category}
