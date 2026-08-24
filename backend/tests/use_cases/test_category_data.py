@@ -1,6 +1,11 @@
+import threading
+from typing import Any
+
 import pytest
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models import Category, CategoryData
 from app.use_cases import categories as category_use_cases
 from app.use_cases.exceptions import (
     CategoryDataValidationError,
@@ -9,7 +14,7 @@ from app.use_cases.exceptions import (
 )
 from tests.utils.ledger_domain import create_category_tree
 
-SCHEMA = {
+SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "invoice_available": {"type": "boolean"},
@@ -123,3 +128,64 @@ def test_incompatible_schema_and_invalid_json_schema_are_rejected(db: Session) -
             category_id=category.id,
             schema={"type": "not-a-json-schema-type"},
         )
+    with pytest.raises(
+        InvalidCategoryDataSchemaError, match="root type must be object"
+    ):
+        category_use_cases.set_category_data_schema(
+            session=db,
+            ledger_id=ledger.id,
+            category_id=category.id,
+            schema={"type": "string"},
+        )
+
+
+def test_category_data_patch_serializes_concurrent_updates(db: Session) -> None:
+    ledger, _, category = create_category_tree(db)
+    category_use_cases.set_category_data_schema(
+        session=db, ledger_id=ledger.id, category_id=category.id, schema=SCHEMA
+    )
+    category_use_cases.update_category_data(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        data={"invoice_available": True, "meter_reading_kwh": 1.0},
+    )
+
+    lock_session = Session(bind=db.get_bind())
+    lock_session.scalar(
+        select(Category).where(Category.id == category.id).with_for_update()
+    )
+    patch_started = threading.Event()
+    patch_finished = threading.Event()
+
+    def apply_patch() -> None:
+        patch_started.set()
+        with Session(bind=db.get_bind()) as patch_session:
+            category_use_cases.patch_category_data(
+                session=patch_session,
+                ledger_id=ledger.id,
+                category_id=category.id,
+                patch={"meter_reading_kwh": 2.0},
+            )
+        patch_finished.set()
+
+    patch_thread = threading.Thread(target=apply_patch)
+    patch_thread.start()
+    assert patch_started.wait(timeout=1)
+    assert not patch_finished.wait(timeout=0.2)
+
+    locked_data = lock_session.get(CategoryData, category.id)
+    assert locked_data is not None
+    locked_data.data = {"invoice_available": False, "meter_reading_kwh": 1.0}
+    lock_session.commit()
+    patch_thread.join(timeout=5)
+    assert patch_finished.is_set()
+
+    db.expire_all()
+    category_data = category_use_cases.get_category_data(
+        session=db, ledger_id=ledger.id, category_id=category.id
+    )
+    assert category_data.data == {
+        "invoice_available": False,
+        "meter_reading_kwh": 2.0,
+    }

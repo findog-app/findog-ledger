@@ -53,19 +53,28 @@ def _normalize_code(value: str) -> str:
 
 
 def _require_category(
-    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    for_update: bool = False,
 ) -> Category:
-    category = session.scalar(
-        select(Category).where(
-            Category.id == category_id, Category.ledger_id == ledger_id
-        )
+    statement = select(Category).where(
+        Category.id == category_id, Category.ledger_id == ledger_id
     )
+    if for_update:
+        statement = statement.with_for_update()
+    category = session.scalar(statement)
     if category is None:
         raise CategoryNotFoundError
     return category
 
 
 def _validate_schema(schema: dict[str, Any]) -> None:
+    if schema.get("type") != "object":
+        raise InvalidCategoryDataSchemaError(
+            "Category data schema root type must be object"
+        )
     try:
         validator_for(schema).check_schema(schema)
     except SchemaError as exc:
@@ -104,7 +113,9 @@ def set_category_data_schema(
     category_id: uuid.UUID,
     schema: dict[str, Any],
 ) -> CategoryDataSchema:
-    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
     _validate_schema(schema)
     existing_data = session.get(CategoryData, category_id)
     if existing_data is not None:
@@ -160,6 +171,9 @@ def update_category_data(
     category_id: uuid.UUID,
     data: dict[str, Any],
 ) -> CategoryData:
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
     active_schema = get_category_data_schema(
         session=session, ledger_id=ledger_id, category_id=category_id
     )
@@ -186,6 +200,9 @@ def patch_category_data(
     patch: dict[str, Any],
 ) -> CategoryData:
     """Merge an integration patch, then validate and persist the complete object."""
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
     active_schema = get_category_data_schema(
         session=session, ledger_id=ledger_id, category_id=category_id
     )
