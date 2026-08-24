@@ -21,9 +21,13 @@ def _api_key(
     return response.json()
 
 
-def _category(db: Session, owner_id: uuid.UUID, code: str):
+def _category(
+    db: Session, owner_id: uuid.UUID, code: str, ledger_name: str | None = None
+):
     ledger = ledger_use_cases.create_ledger(
-        session=db, owner_user_id=owner_id, name=f"Ledger {code}"
+        session=db,
+        owner_user_id=owner_id,
+        name=f"Ledger {ledger_name or code}",
     )
     group = category_use_cases.create_category_group(
         session=db, ledger_id=ledger.id, name=f"Group {code}"
@@ -60,10 +64,11 @@ def test_integration_category_data_patch_is_ledger_scoped_and_validates_merged_d
         client=client, email=owner.email, db=db
     )
     ledger, category = _category(db, owner.id, "ELEC")
-    _, other_category = _category(db, owner.id, "GASS")
+    _category(db, owner.id, "ELEC", ledger_name="Other ELEC")
+    _, foreign_category = _category(db, owner.id, "GASS")
     key = _api_key(client, jwt_headers, ledger.id, ["ledger:read", "ledger:write"])
     headers = {"Authorization": f"Bearer {key['key']}"}
-    data_url = f"{settings.API_V1_STR}/integration/categories/{category.id}/data"
+    data_url = f"{settings.API_V1_STR}/integration/categories/{category.code}/data"
 
     response = client.patch(
         data_url,
@@ -91,8 +96,29 @@ def test_integration_category_data_patch_is_ledger_scoped_and_validates_merged_d
         "meter_reading_kwh": 12402.7,
     }
 
+    response = client.get(data_url, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["data"]["meter_reading_kwh"] == 12402.7
+
     response = client.get(
-        f"{settings.API_V1_STR}/integration/categories/{other_category.id}/data-schema",
+        f"{settings.API_V1_STR}/integration/categories/{category.code}/data-schema",
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json()["schema"]["properties"]["meter_reading_kwh"] == {
+        "type": "number"
+    }
+
+    # Another ledger also has ELEC; the successful requests above resolve to the
+    # API key's ledger. A code that exists only in a different ledger is hidden.
+    response = client.get(
+        f"{settings.API_V1_STR}/integration/categories/{foreign_category.code}/data-schema",
+        headers=headers,
+    )
+    assert response.status_code == 404
+
+    response = client.get(
+        f"{settings.API_V1_STR}/integration/categories/MISS/data-schema",
         headers=headers,
     )
     assert response.status_code == 404
@@ -110,7 +136,7 @@ def test_integration_category_data_requires_matching_scope(
     headers = {"Authorization": f"Bearer {read_key['key']}"}
 
     response = client.patch(
-        f"{settings.API_V1_STR}/integration/categories/{category.id}/data",
+        f"{settings.API_V1_STR}/integration/categories/{category.code}/data",
         headers=headers,
         json={"invoice_available": True, "meter_reading_kwh": 12401.2},
     )

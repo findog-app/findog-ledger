@@ -55,3 +55,45 @@ def test_category_data_api_validates_payload_and_returns_schema_version(
     assert valid_response.json()["schema_version"] == 1
     assert valid_response.json()["data"] == {"invoice_available": True}
     assert invalid_response.status_code == 422
+
+
+def test_category_data_api_rejects_invalid_date_format(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="Utilities"
+    )
+    category = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=group.id,
+        name="Electricity",
+        code="ELEC",
+    )
+    schema_url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data-schema"
+    data_url = (
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data"
+    )
+    response = client.post(
+        schema_url,
+        headers=headers,
+        json={
+            "schema": {
+                "type": "object",
+                "properties": {"reading_date": {"type": "string", "format": "date"}},
+                "required": ["reading_date"],
+            }
+        },
+    )
+    assert response.status_code == 200
+
+    response = client.put(
+        data_url, headers=headers, json={"data": {"reading_date": "not-a-date"}}
+    )
+    assert response.status_code == 422
+    assert "is not a 'date'" in response.json()["detail"]

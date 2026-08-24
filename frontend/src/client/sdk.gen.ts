@@ -295,16 +295,16 @@ export class IntegrationService {
     /**
      * Read Integration Category Data
      * @param data The data for the request.
-     * @param data.categoryId
+     * @param data.categoryCode
      * @returns CategoryDataPublic Successful Response
      * @throws ApiError
      */
     public static readIntegrationCategoryData(data: IntegrationReadIntegrationCategoryDataData): CancelablePromise<IntegrationReadIntegrationCategoryDataResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/integration/categories/{category_id}/data',
+            url: '/api/v1/integration/categories/{category_code}/data',
             path: {
-                category_id: data.categoryId
+                category_code: data.categoryCode
             },
             errors: {
                 422: 'Validation Error'
@@ -315,7 +315,7 @@ export class IntegrationService {
     /**
      * Patch Integration Category Data
      * @param data The data for the request.
-     * @param data.categoryId
+     * @param data.categoryCode
      * @param data.requestBody
      * @returns CategoryDataPublic Successful Response
      * @throws ApiError
@@ -323,9 +323,9 @@ export class IntegrationService {
     public static patchIntegrationCategoryData(data: IntegrationPatchIntegrationCategoryDataData): CancelablePromise<IntegrationPatchIntegrationCategoryDataResponse> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/v1/integration/categories/{category_id}/data',
+            url: '/api/v1/integration/categories/{category_code}/data',
             path: {
-                category_id: data.categoryId
+                category_code: data.categoryCode
             },
             body: data.requestBody,
             mediaType: 'application/json',
@@ -338,16 +338,16 @@ export class IntegrationService {
     /**
      * Read Integration Category Data Schema
      * @param data The data for the request.
-     * @param data.categoryId
+     * @param data.categoryCode
      * @returns CategoryDataSchemaPublic Successful Response
      * @throws ApiError
      */
     public static readIntegrationCategoryDataSchema(data: IntegrationReadIntegrationCategoryDataSchemaData): CancelablePromise<IntegrationReadIntegrationCategoryDataSchemaResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/integration/categories/{category_id}/data-schema',
+            url: '/api/v1/integration/categories/{category_code}/data-schema',
             path: {
-                category_id: data.categoryId
+                category_code: data.categoryCode
             },
             errors: {
                 422: 'Validation Error'

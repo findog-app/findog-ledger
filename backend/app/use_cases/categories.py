@@ -5,7 +5,7 @@ import uuid
 from datetime import date
 from typing import Any
 
-from jsonschema import SchemaError, ValidationError
+from jsonschema import FormatChecker, SchemaError, ValidationError
 from jsonschema.validators import validator_for
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -70,6 +70,20 @@ def _require_category(
     return category
 
 
+def get_category_by_code(
+    *, session: Session, ledger_id: uuid.UUID, category_code: str
+) -> Category:
+    category = session.scalar(
+        select(Category).where(
+            Category.ledger_id == ledger_id,
+            Category.code == category_code,
+        )
+    )
+    if category is None:
+        raise CategoryNotFoundError
+    return category
+
+
 def _validate_schema(schema: dict[str, Any]) -> None:
     if schema.get("type") != "object":
         raise InvalidCategoryDataSchemaError(
@@ -84,7 +98,7 @@ def _validate_schema(schema: dict[str, Any]) -> None:
 def _validate_data(*, schema: dict[str, Any], data: dict[str, Any]) -> None:
     validator = validator_for(schema)
     try:
-        validator(schema).validate(data)
+        validator(schema, format_checker=FormatChecker()).validate(data)
     except ValidationError as exc:
         location = ".".join(str(part) for part in exc.absolute_path)
         prefix = f"{location}: " if location else ""
