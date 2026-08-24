@@ -15,6 +15,8 @@ from app.main import app
 from app.models import (
     ApiKey,
     Category,
+    CategoryData,
+    CategoryDataSchema,
     CategoryGroup,
     Ledger,
     LedgerMembership,
@@ -67,6 +69,8 @@ def db() -> Generator[Session, None, None]:
         session.execute(delete(ApiKey))
         session.execute(delete(LegacyImportJob))
         session.execute(delete(Obligation))
+        session.execute(delete(CategoryData))
+        session.execute(delete(CategoryDataSchema))
         session.execute(delete(Category))
         session.execute(delete(CategoryGroup))
         session.execute(delete(LedgerMembership))
@@ -78,6 +82,8 @@ def db() -> Generator[Session, None, None]:
         session.execute(delete(ApiKey))
         session.execute(delete(LegacyImportJob))
         session.execute(delete(Obligation))
+        session.execute(delete(CategoryData))
+        session.execute(delete(CategoryDataSchema))
         session.execute(delete(Category))
         session.execute(delete(CategoryGroup))
         session.execute(delete(LedgerMembership))

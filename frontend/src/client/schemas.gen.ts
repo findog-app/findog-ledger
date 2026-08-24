@@ -384,6 +384,89 @@ export const CategoryCreateSchema = {
     title: 'CategoryCreate'
 } as const;
 
+export const CategoryDataPatchSchema = {
+    additionalProperties: true,
+    type: 'object',
+    title: 'CategoryDataPatch',
+    description: 'A partial category-data object supplied by an integration.'
+} as const;
+
+export const CategoryDataPublicSchema = {
+    properties: {
+        schema_version: {
+            type: 'integer',
+            title: 'Schema Version'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        },
+        data: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Data'
+        }
+    },
+    type: 'object',
+    required: ['schema_version', 'created_at', 'updated_at', 'data'],
+    title: 'CategoryDataPublic'
+} as const;
+
+export const CategoryDataSchemaCreateSchema = {
+    properties: {
+        schema: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Definition'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['schema'],
+    title: 'CategoryDataSchemaCreate'
+} as const;
+
+export const CategoryDataSchemaPublicSchema = {
+    properties: {
+        version: {
+            type: 'integer'
+        },
+        schema: {
+            additionalProperties: true,
+            type: 'object'
+        },
+        is_active: {
+            type: 'boolean'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time'
+        }
+    },
+    type: 'object',
+    required: ['version', 'schema', 'is_active', 'created_at']
+} as const;
+
+export const CategoryDataUpdateSchema = {
+    properties: {
+        data: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Data'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['data'],
+    title: 'CategoryDataUpdate'
+} as const;
+
 export const CategoryGroupCreateSchema = {
     properties: {
         name: {

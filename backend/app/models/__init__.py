@@ -1,6 +1,11 @@
 from app.models.api_key import ApiKey
 from app.models.base import Base
-from app.models.category import Category, CategoryGroup
+from app.models.category import (
+    Category,
+    CategoryData,
+    CategoryDataSchema,
+    CategoryGroup,
+)
 from app.models.ledger import Ledger, LedgerMembership
 from app.models.legacy_import_job import LegacyImportJob
 from app.models.obligation import Obligation
@@ -10,6 +15,8 @@ __all__ = [
     "Base",
     "ApiKey",
     "Category",
+    "CategoryData",
+    "CategoryDataSchema",
     "CategoryGroup",
     "Ledger",
     "LedgerMembership",
