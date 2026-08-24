@@ -96,6 +96,84 @@ type CustomFieldsForm = z.infer<typeof customFieldsSchema>
 type CustomField = CustomFieldsForm["fields"][number]
 type JsonSchemaProperty = Record<string, unknown>
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
+}
+
+function unsupportedSchemaReason(schema: CategoryDataSchemaPublic | null) {
+  if (!schema) return null
+  if (!isRecord(schema.schema)) return "The schema root is not an object."
+
+  const definition = schema.schema
+  const supportedRootKeywords = new Set([
+    "type",
+    "properties",
+    "required",
+    "additionalProperties",
+  ])
+  const unsupportedRootKeyword = Object.keys(definition).find(
+    (key) => !supportedRootKeywords.has(key),
+  )
+  if (unsupportedRootKeyword) {
+    return `It uses the unsupported root keyword “${unsupportedRootKeyword}”.`
+  }
+  if (definition.type !== "object") {
+    return "Its root type is not an object."
+  }
+  if (definition.additionalProperties !== false) {
+    return "Its additional-properties setting is not supported by this builder."
+  }
+  const properties = definition.properties
+  if (!isRecord(properties)) {
+    return "Its properties definition is not an object."
+  }
+  if (
+    !Array.isArray(definition.required) ||
+    !definition.required.every((value) => typeof value === "string")
+  ) {
+    return "Its required-fields definition is not supported by this builder."
+  }
+  if (
+    definition.required.some((key) => !Object.keys(properties).includes(key))
+  ) {
+    return "It requires a field that is not defined in its properties."
+  }
+
+  for (const [key, value] of Object.entries(properties)) {
+    if (!isRecord(value)) return `Field “${key}” is not an object definition.`
+    const type =
+      value.type === "string" && value.format === "date" ? "date" : value.type
+    if (!fieldTypes.includes(type as (typeof fieldTypes)[number])) {
+      return `Field “${key}” uses an unsupported type or format.`
+    }
+    const supportedPropertyKeywords = new Set(["type", "title", "description"])
+    if (type === "string") {
+      supportedPropertyKeywords.add("minLength")
+      supportedPropertyKeywords.add("maxLength")
+      supportedPropertyKeywords.add("enum")
+    }
+    if (type === "date") supportedPropertyKeywords.add("format")
+    if (type === "number" || type === "integer") {
+      supportedPropertyKeywords.add("minimum")
+      supportedPropertyKeywords.add("maximum")
+    }
+    const unsupportedPropertyKeyword = Object.keys(value).find(
+      (propertyKey) => !supportedPropertyKeywords.has(propertyKey),
+    )
+    if (unsupportedPropertyKeyword) {
+      return `Field “${key}” uses the unsupported keyword “${unsupportedPropertyKeyword}”.`
+    }
+    if (
+      value.enum !== undefined &&
+      (!Array.isArray(value.enum) ||
+        !value.enum.every((item) => typeof item === "string"))
+    ) {
+      return `Field “${key}” has unsupported allowed values.`
+    }
+  }
+  return null
+}
+
 function emptyField(): CustomField {
   return {
     key: "",
@@ -252,6 +330,10 @@ export function CategoryCustomFieldsDialog({
     defaultValues: { fields: [] },
   })
   const fields = useFieldArray({ control: form.control, name: "fields" })
+  const unsupportedReason =
+    schemaQuery.data === undefined
+      ? null
+      : unsupportedSchemaReason(schemaQuery.data)
 
   useEffect(() => {
     if (open && schemaQuery.data !== undefined) {
@@ -308,194 +390,219 @@ export function CategoryCustomFieldsDialog({
         ) : (
           <form
             className="space-y-4"
-            onSubmit={form.handleSubmit((data) =>
-              saveSchema.mutate({ schema: toSchema(data.fields) }),
-            )}
+            onSubmit={form.handleSubmit((data) => {
+              if (!unsupportedReason) {
+                saveSchema.mutate({ schema: toSchema(data.fields) })
+              }
+            })}
           >
-            {fields.fields.length === 0 ? (
-              <p className="rounded-md border border-dashed p-5 text-center text-sm text-muted-foreground">
-                No custom fields configured yet.
+            {unsupportedReason && (
+              <p className="rounded-md border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+                This schema is read-only in the custom-field builder.{" "}
+                {unsupportedReason}
+                Editing it here could remove configuration that the builder
+                cannot represent.
               </p>
-            ) : (
-              <div className="space-y-4">
-                {fields.fields.map((item, index) => {
-                  const field = form.watch(`fields.${index}`)
-                  const isText = field.type === "string"
-                  const isNumeric =
-                    field.type === "number" || field.type === "integer"
-                  return (
-                    <section
-                      key={item.id}
-                      className="space-y-3 rounded-lg border p-4"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <Badge variant="secondary">Field {index + 1}</Badge>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => fields.remove(index)}
-                        >
-                          <Trash2 /> Remove
-                        </Button>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1.5 text-sm font-medium">
-                          <Label htmlFor={`custom-field-key-${item.id}`}>
-                            Field name
-                          </Label>
-                          <Input
-                            id={`custom-field-key-${item.id}`}
-                            {...form.register(`fields.${index}.key`)}
-                            placeholder="meter_reading_kwh"
-                          />
-                          {form.formState.errors.fields?.[index]?.key && (
-                            <span className="text-xs text-destructive">
-                              {
-                                form.formState.errors.fields[index]?.key
-                                  ?.message
-                              }
-                            </span>
-                          )}
-                        </div>
-                        <div className="space-y-1.5 text-sm font-medium">
-                          <Label htmlFor={`custom-field-type-${item.id}`}>
-                            Type
-                          </Label>
-                          <Select
-                            value={field.type}
-                            onValueChange={(value) =>
-                              form.setValue(
-                                `fields.${index}.type`,
-                                value as CustomField["type"],
-                              )
-                            }
-                          >
-                            <SelectTrigger
-                              id={`custom-field-type-${item.id}`}
-                              className="w-full"
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="string">Text</SelectItem>
-                              <SelectItem value="number">Number</SelectItem>
-                              <SelectItem value="integer">Integer</SelectItem>
-                              <SelectItem value="boolean">Yes / no</SelectItem>
-                              <SelectItem value="date">Date</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="space-y-1.5 text-sm font-medium">
-                          <Label htmlFor={`custom-field-title-${item.id}`}>
-                            Label
-                          </Label>
-                          <Input
-                            id={`custom-field-title-${item.id}`}
-                            {...form.register(`fields.${index}.title`)}
-                            placeholder="Meter reading"
-                          />
-                        </div>
-                        <label className="flex items-center gap-2 pt-7 text-sm font-medium">
-                          <input
-                            type="checkbox"
-                            {...form.register(`fields.${index}.required`)}
-                          />{" "}
-                          Required
-                        </label>
-                      </div>
-                      <div className="space-y-1.5 text-sm font-medium">
-                        <Label htmlFor={`custom-field-description-${item.id}`}>
-                          Help text
-                        </Label>
-                        <Input
-                          id={`custom-field-description-${item.id}`}
-                          {...form.register(`fields.${index}.description`)}
-                          placeholder="Shown below the field"
-                        />
-                      </div>
-                      {isText && (
-                        <div className="grid gap-3 sm:grid-cols-3">
-                          <Label className="space-y-1.5">
-                            Minimum length
-                            <NumberInput
-                              integer
-                              value={field.minLength}
-                              onChange={(value) =>
-                                form.setValue(
-                                  `fields.${index}.minLength`,
-                                  value,
-                                )
-                              }
-                              placeholder="None"
-                            />
-                          </Label>
-                          <Label className="space-y-1.5">
-                            Maximum length
-                            <NumberInput
-                              integer
-                              value={field.maxLength}
-                              onChange={(value) =>
-                                form.setValue(
-                                  `fields.${index}.maxLength`,
-                                  value,
-                                )
-                              }
-                              placeholder="None"
-                            />
-                          </Label>
-                          <Label className="space-y-1.5">
-                            Allowed values
-                            <Input
-                              {...form.register(`fields.${index}.enumValues`)}
-                              placeholder="e.g. low, high"
-                            />
-                          </Label>
-                        </div>
-                      )}
-                      {isNumeric && (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <Label className="space-y-1.5">
-                            Minimum
-                            <NumberInput
-                              value={field.minimum}
-                              onChange={(value) =>
-                                form.setValue(`fields.${index}.minimum`, value)
-                              }
-                              placeholder="None"
-                            />
-                          </Label>
-                          <Label className="space-y-1.5">
-                            Maximum
-                            <NumberInput
-                              value={field.maximum}
-                              onChange={(value) =>
-                                form.setValue(`fields.${index}.maximum`, value)
-                              }
-                              placeholder="None"
-                            />
-                          </Label>
-                        </div>
-                      )}
-                    </section>
-                  )
-                })}
-              </div>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fields.append(emptyField())}
+            <fieldset
+              disabled={Boolean(unsupportedReason)}
+              className="space-y-4"
             >
-              <Plus /> Add field
-            </Button>
-            <DialogFooter>
-              <LoadingButton type="submit" loading={saveSchema.isPending}>
-                Save custom fields
-              </LoadingButton>
-            </DialogFooter>
+              {fields.fields.length === 0 ? (
+                <p className="rounded-md border border-dashed p-5 text-center text-sm text-muted-foreground">
+                  No custom fields configured yet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {fields.fields.map((item, index) => {
+                    const field = form.watch(`fields.${index}`)
+                    const isText = field.type === "string"
+                    const isNumeric =
+                      field.type === "number" || field.type === "integer"
+                    return (
+                      <section
+                        key={item.id}
+                        className="space-y-3 rounded-lg border p-4"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <Badge variant="secondary">Field {index + 1}</Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fields.remove(index)}
+                          >
+                            <Trash2 /> Remove
+                          </Button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1.5 text-sm font-medium">
+                            <Label htmlFor={`custom-field-key-${item.id}`}>
+                              Field name
+                            </Label>
+                            <Input
+                              id={`custom-field-key-${item.id}`}
+                              {...form.register(`fields.${index}.key`)}
+                              placeholder="meter_reading_kwh"
+                            />
+                            {form.formState.errors.fields?.[index]?.key && (
+                              <span className="text-xs text-destructive">
+                                {
+                                  form.formState.errors.fields[index]?.key
+                                    ?.message
+                                }
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-1.5 text-sm font-medium">
+                            <Label htmlFor={`custom-field-type-${item.id}`}>
+                              Type
+                            </Label>
+                            <Select
+                              value={field.type}
+                              onValueChange={(value) =>
+                                form.setValue(
+                                  `fields.${index}.type`,
+                                  value as CustomField["type"],
+                                )
+                              }
+                            >
+                              <SelectTrigger
+                                id={`custom-field-type-${item.id}`}
+                                className="w-full"
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="string">Text</SelectItem>
+                                <SelectItem value="number">Number</SelectItem>
+                                <SelectItem value="integer">Integer</SelectItem>
+                                <SelectItem value="boolean">
+                                  Yes / no
+                                </SelectItem>
+                                <SelectItem value="date">Date</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1.5 text-sm font-medium">
+                            <Label htmlFor={`custom-field-title-${item.id}`}>
+                              Label
+                            </Label>
+                            <Input
+                              id={`custom-field-title-${item.id}`}
+                              {...form.register(`fields.${index}.title`)}
+                              placeholder="Meter reading"
+                            />
+                          </div>
+                          <label className="flex items-center gap-2 pt-7 text-sm font-medium">
+                            <input
+                              type="checkbox"
+                              {...form.register(`fields.${index}.required`)}
+                            />{" "}
+                            Required
+                          </label>
+                        </div>
+                        <div className="space-y-1.5 text-sm font-medium">
+                          <Label
+                            htmlFor={`custom-field-description-${item.id}`}
+                          >
+                            Help text
+                          </Label>
+                          <Input
+                            id={`custom-field-description-${item.id}`}
+                            {...form.register(`fields.${index}.description`)}
+                            placeholder="Shown below the field"
+                          />
+                        </div>
+                        {isText && (
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <Label className="space-y-1.5">
+                              Minimum length
+                              <NumberInput
+                                integer
+                                value={field.minLength}
+                                onChange={(value) =>
+                                  form.setValue(
+                                    `fields.${index}.minLength`,
+                                    value,
+                                  )
+                                }
+                                placeholder="None"
+                              />
+                            </Label>
+                            <Label className="space-y-1.5">
+                              Maximum length
+                              <NumberInput
+                                integer
+                                value={field.maxLength}
+                                onChange={(value) =>
+                                  form.setValue(
+                                    `fields.${index}.maxLength`,
+                                    value,
+                                  )
+                                }
+                                placeholder="None"
+                              />
+                            </Label>
+                            <Label className="space-y-1.5">
+                              Allowed values
+                              <Input
+                                {...form.register(`fields.${index}.enumValues`)}
+                                placeholder="e.g. low, high"
+                              />
+                            </Label>
+                          </div>
+                        )}
+                        {isNumeric && (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <Label className="space-y-1.5">
+                              Minimum
+                              <NumberInput
+                                value={field.minimum}
+                                onChange={(value) =>
+                                  form.setValue(
+                                    `fields.${index}.minimum`,
+                                    value,
+                                  )
+                                }
+                                placeholder="None"
+                              />
+                            </Label>
+                            <Label className="space-y-1.5">
+                              Maximum
+                              <NumberInput
+                                value={field.maximum}
+                                onChange={(value) =>
+                                  form.setValue(
+                                    `fields.${index}.maximum`,
+                                    value,
+                                  )
+                                }
+                                placeholder="None"
+                              />
+                            </Label>
+                          </div>
+                        )}
+                      </section>
+                    )
+                  })}
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fields.append(emptyField())}
+              >
+                <Plus /> Add field
+              </Button>
+              <DialogFooter>
+                <LoadingButton type="submit" loading={saveSchema.isPending}>
+                  Save custom fields
+                </LoadingButton>
+              </DialogFooter>
+            </fieldset>
           </form>
         )}
       </DialogContent>
