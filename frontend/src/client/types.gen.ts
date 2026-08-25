@@ -142,6 +142,8 @@ export type CategoryPublic = {
     first_due_date: (string | null);
     currency: Currency;
     archived_at: (string | null);
+    has_data_schema: boolean;
+    active_data_schema_version: (number | null);
 };
 
 export type CategoryUpdate = {

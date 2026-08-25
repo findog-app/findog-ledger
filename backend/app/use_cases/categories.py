@@ -459,7 +459,11 @@ def list_categories_for_ledger(
 ) -> list[Category]:
     _require_ledger(session=session, ledger_id=ledger_id)
 
-    statement = select(Category).where(Category.ledger_id == ledger_id)
+    statement = (
+        select(Category)
+        .where(Category.ledger_id == ledger_id)
+        .execution_options(populate_existing=True)
+    )
     if category_group_id is not None:
         statement = statement.where(Category.category_group_id == category_group_id)
     if not include_archived:

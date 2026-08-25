@@ -675,10 +675,25 @@ export const CategoryPublicSchema = {
                 }
             ],
             title: 'Archived At'
+        },
+        has_data_schema: {
+            type: 'boolean',
+            title: 'Has Data Schema'
+        },
+        active_data_schema_version: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Active Data Schema Version'
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'first_due_date', 'currency', 'archived_at'],
+    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'first_due_date', 'currency', 'archived_at', 'has_data_schema', 'active_data_schema_version'],
     title: 'CategoryPublic'
 } as const;
 

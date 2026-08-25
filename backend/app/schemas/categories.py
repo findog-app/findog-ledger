@@ -80,6 +80,8 @@ class CategoryPublic(BaseModel):
     first_due_date: date | None
     currency: Currency
     archived_at: datetime | None
+    has_data_schema: bool
+    active_data_schema_version: int | None
 
 
 class CategoriesPublic(BaseModel):
