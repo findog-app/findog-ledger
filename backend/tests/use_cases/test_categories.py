@@ -229,6 +229,32 @@ def test_create_category_defaults_currency_and_clears_manual_recurrence(
     assert category.first_due_date is None
 
 
+def test_list_categories_exposes_active_data_schema_metadata(db: Session) -> None:
+    ledger, category_group, category = create_category_tree(db)
+    category_use_cases.set_category_data_schema(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        schema={"type": "object"},
+    )
+    category_use_cases.set_category_data_schema(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        schema={"type": "object", "properties": {"note": {"type": "string"}}},
+    )
+
+    categories = category_use_cases.list_categories_for_ledger(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+    )
+
+    assert len(categories) == 1
+    assert categories[0].has_data_schema is True
+    assert categories[0].active_data_schema_version == 2
+
+
 def test_category_code_is_immutable(db: Session) -> None:
     ledger, group, category = create_category_tree(db)
     category.code = "OTHR"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from sqlalchemy import (
     CheckConstraint,
@@ -16,10 +16,11 @@ from sqlalchemy import (
     UniqueConstraint,
     event,
     inspect,
+    select,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.domain import BillingPeriod, Currency, DataSourcePolicy, RecurrenceUnit
 from app.models.base import Base, get_datetime_utc
@@ -139,6 +140,14 @@ class Category(Base):
         back_populates="category", cascade="all, delete-orphan"
     )
 
+    @property
+    def active_data_schema_version(self) -> int | None:
+        return cast(int | None, self.__dict__.get("_active_data_schema_version"))
+
+    @property
+    def has_data_schema(self) -> bool:
+        return self.active_data_schema_version is not None
+
     def occurs_in(self, period: BillingPeriod) -> bool:
         if (
             self.data_source_policy is DataSourcePolicy.MANUAL
@@ -227,3 +236,14 @@ class CategoryDataSchema(Base):
     )
 
     category: Mapped[Category] = relationship(back_populates="data_schemas")
+
+
+Category._active_data_schema_version = column_property(
+    select(CategoryDataSchema.version)
+    .where(
+        CategoryDataSchema.category_id == Category.id,
+        CategoryDataSchema.is_active.is_(True),
+    )
+    .correlate_except(CategoryDataSchema)
+    .scalar_subquery()
+)
