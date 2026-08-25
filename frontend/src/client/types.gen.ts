@@ -151,6 +151,7 @@ export type CategoryPublic = {
 };
 
 export type CategoryUpdate = {
+    category_group_id?: (string | null);
     name: string;
     description?: (string | null);
     data_source_policy: DataSourcePolicy;
@@ -468,6 +469,13 @@ export type CategoriesArchiveCategoryData = {
 };
 
 export type CategoriesArchiveCategoryResponse = (CategoryPublic);
+
+export type CategoriesRestoreCategoryData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesRestoreCategoryResponse = (CategoryPublic);
 
 export type IntegrationReadLatestIntegrationCategoryDataRecordData = {
     categoryCode: string;

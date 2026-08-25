@@ -769,6 +769,18 @@ export const CategoryPublicSchema = {
 
 export const CategoryUpdateSchema = {
     properties: {
+        category_group_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Category Group Id'
+        },
         name: {
             type: 'string',
             maxLength: 255,

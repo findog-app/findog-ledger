@@ -741,3 +741,72 @@ def test_patch_category_updates_category_and_returns_404_when_missing(
     assert updated.json()["first_due_date"] == "2026-01-15"
     assert missing.status_code == 404
     assert missing.json() == {"detail": "Category not found"}
+
+
+def test_patch_category_moves_category_to_another_active_group(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    source_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="Housing"
+    )
+    target_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="Utilities"
+    )
+    category = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=source_group.id,
+        name="Rent",
+        code="RENT",
+    )
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}",
+        headers=headers,
+        json={
+            "category_group_id": str(target_group.id),
+            "name": category.name,
+            "data_source_policy": "hybrid",
+            "currency": "PLN",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["category_group_id"] == str(target_group.id)
+
+
+def test_patch_category_restore_restores_archived_category(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category_group = category_use_cases.create_category_group(
+        session=db, ledger_id=ledger.id, name="Housing"
+    )
+    category = category_use_cases.create_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_group_id=category_group.id,
+        name="Rent",
+        code="RENT",
+    )
+    category_use_cases.archive_category(
+        session=db, ledger_id=ledger.id, category_id=category.id
+    )
+
+    response = client.patch(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/restore",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_active"] is True
+    assert response.json()["archived_at"] is None

@@ -42,6 +42,35 @@ def archive_category(
     return category
 
 
+def restore_category(
+    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+) -> Category:
+    category = session.scalar(
+        select(Category).where(
+            Category.id == category_id,
+            Category.ledger_id == ledger_id,
+        )
+    )
+    if category is None:
+        raise CategoryNotFoundError
+
+    category_group = session.scalar(
+        select(CategoryGroup).where(
+            CategoryGroup.id == category.category_group_id,
+            CategoryGroup.ledger_id == ledger_id,
+        )
+    )
+    if category_group is None:
+        raise CategoryGroupNotFoundError
+    if not category_group.is_active:
+        raise CategoryGroupHasActiveChildrenError
+
+    category.is_active = True
+    category.archived_at = None
+    session.flush()
+    return category
+
+
 def archive_category_group(
     *, session: Session, ledger_id: uuid.UUID, category_group_id: uuid.UUID
 ) -> CategoryGroup:
