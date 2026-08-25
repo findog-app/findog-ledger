@@ -384,6 +384,159 @@ export const CategoryCreateSchema = {
     title: 'CategoryCreate'
 } as const;
 
+export const CategoryDataRecordCreateSchema = {
+    properties: {
+        observed_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Observed At'
+        },
+        data: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Data'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['observed_at', 'data'],
+    title: 'CategoryDataRecordCreate'
+} as const;
+
+export const CategoryDataRecordPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        schema_version: {
+            type: 'integer',
+            title: 'Schema Version'
+        },
+        observed_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Observed At'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        data: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Data'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        }
+    },
+    type: 'object',
+    required: ['id', 'schema_version', 'observed_at', 'created_at', 'data', 'source', 'external_id'],
+    title: 'CategoryDataRecordPublic'
+} as const;
+
+export const CategoryDataRecordsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/CategoryDataRecordPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'CategoryDataRecordsPublic'
+} as const;
+
+export const CategoryDataSchemaCreateSchema = {
+    properties: {
+        schema: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Definition'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['schema'],
+    title: 'CategoryDataSchemaCreate'
+} as const;
+
+export const CategoryDataSchemaPublicSchema = {
+    properties: {
+        version: {
+            type: 'integer'
+        },
+        schema: {
+            additionalProperties: true,
+            type: 'object'
+        },
+        is_active: {
+            type: 'boolean'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time'
+        }
+    },
+    type: 'object',
+    required: ['version', 'schema', 'is_active', 'created_at']
+} as const;
+
 export const CategoryGroupCreateSchema = {
     properties: {
         name: {
@@ -592,15 +745,42 @@ export const CategoryPublicSchema = {
                 }
             ],
             title: 'Archived At'
+        },
+        has_data_schema: {
+            type: 'boolean',
+            title: 'Has Data Schema'
+        },
+        active_data_schema_version: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Active Data Schema Version'
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'first_due_date', 'currency', 'archived_at'],
+    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'first_due_date', 'currency', 'archived_at', 'has_data_schema', 'active_data_schema_version'],
     title: 'CategoryPublic'
 } as const;
 
 export const CategoryUpdateSchema = {
     properties: {
+        category_group_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Category Group Id'
+        },
         name: {
             type: 'string',
             maxLength: 255,

@@ -67,6 +67,47 @@ export type CategoryCreate = {
     currency?: Currency;
 };
 
+export type CategoryDataRecordCreate = {
+    observed_at: string;
+    data: {
+        [key: string]: unknown;
+    };
+    source?: (string | null);
+    external_id?: (string | null);
+};
+
+export type CategoryDataRecordPublic = {
+    id: string;
+    schema_version: number;
+    observed_at: string;
+    created_at: string;
+    data: {
+        [key: string]: unknown;
+    };
+    source: (string | null);
+    external_id: (string | null);
+};
+
+export type CategoryDataRecordsPublic = {
+    data: Array<CategoryDataRecordPublic>;
+    count: number;
+};
+
+export type CategoryDataSchemaCreate = {
+    schema: {
+        [key: string]: unknown;
+    };
+};
+
+export type CategoryDataSchemaPublic = {
+    version: number;
+    schema: {
+        [key: string]: unknown;
+    };
+    is_active: boolean;
+    created_at: string;
+};
+
 export type CategoryGroupCreate = {
     name: string;
     description?: (string | null);
@@ -105,9 +146,12 @@ export type CategoryPublic = {
     first_due_date: (string | null);
     currency: Currency;
     archived_at: (string | null);
+    has_data_schema: boolean;
+    active_data_schema_version: (number | null);
 };
 
 export type CategoryUpdate = {
+    category_group_id?: (string | null);
     name: string;
     description?: (string | null);
     data_source_policy: DataSourcePolicy;
@@ -386,12 +430,81 @@ export type CategoriesUpdateCategoryData = {
 
 export type CategoriesUpdateCategoryResponse = (CategoryPublic);
 
+export type CategoriesReadCategoryDataRecordsData = {
+    categoryId: string;
+    ledgerId: string;
+    limit?: number;
+    observedFrom?: (string | null);
+    observedTo?: (string | null);
+    offset?: number;
+};
+
+export type CategoriesReadCategoryDataRecordsResponse = (CategoryDataRecordsPublic);
+
+export type CategoriesReadLatestCategoryDataRecordData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesReadLatestCategoryDataRecordResponse = (CategoryDataRecordPublic);
+
+export type CategoriesReadCategoryDataSchemaData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesReadCategoryDataSchemaResponse = (CategoryDataSchemaPublic);
+
+export type CategoriesCreateCategoryDataSchemaData = {
+    categoryId: string;
+    ledgerId: string;
+    requestBody: CategoryDataSchemaCreate;
+};
+
+export type CategoriesCreateCategoryDataSchemaResponse = (CategoryDataSchemaPublic);
+
 export type CategoriesArchiveCategoryData = {
     categoryId: string;
     ledgerId: string;
 };
 
 export type CategoriesArchiveCategoryResponse = (CategoryPublic);
+
+export type CategoriesRestoreCategoryData = {
+    categoryId: string;
+    ledgerId: string;
+};
+
+export type CategoriesRestoreCategoryResponse = (CategoryPublic);
+
+export type IntegrationReadLatestIntegrationCategoryDataRecordData = {
+    categoryCode: string;
+};
+
+export type IntegrationReadLatestIntegrationCategoryDataRecordResponse = (CategoryDataRecordPublic);
+
+export type IntegrationReadIntegrationCategoryDataRecordsData = {
+    _from?: (string | null);
+    categoryCode: string;
+    limit?: number;
+    offset?: number;
+    to?: (string | null);
+};
+
+export type IntegrationReadIntegrationCategoryDataRecordsResponse = (CategoryDataRecordsPublic);
+
+export type IntegrationCreateIntegrationCategoryDataRecordData = {
+    categoryCode: string;
+    requestBody: CategoryDataRecordCreate;
+};
+
+export type IntegrationCreateIntegrationCategoryDataRecordResponse = (CategoryDataRecordPublic);
+
+export type IntegrationReadIntegrationCategoryDataSchemaData = {
+    categoryCode: string;
+};
+
+export type IntegrationReadIntegrationCategoryDataSchemaResponse = (CategoryDataSchemaPublic);
 
 export type IntegrationReadIntegrationLedgerResponse = (LedgerPublic);
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from sqlalchemy import (
     CheckConstraint,
@@ -10,14 +10,17 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     String,
     Text,
     UniqueConstraint,
     event,
     inspect,
+    select,
+    text,
 )
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.domain import BillingPeriod, Currency, DataSourcePolicy, RecurrenceUnit
 from app.models.base import Base, get_datetime_utc
@@ -130,6 +133,20 @@ class Category(Base):
         back_populates="category",
         overlaps="ledger,obligations",
     )
+    data_records: Mapped[list[CategoryDataRecord]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"
+    )
+    data_schemas: Mapped[list[CategoryDataSchema]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"
+    )
+
+    @property
+    def active_data_schema_version(self) -> int | None:
+        return cast(int | None, self.__dict__.get("_active_data_schema_version"))
+
+    @property
+    def has_data_schema(self) -> bool:
+        return self.active_data_schema_version is not None
 
     def occurs_in(self, period: BillingPeriod) -> bool:
         if (
@@ -160,3 +177,94 @@ def _prevent_category_code_change(
 ) -> None:
     if inspect(target).attrs.code.history.has_changes():
         raise ValueError("Category code is immutable")
+
+
+class CategoryDataRecord(Base):
+    __tablename__ = "category_data"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["category_id", "schema_version"],
+            ["category_data_schema.category_id", "category_data_schema.version"],
+        ),
+        Index(
+            "ix_category_data_category_observed_at",
+            "category_id",
+            text("observed_at DESC"),
+        ),
+        Index(
+            "uq_category_data_source_external_id",
+            "category_id",
+            "source",
+            "external_id",
+            unique=True,
+            postgresql_where=text("source IS NOT NULL AND external_id IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("category.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    schema_version: Mapped[int] = mapped_column(nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    data: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=get_datetime_utc, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=get_datetime_utc,
+        onupdate=get_datetime_utc,
+        nullable=False,
+    )
+
+    category: Mapped[Category] = relationship(back_populates="data_records")
+
+
+class CategoryDataSchema(Base):
+    __tablename__ = "category_data_schema"
+    __table_args__ = (
+        UniqueConstraint("category_id", "version"),
+        Index(
+            "uq_category_data_schema_active",
+            "category_id",
+            unique=True,
+            postgresql_where=text("is_active"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("category.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    version: Mapped[int] = mapped_column(nullable=False)
+    schema: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=get_datetime_utc, nullable=False
+    )
+
+    category: Mapped[Category] = relationship(back_populates="data_schemas")
+
+
+Category._active_data_schema_version = column_property(
+    select(CategoryDataSchema.version)
+    .where(
+        CategoryDataSchema.category_id == Category.id,
+        CategoryDataSchema.is_active.is_(True),
+    )
+    .correlate_except(CategoryDataSchema)
+    .scalar_subquery()
+)

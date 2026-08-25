@@ -2,15 +2,26 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime
+from typing import Any
 
-from sqlalchemy import select
+from jsonschema import FormatChecker, SchemaError, ValidationError
+from jsonschema.validators import validator_for
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain import Currency, DataSourcePolicy, RecurrenceUnit
-from app.models import Category, CategoryGroup, Ledger
+from app.models import (
+    Category,
+    CategoryDataRecord,
+    CategoryDataSchema,
+    CategoryGroup,
+    Ledger,
+)
 from app.services import categories as category_service
 from app.use_cases.exceptions import (
+    CategoryDataSchemaNotFoundError,
+    CategoryDataValidationError,
     CategoryGroupArchivedError,
     CategoryGroupHasActiveChildrenError,
     CategoryGroupNotFoundError,
@@ -20,6 +31,7 @@ from app.use_cases.exceptions import (
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
     InvalidCategoryCodeError,
+    InvalidCategoryDataSchemaError,
     LedgerNotFoundError,
 )
 
@@ -43,6 +55,219 @@ def _normalize_code(value: str) -> str:
     if re.fullmatch(r"[A-Z]{4}", normalized) is None:
         raise InvalidCategoryCodeError
     return normalized
+
+
+def _require_category(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    for_update: bool = False,
+) -> Category:
+    statement = select(Category).where(
+        Category.id == category_id, Category.ledger_id == ledger_id
+    )
+    if for_update:
+        statement = statement.with_for_update()
+    category = session.scalar(statement)
+    if category is None:
+        raise CategoryNotFoundError
+    return category
+
+
+def get_category_by_code(
+    *, session: Session, ledger_id: uuid.UUID, category_code: str
+) -> Category:
+    category = session.scalar(
+        select(Category).where(
+            Category.ledger_id == ledger_id,
+            Category.code == category_code,
+        )
+    )
+    if category is None:
+        raise CategoryNotFoundError
+    return category
+
+
+def _validate_schema(schema: dict[str, Any]) -> None:
+    if schema.get("type") != "object":
+        raise InvalidCategoryDataSchemaError(
+            "Category data schema root type must be object"
+        )
+    try:
+        validator_for(schema).check_schema(schema)
+    except SchemaError as exc:
+        raise InvalidCategoryDataSchemaError(str(exc.message)) from exc
+
+
+def _validate_data(*, schema: dict[str, Any], data: dict[str, Any]) -> None:
+    validator = validator_for(schema)
+    try:
+        validator(schema, format_checker=FormatChecker()).validate(data)
+    except ValidationError as exc:
+        location = ".".join(str(part) for part in exc.absolute_path)
+        prefix = f"{location}: " if location else ""
+        raise CategoryDataValidationError(f"{prefix}{exc.message}") from exc
+
+
+def get_category_data_schema(
+    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+) -> CategoryDataSchema:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    schema = session.scalar(
+        select(CategoryDataSchema).where(
+            CategoryDataSchema.category_id == category_id,
+            CategoryDataSchema.is_active.is_(True),
+        )
+    )
+    if schema is None:
+        raise CategoryDataSchemaNotFoundError
+    return schema
+
+
+def set_category_data_schema(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    schema: dict[str, Any],
+) -> CategoryDataSchema:
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
+    _validate_schema(schema)
+    current_schema = session.scalar(
+        select(CategoryDataSchema).where(
+            CategoryDataSchema.category_id == category_id,
+            CategoryDataSchema.is_active.is_(True),
+        )
+    )
+    latest_version = session.scalar(
+        select(CategoryDataSchema.version)
+        .where(CategoryDataSchema.category_id == category_id)
+        .order_by(CategoryDataSchema.version.desc())
+        .limit(1)
+    )
+    if current_schema is not None:
+        current_schema.is_active = False
+        session.flush()
+    category_schema = CategoryDataSchema(
+        category_id=category_id,
+        version=(latest_version or 0) + 1,
+        schema=schema,
+        is_active=True,
+    )
+    session.add(category_schema)
+    session.flush()
+    session.commit()
+    session.refresh(category_schema)
+    return category_schema
+
+
+def get_category_data_record(
+    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+) -> CategoryDataRecord:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    category_data = session.scalar(
+        select(CategoryDataRecord)
+        .where(CategoryDataRecord.category_id == category_id)
+        .order_by(CategoryDataRecord.observed_at.desc(), CategoryDataRecord.id.desc())
+        .limit(1)
+    )
+    if category_data is None:
+        raise CategoryDataSchemaNotFoundError
+    return category_data
+
+
+def list_category_data_records(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    observed_from: datetime | None = None,
+    observed_to: datetime | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[CategoryDataRecord]:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    statement = select(CategoryDataRecord).where(
+        CategoryDataRecord.category_id == category_id
+    )
+    if observed_from is not None:
+        statement = statement.where(CategoryDataRecord.observed_at >= observed_from)
+    if observed_to is not None:
+        statement = statement.where(CategoryDataRecord.observed_at <= observed_to)
+    return list(
+        session.scalars(
+            statement.order_by(
+                CategoryDataRecord.observed_at.desc(), CategoryDataRecord.id.desc()
+            )
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )
+
+
+def count_category_data_records(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    observed_from: datetime | None = None,
+    observed_to: datetime | None = None,
+) -> int:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    statement = (
+        select(func.count())
+        .select_from(CategoryDataRecord)
+        .where(CategoryDataRecord.category_id == category_id)
+    )
+    if observed_from is not None:
+        statement = statement.where(CategoryDataRecord.observed_at >= observed_from)
+    if observed_to is not None:
+        statement = statement.where(CategoryDataRecord.observed_at <= observed_to)
+    return session.scalar(statement) or 0
+
+
+def create_category_data_record(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    observed_at: datetime,
+    data: dict[str, Any],
+    source: str | None = None,
+    external_id: str | None = None,
+) -> CategoryDataRecord:
+    _require_category(
+        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    )
+    if source is not None and external_id is not None:
+        existing_record = session.scalar(
+            select(CategoryDataRecord).where(
+                CategoryDataRecord.category_id == category_id,
+                CategoryDataRecord.source == source,
+                CategoryDataRecord.external_id == external_id,
+            )
+        )
+        if existing_record is not None:
+            return existing_record
+    active_schema = get_category_data_schema(
+        session=session, ledger_id=ledger_id, category_id=category_id
+    )
+    _validate_data(schema=active_schema.schema, data=data)
+    category_data = CategoryDataRecord(
+        category_id=category_id,
+        schema_version=active_schema.version,
+        observed_at=observed_at,
+        data=data,
+        source=source,
+        external_id=external_id,
+    )
+    session.add(category_data)
+    session.commit()
+    session.refresh(category_data)
+    return category_data
 
 
 def create_category_group(
@@ -212,6 +437,7 @@ def update_category(
     session: Session,
     ledger_id: uuid.UUID,
     category_id: uuid.UUID,
+    category_group_id: uuid.UUID | None = None,
     name: str,
     description: str | None = None,
     data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
@@ -230,11 +456,23 @@ def update_category(
     if category is None:
         raise CategoryNotFoundError
 
+    target_group_id = category_group_id or category.category_group_id
+    category_group = session.scalar(
+        select(CategoryGroup).where(
+            CategoryGroup.id == target_group_id,
+            CategoryGroup.ledger_id == ledger_id,
+        )
+    )
+    if category_group is None:
+        raise CategoryGroupNotFoundError
+    if not category_group.is_active:
+        raise CategoryGroupArchivedError
+
     normalized_name = _normalize_name(name)
     existing_name = session.scalar(
         select(Category.id).where(
             Category.ledger_id == ledger_id,
-            Category.category_group_id == category.category_group_id,
+            Category.category_group_id == target_group_id,
             Category.name == normalized_name,
             Category.id != category_id,
         )
@@ -242,6 +480,7 @@ def update_category(
     if existing_name is not None:
         raise DuplicateCategoryError
 
+    category.category_group_id = target_group_id
     category.name = normalized_name
     category.description = description
     category.data_source_policy = data_source_policy
@@ -265,7 +504,11 @@ def list_categories_for_ledger(
 ) -> list[Category]:
     _require_ledger(session=session, ledger_id=ledger_id)
 
-    statement = select(Category).where(Category.ledger_id == ledger_id)
+    statement = (
+        select(Category)
+        .where(Category.ledger_id == ledger_id)
+        .execution_options(populate_existing=True)
+    )
     if category_group_id is not None:
         statement = statement.where(Category.category_group_id == category_group_id)
     if not include_archived:
@@ -322,3 +565,25 @@ def archive_category_group(
     session.commit()
     session.refresh(category_group)
     return category_group
+
+
+def restore_category(
+    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+) -> Category:
+    _require_ledger(session=session, ledger_id=ledger_id)
+    try:
+        category = category_service.restore_category(
+            session=session,
+            ledger_id=ledger_id,
+            category_id=category_id,
+        )
+    except category_service.CategoryNotFoundError as exc:
+        raise CategoryNotFoundError from exc
+    except category_service.CategoryGroupNotFoundError as exc:
+        raise CategoryGroupNotFoundError from exc
+    except category_service.CategoryGroupHasActiveChildrenError as exc:
+        raise CategoryGroupArchivedError from exc
+
+    session.commit()
+    session.refresh(category)
+    return category
