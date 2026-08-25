@@ -2,16 +2,22 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from jsonschema import FormatChecker, SchemaError, ValidationError
 from jsonschema.validators import validator_for
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain import Currency, DataSourcePolicy, RecurrenceUnit
-from app.models import Category, CategoryData, CategoryDataSchema, CategoryGroup, Ledger
+from app.models import (
+    Category,
+    CategoryDataRecord,
+    CategoryDataSchema,
+    CategoryGroup,
+    Ledger,
+)
 from app.services import categories as category_service
 from app.use_cases.exceptions import (
     CategoryDataSchemaNotFoundError,
@@ -24,7 +30,6 @@ from app.use_cases.exceptions import (
     DuplicateCategoryCodeError,
     DuplicateCategoryError,
     DuplicateCategoryGroupError,
-    IncompatibleCategoryDataSchemaError,
     InvalidCategoryCodeError,
     InvalidCategoryDataSchemaError,
     LedgerNotFoundError,
@@ -131,13 +136,6 @@ def set_category_data_schema(
         session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
     )
     _validate_schema(schema)
-    existing_data = session.get(CategoryData, category_id)
-    if existing_data is not None:
-        try:
-            _validate_data(schema=schema, data=existing_data.data)
-        except CategoryDataValidationError as exc:
-            raise IncompatibleCategoryDataSchemaError(str(exc)) from exc
-
     current_schema = session.scalar(
         select(CategoryDataSchema).where(
             CategoryDataSchema.category_id == category_id,
@@ -161,79 +159,112 @@ def set_category_data_schema(
     )
     session.add(category_schema)
     session.flush()
-    if existing_data is not None:
-        existing_data.schema_version = category_schema.version
     session.commit()
     session.refresh(category_schema)
     return category_schema
 
 
-def get_category_data(
+def get_category_data_record(
     *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
-) -> CategoryData:
+) -> CategoryDataRecord:
     _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
-    category_data = session.get(CategoryData, category_id)
+    category_data = session.scalar(
+        select(CategoryDataRecord)
+        .where(CategoryDataRecord.category_id == category_id)
+        .order_by(CategoryDataRecord.observed_at.desc(), CategoryDataRecord.id.desc())
+        .limit(1)
+    )
     if category_data is None:
         raise CategoryDataSchemaNotFoundError
     return category_data
 
 
-def update_category_data(
+def list_category_data_records(
     *,
     session: Session,
     ledger_id: uuid.UUID,
     category_id: uuid.UUID,
+    observed_from: datetime | None = None,
+    observed_to: datetime | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[CategoryDataRecord]:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    statement = select(CategoryDataRecord).where(
+        CategoryDataRecord.category_id == category_id
+    )
+    if observed_from is not None:
+        statement = statement.where(CategoryDataRecord.observed_at >= observed_from)
+    if observed_to is not None:
+        statement = statement.where(CategoryDataRecord.observed_at <= observed_to)
+    return list(
+        session.scalars(
+            statement.order_by(
+                CategoryDataRecord.observed_at.desc(), CategoryDataRecord.id.desc()
+            )
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )
+
+
+def count_category_data_records(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    observed_from: datetime | None = None,
+    observed_to: datetime | None = None,
+) -> int:
+    _require_category(session=session, ledger_id=ledger_id, category_id=category_id)
+    statement = (
+        select(func.count())
+        .select_from(CategoryDataRecord)
+        .where(CategoryDataRecord.category_id == category_id)
+    )
+    if observed_from is not None:
+        statement = statement.where(CategoryDataRecord.observed_at >= observed_from)
+    if observed_to is not None:
+        statement = statement.where(CategoryDataRecord.observed_at <= observed_to)
+    return session.scalar(statement) or 0
+
+
+def create_category_data_record(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    observed_at: datetime,
     data: dict[str, Any],
-) -> CategoryData:
+    source: str | None = None,
+    external_id: str | None = None,
+) -> CategoryDataRecord:
     _require_category(
         session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
     )
+    if source is not None and external_id is not None:
+        existing_record = session.scalar(
+            select(CategoryDataRecord).where(
+                CategoryDataRecord.category_id == category_id,
+                CategoryDataRecord.source == source,
+                CategoryDataRecord.external_id == external_id,
+            )
+        )
+        if existing_record is not None:
+            return existing_record
     active_schema = get_category_data_schema(
         session=session, ledger_id=ledger_id, category_id=category_id
     )
     _validate_data(schema=active_schema.schema, data=data)
-    category_data = session.get(CategoryData, category_id)
-    if category_data is None:
-        category_data = CategoryData(
-            category_id=category_id, schema_version=active_schema.version, data=data
-        )
-        session.add(category_data)
-    else:
-        category_data.schema_version = active_schema.version
-        category_data.data = data
-    session.commit()
-    session.refresh(category_data)
-    return category_data
-
-
-def patch_category_data(
-    *,
-    session: Session,
-    ledger_id: uuid.UUID,
-    category_id: uuid.UUID,
-    patch: dict[str, Any],
-) -> CategoryData:
-    """Merge an integration patch, then validate and persist the complete object."""
-    _require_category(
-        session=session, ledger_id=ledger_id, category_id=category_id, for_update=True
+    category_data = CategoryDataRecord(
+        category_id=category_id,
+        schema_version=active_schema.version,
+        observed_at=observed_at,
+        data=data,
+        source=source,
+        external_id=external_id,
     )
-    active_schema = get_category_data_schema(
-        session=session, ledger_id=ledger_id, category_id=category_id
-    )
-    category_data = session.get(CategoryData, category_id)
-    merged_data = {**(category_data.data if category_data is not None else {}), **patch}
-    _validate_data(schema=active_schema.schema, data=merged_data)
-
-    if category_data is None:
-        category_data = CategoryData(
-            category_id=category_id,
-            schema_version=active_schema.version,
-            data=merged_data,
-        )
-        session.add(category_data)
-    else:
-        category_data.schema_version = active_schema.version
-        category_data.data = merged_data
+    session.add(category_data)
     session.commit()
     session.refresh(category_data)
     return category_data

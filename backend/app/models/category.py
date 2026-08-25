@@ -133,8 +133,8 @@ class Category(Base):
         back_populates="category",
         overlaps="ledger,obligations",
     )
-    data: Mapped[CategoryData | None] = relationship(
-        back_populates="category", cascade="all, delete-orphan", uselist=False
+    data_records: Mapped[list[CategoryDataRecord]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"
     )
     data_schemas: Mapped[list[CategoryDataSchema]] = relationship(
         back_populates="category", cascade="all, delete-orphan"
@@ -179,22 +179,43 @@ def _prevent_category_code_change(
         raise ValueError("Category code is immutable")
 
 
-class CategoryData(Base):
+class CategoryDataRecord(Base):
     __tablename__ = "category_data"
     __table_args__ = (
         ForeignKeyConstraint(
             ["category_id", "schema_version"],
             ["category_data_schema.category_id", "category_data_schema.version"],
         ),
+        Index(
+            "ix_category_data_category_observed_at",
+            "category_id",
+            text("observed_at DESC"),
+        ),
+        Index(
+            "uq_category_data_source_external_id",
+            "category_id",
+            "source",
+            "external_id",
+            unique=True,
+            postgresql_where=text("source IS NOT NULL AND external_id IS NOT NULL"),
+        ),
     )
 
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("category.id", ondelete="CASCADE"),
-        primary_key=True,
+        nullable=False,
     )
     schema_version: Mapped[int] = mapped_column(nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     data: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=get_datetime_utc, nullable=False
     )
@@ -205,7 +226,7 @@ class CategoryData(Base):
         nullable=False,
     )
 
-    category: Mapped[Category] = relationship(back_populates="data")
+    category: Mapped[Category] = relationship(back_populates="data_records")
 
 
 class CategoryDataSchema(Base):

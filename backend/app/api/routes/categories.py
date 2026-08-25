@@ -1,21 +1,28 @@
 import uuid
+from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.deps import (
     SessionDep,
     require_ledger_edit_access,
     require_ledger_view_access,
 )
-from app.models import Category, CategoryData, CategoryDataSchema, CategoryGroup, Ledger
+from app.models import (
+    Category,
+    CategoryDataRecord,
+    CategoryDataSchema,
+    CategoryGroup,
+    Ledger,
+)
 from app.schemas import (
     CategoriesPublic,
     CategoryCreate,
-    CategoryDataPublic,
+    CategoryDataRecordPublic,
+    CategoryDataRecordsPublic,
     CategoryDataSchemaCreate,
     CategoryDataSchemaPublic,
-    CategoryDataUpdate,
     CategoryGroupCreate,
     CategoryGroupPublic,
     CategoryGroupsPublic,
@@ -26,7 +33,6 @@ from app.schemas import (
 from app.use_cases import categories as category_use_cases
 from app.use_cases.exceptions import (
     CategoryDataSchemaNotFoundError,
-    CategoryDataValidationError,
     CategoryGroupArchivedError,
     CategoryGroupHasActiveChildrenError,
     CategoryGroupNotFoundError,
@@ -51,12 +57,17 @@ def _to_category_public(category: Category) -> CategoryPublic:
     return CategoryPublic.model_validate(category)
 
 
-def _to_category_data_public(category_data: CategoryData) -> CategoryDataPublic:
-    return CategoryDataPublic(
+def _to_category_data_record_public(
+    category_data: CategoryDataRecord,
+) -> CategoryDataRecordPublic:
+    return CategoryDataRecordPublic(
+        id=category_data.id,
         schema_version=category_data.schema_version,
+        observed_at=category_data.observed_at,
         created_at=category_data.created_at,
-        updated_at=category_data.updated_at,
         data=category_data.data,
+        source=category_data.source,
+        external_id=category_data.external_id,
     )
 
 
@@ -265,53 +276,65 @@ def update_category(
 
 
 @router.get(
-    "/ledgers/{ledger_id}/categories/{category_id}/data",
-    response_model=CategoryDataPublic,
+    "/ledgers/{ledger_id}/categories/{category_id}/data-records",
+    response_model=CategoryDataRecordsPublic,
 )
-def read_category_data(
+def read_category_data_records(
+    *,
+    session: SessionDep,
+    category_id: uuid.UUID,
+    observed_from: datetime | None = None,
+    observed_to: datetime | None = None,
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    ledger: Ledger = Depends(require_ledger_view_access),
+) -> CategoryDataRecordsPublic:
+    try:
+        records = category_use_cases.list_category_data_records(
+            session=session,
+            ledger_id=ledger.id,
+            category_id=category_id,
+            observed_from=observed_from,
+            observed_to=observed_to,
+            limit=limit,
+            offset=offset,
+        )
+        count = category_use_cases.count_category_data_records(
+            session=session,
+            ledger_id=ledger.id,
+            category_id=category_id,
+            observed_from=observed_from,
+            observed_to=observed_to,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return CategoryDataRecordsPublic(
+        data=[_to_category_data_record_public(record) for record in records],
+        count=count,
+    )
+
+
+@router.get(
+    "/ledgers/{ledger_id}/categories/{category_id}/data-records/latest",
+    response_model=CategoryDataRecordPublic,
+)
+def read_latest_category_data_record(
     *,
     session: SessionDep,
     category_id: uuid.UUID,
     ledger: Ledger = Depends(require_ledger_view_access),
-) -> Any:
+) -> CategoryDataRecordPublic:
     try:
-        category_data = category_use_cases.get_category_data(
-            session=session, ledger_id=ledger.id, category_id=category_id
-        )
-    except CategoryNotFoundError:
-        raise HTTPException(status_code=404, detail="Category not found")
-    except CategoryDataSchemaNotFoundError:
-        raise HTTPException(status_code=404, detail="Category data not found")
-    return _to_category_data_public(category_data)
-
-
-@router.put(
-    "/ledgers/{ledger_id}/categories/{category_id}/data",
-    response_model=CategoryDataPublic,
-)
-def update_category_data(
-    *,
-    session: SessionDep,
-    category_id: uuid.UUID,
-    category_data_in: CategoryDataUpdate,
-    ledger: Ledger = Depends(require_ledger_edit_access),
-) -> Any:
-    try:
-        category_data = category_use_cases.update_category_data(
+        record = category_use_cases.get_category_data_record(
             session=session,
             ledger_id=ledger.id,
             category_id=category_id,
-            data=category_data_in.data,
         )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
     except CategoryDataSchemaNotFoundError:
-        raise HTTPException(
-            status_code=409, detail="Category data schema not configured"
-        )
-    except CategoryDataValidationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-    return _to_category_data_public(category_data)
+        raise HTTPException(status_code=404, detail="Category data records not found")
+    return _to_category_data_record_public(record)
 
 
 @router.get(

@@ -384,38 +384,122 @@ export const CategoryCreateSchema = {
     title: 'CategoryCreate'
 } as const;
 
-export const CategoryDataPatchSchema = {
-    additionalProperties: true,
+export const CategoryDataRecordCreateSchema = {
+    properties: {
+        observed_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Observed At'
+        },
+        data: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Data'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        }
+    },
+    additionalProperties: false,
     type: 'object',
-    title: 'CategoryDataPatch',
-    description: 'A partial category-data object supplied by an integration.'
+    required: ['observed_at', 'data'],
+    title: 'CategoryDataRecordCreate'
 } as const;
 
-export const CategoryDataPublicSchema = {
+export const CategoryDataRecordPublicSchema = {
     properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
         schema_version: {
             type: 'integer',
             title: 'Schema Version'
+        },
+        observed_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Observed At'
         },
         created_at: {
             type: 'string',
             format: 'date-time',
             title: 'Created At'
         },
-        updated_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Updated At'
-        },
         data: {
             additionalProperties: true,
             type: 'object',
             title: 'Data'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
         }
     },
     type: 'object',
-    required: ['schema_version', 'created_at', 'updated_at', 'data'],
-    title: 'CategoryDataPublic'
+    required: ['id', 'schema_version', 'observed_at', 'created_at', 'data', 'source', 'external_id'],
+    title: 'CategoryDataRecordPublic'
+} as const;
+
+export const CategoryDataRecordsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/CategoryDataRecordPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'CategoryDataRecordsPublic'
 } as const;
 
 export const CategoryDataSchemaCreateSchema = {
@@ -451,20 +535,6 @@ export const CategoryDataSchemaPublicSchema = {
     },
     type: 'object',
     required: ['version', 'schema', 'is_active', 'created_at']
-} as const;
-
-export const CategoryDataUpdateSchema = {
-    properties: {
-        data: {
-            additionalProperties: true,
-            type: 'object',
-            title: 'Data'
-        }
-    },
-    additionalProperties: false,
-    type: 'object',
-    required: ['data'],
-    title: 'CategoryDataUpdate'
 } as const;
 
 export const CategoryGroupCreateSchema = {
