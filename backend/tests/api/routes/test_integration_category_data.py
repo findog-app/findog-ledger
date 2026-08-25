@@ -96,6 +96,14 @@ def test_integration_category_data_records_enforce_scopes_and_ledger_isolation(
 
     assert forbidden.status_code == 403
 
+    category_use_cases.create_category_data_record(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        observed_at=datetime(2026, 1, 1, tzinfo=UTC),
+        data={"reading": 1},
+    )
+
     other_ledger = ledger_use_cases.create_ledger(
         session=db,
         owner_user_id=ledger.owner_user_id,
