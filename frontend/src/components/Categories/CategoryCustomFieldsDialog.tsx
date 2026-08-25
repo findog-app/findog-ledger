@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ListPlus, Plus, Trash2 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -302,9 +302,11 @@ function NumberInput({
 export function CategoryCustomFieldsDialog({
   ledgerId,
   category,
+  trigger,
 }: {
   ledgerId: string
   category: CategoryPublic
+  trigger?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
@@ -356,20 +358,25 @@ export function CategoryCustomFieldsDialog({
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () =>
-      queryClient.invalidateQueries({
-        queryKey: ["category-data-schema", ledgerId, category.id],
-      }),
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["category-data-schema", ledgerId, category.id],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["categories", ledgerId] }),
+      ]),
   })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <ListPlus />
-          <span className="sr-only">
-            Manage custom fields for {category.name}
-          </span>
-        </Button>
+        {trigger || (
+          <Button variant="ghost" size="sm">
+            <ListPlus />
+            <span className="sr-only">
+              Manage custom fields for {category.name}
+            </span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>

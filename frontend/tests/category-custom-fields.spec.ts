@@ -1,7 +1,18 @@
-import { expect, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 
 function uniqueName(prefix: string) {
   return `${prefix} ${Math.random().toString(36).slice(2, 8)}`
+}
+
+async function openCategoryAction(
+  page: Page,
+  categoryName: string,
+  action: string,
+) {
+  await page
+    .getByRole("button", { name: `More actions for ${categoryName}` })
+    .click()
+  await page.getByRole("menuitem", { name: action }).click()
 }
 
 test("manages category custom fields with the builder", async ({ page }) => {
@@ -34,10 +45,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
   await createCategoryButton.click()
   await expect(page.getByText("Category created")).toBeVisible()
 
-  const customFieldsButton = page.getByRole("button", {
-    name: `Manage custom fields for ${categoryName}`,
-  })
-  await customFieldsButton.click()
+  await openCategoryAction(page, categoryName, "Manage custom fields")
   await page.getByRole("button", { name: "Add field" }).click()
   await page.getByLabel("Field name").fill("meter_reading_kwh")
   await page.getByLabel("Label").fill("Meter reading")
@@ -50,7 +58,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 1"),
   ).toBeVisible()
 
-  await customFieldsButton.click()
+  await openCategoryAction(page, categoryName, "Manage custom fields")
   await expect(page.getByLabel("Field name")).toHaveValue("meter_reading_kwh")
   await page.getByLabel("Field name").fill("current_reading_kwh")
   await saveCustomFieldsButton.scrollIntoViewIfNeeded()
@@ -59,7 +67,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 2"),
   ).toBeVisible()
 
-  await customFieldsButton.click()
+  await openCategoryAction(page, categoryName, "Manage custom fields")
   await page.getByRole("button", { name: "Remove" }).click()
   await expect(page.getByText("No custom fields configured yet.")).toBeVisible()
   await saveCustomFieldsButton.scrollIntoViewIfNeeded()
@@ -94,22 +102,13 @@ test("shows the empty category custom-data history", async ({ page }) => {
   await createCategoryButton.scrollIntoViewIfNeeded()
   await createCategoryButton.click()
 
-  const customDataButton = page.getByRole("button", {
-    name: `View custom data for ${categoryName}`,
-  })
-  await customDataButton.click()
   await expect(
-    page.getByText(
-      "No custom data records have been saved for this category yet.",
-    ),
-  ).toBeVisible()
-  await page.getByRole("button", { name: "Close", exact: true }).click()
+    page.getByRole("button", {
+      name: `View custom data for ${categoryName}`,
+    }),
+  ).toHaveCount(0)
 
-  await page
-    .getByRole("button", {
-      name: `Manage custom fields for ${categoryName}`,
-    })
-    .click()
+  await openCategoryAction(page, categoryName, "Manage custom fields")
   await page.getByRole("button", { name: "Add field" }).click()
   await page.getByLabel("Field name").fill("meter_reading")
   await page.getByLabel("Label").fill("Meter reading")
@@ -124,6 +123,9 @@ test("shows the empty category custom-data history", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 1"),
   ).toBeVisible()
 
+  const customDataButton = page.getByRole("button", {
+    name: `View custom data for ${categoryName}`,
+  })
   await customDataButton.click()
   await expect(
     page.getByText(
@@ -164,7 +166,7 @@ test("filters the category table and moves a category between groups", async ({
   await expect(page.getByText(categoryName, { exact: true })).toBeVisible()
   await expect(page.getByText(firstGroup, { exact: true })).toBeVisible()
 
-  await page.getByRole("button", { name: `Edit ${categoryName}` }).click()
+  await openCategoryAction(page, categoryName, "Edit category")
   await page.getByLabel("Group").click()
   await page.getByRole("option", { name: secondGroup }).click()
   await page.getByRole("button", { name: "Save changes" }).click()

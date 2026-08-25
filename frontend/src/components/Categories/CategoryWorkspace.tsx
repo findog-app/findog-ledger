@@ -8,14 +8,14 @@ import type { ColumnDef } from "@tanstack/react-table"
 import {
   Archive,
   ArrowDownUp,
+  Ellipsis,
   FolderPlus,
   Pencil,
   Plus,
-  RotateCcw,
   Search,
   Settings2,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useState } from "react"
 import {
   type Control,
   type FieldValues,
@@ -56,6 +56,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Form,
   FormControl,
@@ -763,10 +770,12 @@ function EditCategoryDialog({
   ledgerId,
   category,
   groups,
+  trigger,
 }: {
   ledgerId: string
   category: CategoryPublic
   groups: { id: string; name: string; is_active: boolean }[]
+  trigger?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
@@ -823,10 +832,16 @@ function EditCategoryDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Pencil />
-          <span className="sr-only">Edit {category.name}</span>
-        </Button>
+        {trigger || (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`More actions for ${category.name}`}
+          >
+            <Pencil />
+            <span className="sr-only">Edit {category.name}</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -1003,21 +1018,6 @@ function ArchiveButton({
   )
 }
 
-function RestoreButton({
-  label,
-  onRestore,
-}: {
-  label: string
-  onRestore: () => void
-}) {
-  return (
-    <Button variant="ghost" size="sm" onClick={onRestore}>
-      <RotateCcw />
-      <span className="sr-only">Restore {label}</span>
-    </Button>
-  )
-}
-
 function ManageGroupsDialog({
   ledgerId,
   groups,
@@ -1124,24 +1124,55 @@ function CategoryActions({
 }) {
   return (
     <div className="flex justify-end gap-1">
-      <CategoryCustomDataDialog ledgerId={ledgerId} category={category} />
-      <CategoryCustomFieldsDialog ledgerId={ledgerId} category={category} />
-      <EditCategoryDialog
-        ledgerId={ledgerId}
-        category={category}
-        groups={groups}
-      />
-      {category.is_active ? (
-        <ArchiveButton
-          label={category.name}
-          onArchive={() => onArchive(category.id)}
-        />
-      ) : (
-        <RestoreButton
-          label={category.name}
-          onRestore={() => onRestore(category.id)}
-        />
+      {category.has_data_schema && (
+        <CategoryCustomDataDialog ledgerId={ledgerId} category={category} />
       )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`More actions for ${category.name}`}
+          >
+            <Ellipsis />
+            <span className="sr-only">More actions for {category.name}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <CategoryCustomFieldsDialog
+            ledgerId={ledgerId}
+            category={category}
+            trigger={
+              <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                Manage custom fields
+              </DropdownMenuItem>
+            }
+          />
+          <EditCategoryDialog
+            ledgerId={ledgerId}
+            category={category}
+            groups={groups}
+            trigger={
+              <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                Edit category
+              </DropdownMenuItem>
+            }
+          />
+          <DropdownMenuSeparator />
+          {category.is_active ? (
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => onArchive(category.id)}
+            >
+              Archive category
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onSelect={() => onRestore(category.id)}>
+              Restore category
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

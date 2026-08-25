@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Database } from "lucide-react"
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 
 import {
   ApiError,
@@ -18,6 +18,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 function formatTimestamp(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -60,9 +65,11 @@ function RecordCard({ record }: { record: CategoryDataRecordPublic }) {
 export function CategoryCustomDataDialog({
   ledgerId,
   category,
+  trigger,
 }: {
   ledgerId: string
   category: CategoryPublic
+  trigger?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const recordsQuery = useQuery({
@@ -84,12 +91,25 @@ export function CategoryCustomDataDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Database />
-          <span className="sr-only">View custom data for {category.name}</span>
-        </Button>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            {trigger || (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`View custom data for ${category.name}`}
+              >
+                <Database />
+                <span className="sr-only">
+                  View custom data for {category.name}
+                </span>
+              </Button>
+            )}
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent>View data records</TooltipContent>
+      </Tooltip>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Custom data history for {category.name}</DialogTitle>
