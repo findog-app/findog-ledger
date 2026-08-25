@@ -1,3 +1,18 @@
+## v0.3.0 (2026-08-25)
+
+### Feat
+
+- **categories**: add category management table (#108)
+- show category data record history
+- expose category data schema metadata (#103)
+- use category codes in integrations (#101)
+- add category custom fields builder (#98)
+- add schema-validated category data (#94)
+
+### Refactor
+
+- store category data records (#105)
+
 ## v0.2.1 (2026-08-23)
 
 ### Fix
