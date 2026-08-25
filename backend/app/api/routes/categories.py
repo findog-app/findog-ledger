@@ -250,6 +250,7 @@ def update_category(
             session=session,
             ledger_id=ledger.id,
             category_id=category_id,
+            category_group_id=category_in.category_group_id,
             name=category_in.name,
             description=category_in.description,
             data_source_policy=category_in.data_source_policy,
@@ -260,6 +261,10 @@ def update_category(
         )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
+    except CategoryGroupNotFoundError:
+        raise HTTPException(status_code=404, detail="Category group not found")
+    except CategoryGroupArchivedError:
+        raise HTTPException(status_code=409, detail="Category group is archived")
     except DuplicateCategoryError:
         raise HTTPException(status_code=409, detail="Category already exists")
     except DuplicateCategoryCodeError:
@@ -406,5 +411,32 @@ def archive_category(
         )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
+
+    return _to_category_public(category)
+
+
+@router.patch(
+    "/ledgers/{ledger_id}/categories/{category_id}/restore",
+    response_model=CategoryPublic,
+)
+def restore_category(
+    *,
+    session: SessionDep,
+    category_id: uuid.UUID,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        category = category_use_cases.restore_category(
+            session=session,
+            ledger_id=ledger.id,
+            category_id=category_id,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    except CategoryGroupArchivedError:
+        raise HTTPException(
+            status_code=409,
+            detail="Category group must be active before restoring a category",
+        )
 
     return _to_category_public(category)

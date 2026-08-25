@@ -131,3 +131,43 @@ test("shows the empty category custom-data history", async ({ page }) => {
     ),
   ).toBeVisible()
 })
+
+test("filters the category table and moves a category between groups", async ({
+  page,
+}) => {
+  const ledgerName = uniqueName("Category table")
+  const firstGroup = uniqueName("Housing")
+  const secondGroup = uniqueName("Utilities")
+  const categoryName = uniqueName("Rent")
+
+  await page.goto("/ledgers")
+  await page.getByRole("button", { name: "New ledger" }).click()
+  await page.getByLabel("Name").fill(ledgerName)
+  await page.getByRole("button", { name: "Create ledger" }).click()
+  await page.getByRole("link", { name: ledgerName }).click()
+  await page.getByRole("link", { name: "Categories" }).click()
+
+  for (const groupName of [firstGroup, secondGroup]) {
+    await page.getByRole("button", { name: "New group" }).click()
+    await page.getByLabel("Name").fill(groupName)
+    await page.getByRole("button", { name: "Create group" }).click()
+  }
+
+  await page.getByRole("button", { name: "New category" }).click()
+  await page.getByLabel("Group").click()
+  await page.getByRole("option", { name: firstGroup }).click()
+  await page.getByLabel("Name").fill(categoryName)
+  await page.getByLabel("Code").fill("RENT")
+  await page.getByRole("button", { name: "Create category" }).click()
+
+  await page.getByPlaceholder("Search name or code").fill("RENT")
+  await expect(page.getByText(categoryName, { exact: true })).toBeVisible()
+  await expect(page.getByText(firstGroup, { exact: true })).toBeVisible()
+
+  await page.getByRole("button", { name: `Edit ${categoryName}` }).click()
+  await page.getByLabel("Group").click()
+  await page.getByRole("option", { name: secondGroup }).click()
+  await page.getByRole("button", { name: "Save changes" }).click()
+  await expect(page.getByText("Category updated")).toBeVisible()
+  await expect(page.getByText(secondGroup, { exact: true })).toBeVisible()
+})

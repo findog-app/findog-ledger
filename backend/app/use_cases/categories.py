@@ -437,6 +437,7 @@ def update_category(
     session: Session,
     ledger_id: uuid.UUID,
     category_id: uuid.UUID,
+    category_group_id: uuid.UUID | None = None,
     name: str,
     description: str | None = None,
     data_source_policy: DataSourcePolicy = DataSourcePolicy.HYBRID,
@@ -455,11 +456,23 @@ def update_category(
     if category is None:
         raise CategoryNotFoundError
 
+    target_group_id = category_group_id or category.category_group_id
+    category_group = session.scalar(
+        select(CategoryGroup).where(
+            CategoryGroup.id == target_group_id,
+            CategoryGroup.ledger_id == ledger_id,
+        )
+    )
+    if category_group is None:
+        raise CategoryGroupNotFoundError
+    if not category_group.is_active:
+        raise CategoryGroupArchivedError
+
     normalized_name = _normalize_name(name)
     existing_name = session.scalar(
         select(Category.id).where(
             Category.ledger_id == ledger_id,
-            Category.category_group_id == category.category_group_id,
+            Category.category_group_id == target_group_id,
             Category.name == normalized_name,
             Category.id != category_id,
         )
@@ -467,6 +480,7 @@ def update_category(
     if existing_name is not None:
         raise DuplicateCategoryError
 
+    category.category_group_id = target_group_id
     category.name = normalized_name
     category.description = description
     category.data_source_policy = data_source_policy
@@ -551,3 +565,25 @@ def archive_category_group(
     session.commit()
     session.refresh(category_group)
     return category_group
+
+
+def restore_category(
+    *, session: Session, ledger_id: uuid.UUID, category_id: uuid.UUID
+) -> Category:
+    _require_ledger(session=session, ledger_id=ledger_id)
+    try:
+        category = category_service.restore_category(
+            session=session,
+            ledger_id=ledger_id,
+            category_id=category_id,
+        )
+    except category_service.CategoryNotFoundError as exc:
+        raise CategoryNotFoundError from exc
+    except category_service.CategoryGroupNotFoundError as exc:
+        raise CategoryGroupNotFoundError from exc
+    except category_service.CategoryGroupHasActiveChildrenError as exc:
+        raise CategoryGroupArchivedError from exc
+
+    session.commit()
+    session.refresh(category)
+    return category

@@ -4,8 +4,18 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query"
-import { Archive, FolderPlus, Pencil, Plus } from "lucide-react"
-import { useEffect, useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
+import {
+  Archive,
+  ArrowDownUp,
+  FolderPlus,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Settings2,
+} from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import {
   type Control,
   type FieldValues,
@@ -14,7 +24,6 @@ import {
   useWatch,
 } from "react-hook-form"
 import { z } from "zod"
-
 import {
   CategoriesService,
   type CategoryCreate,
@@ -25,6 +34,10 @@ import {
 } from "@/client"
 import { CategoryCustomDataDialog } from "@/components/Categories/CategoryCustomDataDialog"
 import { CategoryCustomFieldsDialog } from "@/components/Categories/CategoryCustomFieldsDialog"
+import {
+  DataTable,
+  type DataTableFeatures,
+} from "@/components/Common/DataTable"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -89,6 +102,10 @@ const categorySchema = categoryConfigurationSchema.extend({
 type GroupFormData = z.infer<typeof groupSchema>
 type CategoryFormData = z.infer<typeof categorySchema>
 type CategoryUpdateFormData = z.infer<typeof categoryConfigurationSchema>
+
+type CategoryRow = CategoryPublic & { groupName: string }
+
+const FILTER_ALL = "all"
 
 function CurrencyField<T extends FieldValues>({
   control,
@@ -369,7 +386,7 @@ function CreateGroupDialog({ ledgerId }: { ledgerId: string }) {
           New group
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create category group</DialogTitle>
           <DialogDescription>
@@ -745,16 +762,23 @@ function CreateCategoryDialog({
 function EditCategoryDialog({
   ledgerId,
   category,
+  groups,
 }: {
   ledgerId: string
   category: CategoryPublic
+  groups: { id: string; name: string; is_active: boolean }[]
 }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
-  const form = useForm<CategoryUpdateFormData>({
-    resolver: zodResolver(categoryConfigurationSchema),
+  const form = useForm<CategoryUpdateFormData & { category_group_id: string }>({
+    resolver: zodResolver(
+      categoryConfigurationSchema.extend({
+        category_group_id: z.string().min(1, "Choose a group"),
+      }),
+    ),
     defaultValues: {
+      category_group_id: category.category_group_id,
       name: category.name,
       description: category.description ?? "",
       data_source_policy: category.data_source_policy,
@@ -768,6 +792,7 @@ function EditCategoryDialog({
   useEffect(() => {
     if (open) {
       form.reset({
+        category_group_id: category.category_group_id,
         name: category.name,
         description: category.description ?? "",
         data_source_policy: category.data_source_policy,
@@ -803,7 +828,7 @@ function EditCategoryDialog({
           <span className="sr-only">Edit {category.name}</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit category</DialogTitle>
           <DialogDescription>
@@ -814,6 +839,7 @@ function EditCategoryDialog({
           <form
             onSubmit={form.handleSubmit((data) =>
               mutation.mutate({
+                category_group_id: data.category_group_id,
                 name: data.name,
                 description: data.description || null,
                 data_source_policy: data.data_source_policy,
@@ -825,6 +851,40 @@ function EditCategoryDialog({
             )}
             className="space-y-4"
           >
+            <FormField
+              control={form.control}
+              name="category_group_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Group</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a group" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {groups
+                        .filter(
+                          (group) =>
+                            group.is_active ||
+                            group.id === category.category_group_id,
+                        )
+                        .map((group) => (
+                          <SelectItem
+                            key={group.id}
+                            value={group.id}
+                            disabled={!group.is_active}
+                          >
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"
@@ -943,17 +1003,201 @@ function ArchiveButton({
   )
 }
 
+function RestoreButton({
+  label,
+  onRestore,
+}: {
+  label: string
+  onRestore: () => void
+}) {
+  return (
+    <Button variant="ghost" size="sm" onClick={onRestore}>
+      <RotateCcw />
+      <span className="sr-only">Restore {label}</span>
+    </Button>
+  )
+}
+
+function ManageGroupsDialog({
+  ledgerId,
+  groups,
+  categories,
+  onArchive,
+}: {
+  ledgerId: string
+  groups: {
+    id: string
+    name: string
+    description: string | null
+    is_active: boolean
+  }[]
+  categories: CategoryPublic[]
+  onArchive: (groupId: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const activeCategoryCount = (groupId: string) =>
+    categories.filter(
+      (category) =>
+        category.category_group_id === groupId && category.is_active,
+    ).length
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <Settings2 />
+          Manage groups
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Manage category groups</DialogTitle>
+          <DialogDescription>
+            Categories always belong to a group. Archive active categories or
+            move them before archiving their group.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end">
+          <CreateGroupDialog ledgerId={ledgerId} />
+        </div>
+        {groups.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No groups yet.
+          </p>
+        ) : (
+          <div className="divide-y rounded-lg border">
+            {groups.map((group) => {
+              const count = activeCategoryCount(group.id)
+              return (
+                <div
+                  key={group.id}
+                  className="flex items-center justify-between gap-3 p-4"
+                >
+                  <div className="min-w-0">
+                    <p
+                      className={
+                        group.is_active
+                          ? "font-medium"
+                          : "font-medium text-muted-foreground line-through"
+                      }
+                    >
+                      {group.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {count} active {count === 1 ? "category" : "categories"}
+                      {group.description ? ` · ${group.description}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <EditGroupDialog ledgerId={ledgerId} group={group} />
+                    {!group.is_active ? (
+                      <Badge variant="secondary">Archived</Badge>
+                    ) : (
+                      <ArchiveButton
+                        label={group.name}
+                        onArchive={() => onArchive(group.id)}
+                      />
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CategoryActions({
+  ledgerId,
+  category,
+  groups,
+  onArchive,
+  onRestore,
+}: {
+  ledgerId: string
+  category: CategoryPublic
+  groups: { id: string; name: string; is_active: boolean }[]
+  onArchive: (categoryId: string) => void
+  onRestore: (categoryId: string) => void
+}) {
+  return (
+    <div className="flex justify-end gap-1">
+      <CategoryCustomDataDialog ledgerId={ledgerId} category={category} />
+      <CategoryCustomFieldsDialog ledgerId={ledgerId} category={category} />
+      <EditCategoryDialog
+        ledgerId={ledgerId}
+        category={category}
+        groups={groups}
+      />
+      {category.is_active ? (
+        <ArchiveButton
+          label={category.name}
+          onArchive={() => onArchive(category.id)}
+        />
+      ) : (
+        <RestoreButton
+          label={category.name}
+          onRestore={() => onRestore(category.id)}
+        />
+      )}
+    </div>
+  )
+}
+
 export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
-  const [includeArchived] = useState(() => {
-    if (typeof window === "undefined") return false
-    return (
-      window.localStorage.getItem(`show-archived-categories:${ledgerId}`) ===
-      "true"
-    )
-  })
+  const initialFilters = () => {
+    if (typeof window === "undefined") {
+      return { group: FILTER_ALL, query: "", status: "active", sort: "name" }
+    }
+    const params = new URLSearchParams(window.location.search)
+    return {
+      group: params.get("group") || FILTER_ALL,
+      query: params.get("q") || "",
+      status: params.get("status") || "active",
+      sort: params.get("sort") || "name",
+    }
+  }
+  const [filters] = useState(initialFilters)
+  const [groupFilter, setGroupFilter] = useState(filters.group)
+  const [query, setQuery] = useState(filters.query)
+  const [statusFilter, setStatusFilter] = useState(filters.status)
+  const [sortBy, setSortBy] = useState(filters.sort)
+  const includeArchived = statusFilter !== "active"
   const { categories, groups } = useCategoryQueries(ledgerId, includeArchived)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const values = {
+      group: groupFilter,
+      q: query,
+      status: statusFilter,
+      sort: sortBy,
+    }
+    Object.entries(values).forEach(([key, value]) => {
+      if (
+        !value ||
+        (key === "group" && value === FILTER_ALL) ||
+        (key === "status" && value === "active") ||
+        (key === "sort" && value === "name")
+      ) {
+        params.delete(key)
+      } else {
+        params.set(key, value)
+      }
+    })
+    const search = params.toString()
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${search ? `?${search}` : ""}`,
+    )
+  }, [groupFilter, query, sortBy, statusFilter])
+
   const archiveGroup = useMutation({
     mutationFn: (groupId: string) =>
       CategoriesService.archiveCategoryGroup({
@@ -975,167 +1219,192 @@ export function CategoryWorkspace({ ledgerId }: { ledgerId: string }) {
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: ["categories", ledgerId] }),
   })
+  const restoreCategory = useMutation({
+    mutationFn: (categoryId: string) =>
+      CategoriesService.restoreCategory({ ledgerId, categoryId }),
+    onSuccess: () => showSuccessToast("Category restored"),
+    onError: handleError.bind(showErrorToast),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ["categories", ledgerId] }),
+  })
+
+  const rows = useMemo(() => {
+    const groupNames = new Map(groups.map((group) => [group.id, group.name]))
+    const normalizedQuery = query.trim().toLocaleLowerCase()
+    return categories
+      .filter(
+        (category) =>
+          groupFilter === FILTER_ALL ||
+          category.category_group_id === groupFilter,
+      )
+      .filter(
+        (category) =>
+          statusFilter === FILTER_ALL ||
+          (statusFilter === "active"
+            ? category.is_active
+            : !category.is_active),
+      )
+      .filter(
+        (category) =>
+          !normalizedQuery ||
+          `${category.name} ${category.code}`
+            .toLocaleLowerCase()
+            .includes(normalizedQuery),
+      )
+      .map((category) => ({
+        ...category,
+        groupName:
+          groupNames.get(category.category_group_id) || "Unknown group",
+      }))
+      .sort((left, right) => {
+        const result = (
+          sortBy === "group" ? left.groupName : left.name
+        ).localeCompare(sortBy === "group" ? right.groupName : right.name)
+        return result || left.name.localeCompare(right.name)
+      })
+  }, [categories, groupFilter, groups, query, sortBy, statusFilter])
+
+  const columns = useMemo<ColumnDef<DataTableFeatures, CategoryRow>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: () => (
+          <Button variant="ghost" size="sm" onClick={() => setSortBy("name")}>
+            Name <ArrowDownUp />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div>
+            <p
+              className={
+                !row.original.is_active
+                  ? "font-medium text-muted-foreground line-through"
+                  : "font-medium"
+              }
+            >
+              {row.original.name}
+            </p>
+            {row.original.description && (
+              <p className="max-w-56 truncate text-sm text-muted-foreground">
+                {row.original.description}
+              </p>
+            )}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "groupName",
+        header: () => (
+          <Button variant="ghost" size="sm" onClick={() => setSortBy("group")}>
+            Group <ArrowDownUp />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <Badge variant="outline">{row.original.groupName}</Badge>
+        ),
+      },
+      {
+        accessorKey: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <Badge variant="secondary">{row.original.code}</Badge>
+        ),
+      },
+      { accessorKey: "data_source_policy", header: "Mode" },
+      {
+        id: "recurrence",
+        header: "Recurrence",
+        cell: ({ row }) =>
+          row.original.recurrence_interval && row.original.recurrence_unit
+            ? `Every ${row.original.recurrence_interval} ${row.original.recurrence_unit}${row.original.recurrence_interval === 1 ? "" : "s"}`
+            : "None",
+      },
+      { accessorKey: "currency", header: "Currency" },
+      {
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <Badge variant={row.original.is_active ? "outline" : "secondary"}>
+            {row.original.is_active ? "Active" : "Archived"}
+          </Badge>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => (
+          <CategoryActions
+            ledgerId={ledgerId}
+            category={row.original}
+            groups={groups}
+            onArchive={(categoryId) => archiveCategory.mutate(categoryId)}
+            onRestore={(categoryId) => restoreCategory.mutate(categoryId)}
+          />
+        ),
+      },
+    ],
+    [archiveCategory, groups, ledgerId, restoreCategory],
+  )
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex-row items-start justify-between gap-4">
-            <div>
-              <CardTitle>Category groups</CardTitle>
-              <CardDescription>Organize categories by purpose.</CardDescription>
-            </div>
+      <Card>
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Categories</CardTitle>
+            <CardDescription>
+              Search, filter, and manage categories without leaving this page.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
             <CreateGroupDialog ledgerId={ledgerId} />
-          </CardHeader>
-          <CardContent>
-            {groups.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No groups yet.
-              </p>
-            ) : (
-              <div className="divide-y rounded-lg border">
-                {groups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="flex items-center justify-between gap-3 p-4"
-                  >
-                    <div className="min-w-0">
-                      <p
-                        className={
-                          group.is_active
-                            ? "font-medium"
-                            : "font-medium text-muted-foreground line-through"
-                        }
-                      >
-                        {group.name}
-                      </p>
-                      {group.description && (
-                        <p className="truncate text-sm text-muted-foreground">
-                          {group.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <EditGroupDialog ledgerId={ledgerId} group={group} />
-                      {!group.is_active && (
-                        <Badge variant="secondary">Archived</Badge>
-                      )}
-                      {group.is_active && (
-                        <ArchiveButton
-                          label={group.name}
-                          onArchive={() => archiveGroup.mutate(group.id)}
-                        />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-start justify-between gap-4">
-            <div>
-              <CardTitle>Categories</CardTitle>
-              <CardDescription>
-                Use categories to classify obligations.
-              </CardDescription>
-            </div>
+            <ManageGroupsDialog
+              ledgerId={ledgerId}
+              groups={groups}
+              categories={categories}
+              onArchive={(groupId) => archiveGroup.mutate(groupId)}
+            />
             <CreateCategoryDialog ledgerId={ledgerId} groups={groups} />
-          </CardHeader>
-          <CardContent>
-            {categories.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No categories yet.
-              </p>
-            ) : (
-              <div className="divide-y rounded-lg border">
-                {categories.map((category) => {
-                  const group = groups.find(
-                    (item) => item.id === category.category_group_id,
-                  )
-                  return (
-                    <div
-                      key={category.id}
-                      className="flex items-center justify-between gap-3 p-4"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p
-                            className={
-                              category.is_active
-                                ? "font-medium"
-                                : "font-medium text-muted-foreground line-through"
-                            }
-                          >
-                            {category.name}
-                          </p>
-                          <Badge variant="outline">
-                            {group?.name || "Unknown group"}
-                          </Badge>
-                        </div>
-                        {category.description && (
-                          <p className="truncate text-sm text-muted-foreground">
-                            {category.description}
-                          </p>
-                        )}
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {category.code && (
-                            <Badge variant="secondary">{category.code}</Badge>
-                          )}
-                          <Badge variant="outline">
-                            {category.data_source_policy}
-                          </Badge>
-                          <Badge variant="outline">
-                            {category.recurrence_interval &&
-                            category.recurrence_unit
-                              ? `every ${category.recurrence_interval} ${category.recurrence_unit}${category.recurrence_interval === 1 ? "" : "s"}`
-                              : "no recurrence"}
-                          </Badge>
-                          {category.currency && (
-                            <Badge variant="outline">{category.currency}</Badge>
-                          )}
-                          {category.first_due_date && (
-                            <Badge variant="outline">
-                              first due {category.first_due_date}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CategoryCustomDataDialog
-                          ledgerId={ledgerId}
-                          category={category}
-                        />
-                        <CategoryCustomFieldsDialog
-                          ledgerId={ledgerId}
-                          category={category}
-                        />
-                        <EditCategoryDialog
-                          ledgerId={ledgerId}
-                          category={category}
-                        />
-                        {!category.is_active && (
-                          <Badge variant="secondary">Archived</Badge>
-                        )}
-                        {category.is_active && (
-                          <ArchiveButton
-                            label={category.name}
-                            onArchive={() =>
-                              archiveCategory.mutate(category.id)
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_160px]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="pl-9"
+                placeholder="Search name or code"
+              />
+            </div>
+            <Select value={groupFilter} onValueChange={setGroupFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All groups" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={FILTER_ALL}>All groups</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value={FILTER_ALL}>All statuses</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DataTable columns={columns} data={rows} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

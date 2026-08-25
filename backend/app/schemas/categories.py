@@ -38,6 +38,7 @@ class CategoryCreate(BaseModel):
 class CategoryUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    category_group_id: uuid.UUID | None = None
     name: str = Field(min_length=1, max_length=255)
     description: str | None = None
     data_source_policy: DataSourcePolicy
