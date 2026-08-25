@@ -69,9 +69,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
   ).toBeVisible()
 })
 
-test("views and edits category custom data with the active schema", async ({
-  page,
-}) => {
+test("shows the empty category custom-data history", async ({ page }) => {
   const ledgerName = uniqueName("Custom data")
   const groupName = uniqueName("Utilities")
   const categoryName = uniqueName("Electricity")
@@ -97,11 +95,13 @@ test("views and edits category custom data with the active schema", async ({
   await createCategoryButton.click()
 
   const customDataButton = page.getByRole("button", {
-    name: `Edit custom data for ${categoryName}`,
+    name: `View custom data for ${categoryName}`,
   })
   await customDataButton.click()
   await expect(
-    page.getByText("No custom fields are configured for this category yet."),
+    page.getByText(
+      "No custom data records have been saved for this category yet.",
+    ),
   ).toBeVisible()
   await page.getByRole("button", { name: "Close" }).click()
 
@@ -125,16 +125,9 @@ test("views and edits category custom data with the active schema", async ({
   ).toBeVisible()
 
   await customDataButton.click()
-  await expect(page.getByText("Schema version 1")).toBeVisible()
-  await expect(page.getByText("No saved custom data yet.")).toBeVisible()
-  await page.getByLabel("Meter reading").fill("1200")
-  await page.getByRole("button", { name: "Save custom data" }).click()
-  await expect(page.getByText("Custom data saved")).toBeVisible()
-
-  await customDataButton.click()
-  await expect(page.getByLabel("Meter reading")).toHaveValue("1200")
-  await expect(page.getByText(/Last updated/)).toBeVisible()
-  await page.getByLabel("Meter reading").fill("")
-  await page.getByRole("button", { name: "Save custom data" }).click()
-  await expect(page.getByText(/should be non-empty/)).toBeVisible()
+  await expect(
+    page.getByText(
+      "No custom data records have been saved for this category yet.",
+    ),
+  ).toBeVisible()
 })
