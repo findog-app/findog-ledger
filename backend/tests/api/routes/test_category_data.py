@@ -56,3 +56,19 @@ def test_category_data_records_api_lists_and_reads_latest(
     assert records_response.json()["data"][0]["data"] == {"reading": 2}
     assert latest_response.status_code == 200
     assert latest_response.json()["id"] == str(latest.id)
+
+
+def test_category_data_records_api_validates_pagination(
+    client: TestClient, db: Session
+) -> None:
+    ledger, _, category = create_category_tree(db)
+    headers = authentication_token_from_email(
+        client=client, email=ledger.owner.email, db=db
+    )
+    url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data-records"
+
+    invalid_limit = client.get(f"{url}?limit=101", headers=headers)
+    invalid_offset = client.get(f"{url}?offset=-1", headers=headers)
+
+    assert invalid_limit.status_code == 422
+    assert invalid_offset.status_code == 422

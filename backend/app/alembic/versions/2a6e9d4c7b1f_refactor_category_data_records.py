@@ -57,6 +57,18 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    connection = op.get_bind()
+    connection.execute(
+        sa.text(
+            """
+            DELETE FROM category_data AS older
+            USING category_data AS newer
+            WHERE older.category_id = newer.category_id
+              AND (older.observed_at, older.created_at, older.id)
+                  < (newer.observed_at, newer.created_at, newer.id)
+            """
+        )
+    )
     op.drop_index("uq_category_data_source_external_id", table_name="category_data")
     op.drop_index("ix_category_data_category_observed_at", table_name="category_data")
     op.drop_constraint("category_data_pkey", "category_data", type_="primary")

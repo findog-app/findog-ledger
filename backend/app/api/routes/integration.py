@@ -88,11 +88,18 @@ def read_integration_category_data_records(
             limit=limit,
             offset=offset,
         )
+        count = category_use_cases.count_category_data_records(
+            session=context.session,
+            ledger_id=context.ledger.id,
+            category_id=category.id,
+            observed_from=observed_from,
+            observed_to=observed_to,
+        )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
     return CategoryDataRecordsPublic(
         data=[_to_category_data_record_public(record) for record in records],
-        count=len(records),
+        count=count,
     )
 
 

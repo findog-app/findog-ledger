@@ -122,3 +122,39 @@ def test_record_validation_and_idempotency(db: Session) -> None:
     )
 
     assert retry.id == record.id
+
+
+def test_records_support_inclusive_ranges_and_pagination(db: Session) -> None:
+    ledger, _, category = create_category_tree(db)
+    category_use_cases.set_category_data_schema(
+        session=db, ledger_id=ledger.id, category_id=category.id, schema=_schema()
+    )
+    timestamps = [datetime(2026, 1, day, tzinfo=UTC) for day in (1, 2, 3)]
+    for index, observed_at in enumerate(timestamps):
+        category_use_cases.create_category_data_record(
+            session=db,
+            ledger_id=ledger.id,
+            category_id=category.id,
+            observed_at=observed_at,
+            data={"reading": index},
+        )
+
+    records = category_use_cases.list_category_data_records(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        observed_from=timestamps[1],
+        observed_to=timestamps[2],
+        limit=1,
+        offset=1,
+    )
+    count = category_use_cases.count_category_data_records(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        observed_from=timestamps[1],
+        observed_to=timestamps[2],
+    )
+
+    assert [record.data for record in records] == [{"reading": 1}]
+    assert count == 2

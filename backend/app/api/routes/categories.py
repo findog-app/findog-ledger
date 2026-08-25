@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.deps import (
     SessionDep,
@@ -285,8 +285,8 @@ def read_category_data_records(
     category_id: uuid.UUID,
     observed_from: datetime | None = None,
     observed_to: datetime | None = None,
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     ledger: Ledger = Depends(require_ledger_view_access),
 ) -> CategoryDataRecordsPublic:
     try:
@@ -299,11 +299,18 @@ def read_category_data_records(
             limit=limit,
             offset=offset,
         )
+        count = category_use_cases.count_category_data_records(
+            session=session,
+            ledger_id=ledger.id,
+            category_id=category_id,
+            observed_from=observed_from,
+            observed_to=observed_to,
+        )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
     return CategoryDataRecordsPublic(
         data=[_to_category_data_record_public(record) for record in records],
-        count=len(records),
+        count=count,
     )
 
 
