@@ -19,8 +19,9 @@ services:
         condition: service_completed_successfully
     env_file:
       - .env
-    volumes:
-      - ./backend/config/legacy-import.yaml:/app/backend/config/legacy-import.yaml:ro
+    # Optional legacy import configuration:
+    # volumes:
+    #   - ./backend/config/legacy-import.yaml:/app/backend/config/legacy-import.yaml:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
       interval: 10s
