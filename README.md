@@ -48,21 +48,18 @@ and a reverse proxy that can route your chosen frontend and API hostnames to
 the `findog-ledger-frontend` and `findog-ledger-backend` aliases on that
 network.
 
-1. Clone the repository on the server and enter it.
+1. Create a deployment directory and download the production files. There is no
+   need to clone the application source code.
 
    ```bash
-   git clone https://github.com/wini83/findog-ledger.git
+   mkdir findog-ledger
    cd findog-ledger
+   curl -fsSL https://raw.githubusercontent.com/findog-app/findog-ledger/main/scripts/install.sh | bash
    ```
 
-2. Create the production environment file and set the values for your
-   deployment. At minimum, choose an immutable image `TAG`, public URLs,
-   PostgreSQL credentials, a random `SECRET_KEY`, and the first administrator
-   account.
-
-   ```bash
-   cp .env.production.example .env
-   ```
+2. Edit `.env` and set the values for your deployment. At minimum, choose an
+   immutable image `TAG`, public URLs, PostgreSQL credentials, a random
+   `SECRET_KEY`, and the first administrator account.
 
 3. Ensure the external Docker network exists and configure your reverse proxy
    to forward the public frontend and API hostnames to the aliases above.
@@ -71,15 +68,15 @@ network.
    before the application starts.
 
    ```bash
-   docker compose -f compose.production.yml pull
-   docker compose -f compose.production.yml up -d --no-build
+   docker compose pull
+   docker compose up -d
    ```
 
 5. Confirm that the services are healthy, then open the frontend URL from your
    `.env` file.
 
    ```bash
-   docker compose -f compose.production.yml ps
+   docker compose ps
    ```
 
 For later releases, change `TAG` to the desired immutable version and run the
