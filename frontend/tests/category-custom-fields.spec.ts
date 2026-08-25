@@ -103,7 +103,7 @@ test("shows the empty category custom-data history", async ({ page }) => {
       "No custom data records have been saved for this category yet.",
     ),
   ).toBeVisible()
-  await page.getByRole("button", { name: "Close" }).click()
+  await page.getByRole("button", { name: "Close", exact: true }).click()
 
   await page
     .getByRole("button", {
