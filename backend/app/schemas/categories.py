@@ -6,7 +6,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    RootModel,
     model_serializer,
     model_validator,
 )
@@ -89,21 +88,28 @@ class CategoriesPublic(BaseModel):
     count: int
 
 
-class CategoryDataUpdate(BaseModel):
+class CategoryDataRecordCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    observed_at: datetime
     data: dict[str, Any]
+    source: str | None = Field(default=None, min_length=1, max_length=255)
+    external_id: str | None = Field(default=None, min_length=1, max_length=255)
 
 
-class CategoryDataPublic(BaseModel):
+class CategoryDataRecordPublic(BaseModel):
+    id: uuid.UUID
     schema_version: int
+    observed_at: datetime
     created_at: datetime
-    updated_at: datetime
     data: dict[str, Any]
+    source: str | None
+    external_id: str | None
 
 
-class CategoryDataPatch(RootModel[dict[str, Any]]):
-    """A partial category-data object supplied by an integration."""
+class CategoryDataRecordsPublic(BaseModel):
+    data: list[CategoryDataRecordPublic]
+    count: int
 
 
 def _schema_create_openapi(schema: dict[str, Any]) -> None:

@@ -1,99 +1,58 @@
+from datetime import UTC, datetime
+
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.use_cases import categories as category_use_cases
-from app.use_cases import ledgers as ledger_use_cases
-from tests.utils.user import authentication_token_from_email, create_random_user
-from tests.utils.utils import random_lower_string
+from tests.utils.ledger_domain import create_category_tree
+from tests.utils.user import authentication_token_from_email
 
 
-def test_category_data_api_validates_payload_and_returns_schema_version(
+def test_category_data_records_api_lists_and_reads_latest(
     client: TestClient, db: Session
 ) -> None:
-    owner = create_random_user(db)
-    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
-    ledger = ledger_use_cases.create_ledger(
-        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    ledger, _, category = create_category_tree(db)
+    headers = authentication_token_from_email(
+        client=client, email=ledger.owner.email, db=db
     )
-    group = category_use_cases.create_category_group(
-        session=db, ledger_id=ledger.id, name="Utilities"
-    )
-    category = category_use_cases.create_category(
+    category_use_cases.set_category_data_schema(
         session=db,
         ledger_id=ledger.id,
-        category_group_id=group.id,
-        name="Electricity",
-        code="ELEC",
-    )
-    schema_url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data-schema"
-    data_url = (
-        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data"
-    )
-    schema_response = client.post(
-        schema_url,
-        headers=headers,
-        json={
-            "schema": {
-                "type": "object",
-                "properties": {"invoice_available": {"type": "boolean"}},
-                "required": ["invoice_available"],
-                "additionalProperties": False,
-            }
+        category_id=category.id,
+        schema={
+            "type": "object",
+            "properties": {"reading": {"type": "number"}},
+            "required": ["reading"],
+            "additionalProperties": False,
         },
     )
-    valid_response = client.put(
-        data_url, headers=headers, json={"data": {"invoice_available": True}}
-    )
-    invalid_response = client.put(
-        data_url, headers=headers, json={"data": {"unexpected": True}}
-    )
-
-    assert schema_response.status_code == 200
-    assert schema_response.json()["version"] == 1
-    assert valid_response.status_code == 200
-    assert valid_response.json()["schema_version"] == 1
-    assert valid_response.json()["data"] == {"invoice_available": True}
-    assert invalid_response.status_code == 422
-
-
-def test_category_data_api_rejects_invalid_date_format(
-    client: TestClient, db: Session
-) -> None:
-    owner = create_random_user(db)
-    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
-    ledger = ledger_use_cases.create_ledger(
-        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
-    )
-    group = category_use_cases.create_category_group(
-        session=db, ledger_id=ledger.id, name="Utilities"
-    )
-    category = category_use_cases.create_category(
+    category_use_cases.create_category_data_record(
         session=db,
         ledger_id=ledger.id,
-        category_group_id=group.id,
-        name="Electricity",
-        code="ELEC",
+        category_id=category.id,
+        observed_at=datetime(2026, 1, 1, tzinfo=UTC),
+        data={"reading": 1},
     )
-    schema_url = f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data-schema"
-    data_url = (
-        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data"
+    latest = category_use_cases.create_category_data_record(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        observed_at=datetime(2026, 1, 2, tzinfo=UTC),
+        data={"reading": 2},
     )
-    response = client.post(
-        schema_url,
-        headers=headers,
-        json={
-            "schema": {
-                "type": "object",
-                "properties": {"reading_date": {"type": "string", "format": "date"}},
-                "required": ["reading_date"],
-            }
-        },
-    )
-    assert response.status_code == 200
 
-    response = client.put(
-        data_url, headers=headers, json={"data": {"reading_date": "not-a-date"}}
+    records_response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data-records",
+        headers=headers,
     )
-    assert response.status_code == 422
-    assert "is not a 'date'" in response.json()["detail"]
+    latest_response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/categories/{category.id}/data-records/latest",
+        headers=headers,
+    )
+
+    assert records_response.status_code == 200
+    assert records_response.json()["count"] == 2
+    assert records_response.json()["data"][0]["data"] == {"reading": 2}
+    assert latest_response.status_code == 200
+    assert latest_response.json()["id"] == str(latest.id)

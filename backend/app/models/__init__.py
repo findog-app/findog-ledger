@@ -2,7 +2,7 @@ from app.models.api_key import ApiKey
 from app.models.base import Base
 from app.models.category import (
     Category,
-    CategoryData,
+    CategoryDataRecord,
     CategoryDataSchema,
     CategoryGroup,
 )
@@ -15,7 +15,7 @@ __all__ = [
     "Base",
     "ApiKey",
     "Category",
-    "CategoryData",
+    "CategoryDataRecord",
     "CategoryDataSchema",
     "CategoryGroup",
     "Ledger",

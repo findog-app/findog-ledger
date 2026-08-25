@@ -1,19 +1,21 @@
 """Ledger-scoped, API-key authenticated integration endpoints."""
 
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from app.api.deps import ApiContext, require_scope
 from app.api.routes.categories import (
-    _to_category_data_public,
+    _to_category_data_record_public,
     _to_category_data_schema_public,
 )
 from app.api.routes.obligations import to_obligation_public
 from app.domain import ObligationKey, ObligationLifecycle
 from app.schemas import (
-    CategoryDataPatch,
-    CategoryDataPublic,
+    CategoryDataRecordCreate,
+    CategoryDataRecordPublic,
+    CategoryDataRecordsPublic,
     CategoryDataSchemaPublic,
     ObligationIntegrationUpdate,
     ObligationNoteAppend,
@@ -36,44 +38,86 @@ from app.use_cases.exceptions import (
 router = APIRouter(prefix="/integration", tags=["integration"])
 
 
-@router.get("/categories/{category_code}/data", response_model=CategoryDataPublic)
-def read_integration_category_data(
+@router.get(
+    "/categories/{category_code}/data-records/latest",
+    response_model=CategoryDataRecordPublic,
+)
+def read_latest_integration_category_data_record(
     category_code: str = Path(pattern=r"^[A-Z]{4}$"),
     context: ApiContext = Depends(require_scope("ledger:read")),
-) -> CategoryDataPublic:
+) -> CategoryDataRecordPublic:
     try:
         category = category_use_cases.get_category_by_code(
             session=context.session,
             ledger_id=context.ledger.id,
             category_code=category_code,
         )
-        category_data = category_use_cases.get_category_data(
+        category_data = category_use_cases.get_category_data_record(
             session=context.session,
             ledger_id=context.ledger.id,
             category_id=category.id,
         )
     except (CategoryNotFoundError, CategoryDataSchemaNotFoundError):
-        raise HTTPException(status_code=404, detail="Category data not found")
-    return _to_category_data_public(category_data)
+        raise HTTPException(status_code=404, detail="Category data record not found")
+    return _to_category_data_record_public(category_data)
 
 
-@router.patch("/categories/{category_code}/data", response_model=CategoryDataPublic)
-def patch_integration_category_data(
-    category_data_in: CategoryDataPatch,
+@router.get(
+    "/categories/{category_code}/data-records", response_model=CategoryDataRecordsPublic
+)
+def read_integration_category_data_records(
     category_code: str = Path(pattern=r"^[A-Z]{4}$"),
-    context: ApiContext = Depends(require_scope("ledger:write")),
-) -> CategoryDataPublic:
+    observed_from: datetime | None = Query(default=None, alias="from"),
+    observed_to: datetime | None = Query(default=None, alias="to"),
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    context: ApiContext = Depends(require_scope("ledger:read")),
+) -> CategoryDataRecordsPublic:
     try:
         category = category_use_cases.get_category_by_code(
             session=context.session,
             ledger_id=context.ledger.id,
             category_code=category_code,
         )
-        category_data = category_use_cases.patch_category_data(
+        records = category_use_cases.list_category_data_records(
             session=context.session,
             ledger_id=context.ledger.id,
             category_id=category.id,
-            patch=category_data_in.root,
+            observed_from=observed_from,
+            observed_to=observed_to,
+            limit=limit,
+            offset=offset,
+        )
+    except CategoryNotFoundError:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return CategoryDataRecordsPublic(
+        data=[_to_category_data_record_public(record) for record in records],
+        count=len(records),
+    )
+
+
+@router.post(
+    "/categories/{category_code}/data-records", response_model=CategoryDataRecordPublic
+)
+def create_integration_category_data_record(
+    category_data_in: CategoryDataRecordCreate,
+    category_code: str = Path(pattern=r"^[A-Z]{4}$"),
+    context: ApiContext = Depends(require_scope("ledger:write")),
+) -> CategoryDataRecordPublic:
+    try:
+        category = category_use_cases.get_category_by_code(
+            session=context.session,
+            ledger_id=context.ledger.id,
+            category_code=category_code,
+        )
+        category_data = category_use_cases.create_category_data_record(
+            session=context.session,
+            ledger_id=context.ledger.id,
+            category_id=category.id,
+            observed_at=category_data_in.observed_at,
+            data=category_data_in.data,
+            source=category_data_in.source,
+            external_id=category_data_in.external_id,
         )
     except CategoryNotFoundError:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -83,7 +127,7 @@ def patch_integration_category_data(
         )
     except CategoryDataValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return _to_category_data_public(category_data)
+    return _to_category_data_record_public(category_data)
 
 
 @router.get(
