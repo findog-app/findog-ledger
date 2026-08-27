@@ -6,36 +6,82 @@
 
 <p align="center"><strong>A calm, self-hosted home for recurring payments and obligations.</strong></p>
 
-> **Early development:** Findog Ledger is actively evolving. The data model and
-> core workflow are usable, but integrations, automation, and parts of the
-> product experience are still being shaped.
+> **Early development:** Findog Ledger is actively evolving. The core ledger,
+> category, obligation, and access-control workflows are usable, while
+> integrations, automation, analytics, and parts of the product experience are
+> still being shaped.
 
-Findog Ledger helps a household or small team keep recurring bills in one
-shared ledger. Instead of relying on a bank feed or a third-party financial
-dashboard, you keep control of the application and its data: run it on your
-own infrastructure, invite the people who need access, and decide how the
-workflow should grow.
+Findog Ledger is a self-hosted application for keeping recurring household or
+small-team obligations under control. It is deliberately not another banking
+or budgeting dashboard: the central object is an **obligation** — something
+that needs to be known, prepared, paid, and eventually closed.
+
+You keep control of the application and its data, can share a ledger with other
+users, and can progressively automate data collection through the API without
+making external integrations part of the core application.
 
 ## What it does today
 
 - Organises recurring costs into category groups and categories.
-- Creates and tracks payment obligations for billing periods.
+- Uses categories as templates for creating obligations for billing periods.
+- Creates and tracks obligations through an explicit lifecycle.
 - Supports shared ledgers with owner, editor, and viewer access.
-- Keeps an explicit workflow from collecting payment data to ready, paid,
-  canceled, or reopened obligations.
-- Highlights approaching and overdue payments, while keeping paid obligations
-  clearly separate.
+- Highlights upcoming and overdue payments while keeping completed obligations
+  clearly separated.
+- Stores structured, category-specific data alongside obligations.
+- Supports obligation components, so a total can be represented by individual
+  items such as invoices or charge components.
+- Exposes API operations intended for external integrations and automation.
+- Supports scoped API keys for machine-to-machine access to a ledger.
 
-For the precise obligation-state rules, API actions, and planned integration
-behaviour, see the [obligation lifecycle](docs/obligation-lifecycle.md).
+For the precise obligation-state rules and available lifecycle actions, see the
+[obligation lifecycle](docs/obligation-lifecycle.md).
+
+## Core concepts
+
+### Ledger
+
+A ledger is the shared workspace. It owns categories and obligations and defines
+who can access them.
+
+### Category
+
+A category describes a recurring type of obligation. Categories belong to
+category groups and provide the metadata used when obligations are created.
+They can also define a schema for structured data collected for that type of
+obligation.
+
+### Obligation
+
+An obligation represents one concrete payment or responsibility for a billing
+period. Its lifecycle separates incomplete data from an item that is ready to
+pay, paid, canceled, or reopened.
+
+### Components and structured data
+
+Not every obligation is just a single amount. Components allow an obligation to
+carry a breakdown of its total, while category-defined structured data can hold
+domain-specific information such as invoice details, consumption, readings, or
+other integration-provided values.
+
+## Automation and integrations
+
+Findog Ledger is designed so integrations can live outside the main
+application. A mail processor, provider-specific scraper, or scheduled job can
+use the API instead of being coupled to the backend.
+
+The integration surface is built around ledger-scoped API keys and explicit
+obligation operations. This keeps the core application useful on its own while
+allowing automation to be added incrementally.
+
+The Python client is maintained separately in the
+[`findog-client-python`](https://github.com/findog-app/findog-client-python)
+repository and is generated from the Ledger OpenAPI specification.
 
 ## Screenshots
 
-Screenshots will be added as the interface settles.
-
-| Obligations workspace | Categories and groups |
-| --- | --- |
-| _Placeholder: `docs/screenshots/obligations-workspace.png`_ | _Placeholder: `docs/screenshots/categories-workspace.png`_ |
+The UI is still moving quickly, so screenshots are intentionally postponed
+until the main desktop and mobile navigation settles.
 
 ## Run it yourself
 
@@ -48,37 +94,59 @@ and a reverse proxy that can route your chosen frontend and API hostnames to
 the `findog-ledger-frontend` and `findog-ledger-backend` aliases on that
 network.
 
-1. Create a deployment directory and download the production files. There is no
-   need to clone the application source code.
+### Install
 
-   ```bash
-   mkdir findog-ledger
-   cd findog-ledger
-   curl -fsSL https://raw.githubusercontent.com/findog-app/findog-ledger/main/scripts/install.sh | bash
-   ```
+Create a deployment directory and run the installer. There is no need to clone
+the application source code.
 
-2. Edit `.env` and set the values for your deployment. At minimum, choose an
+```bash
+mkdir findog-ledger
+cd findog-ledger
+curl -fsSL https://raw.githubusercontent.com/findog-app/findog-ledger/main/scripts/install.sh | bash
+```
+
+The installer downloads the production Compose file and environment template.
+
+Then:
+
+1. Edit `.env` and set the values for your deployment. At minimum, choose an
    immutable image `TAG`, public URLs, PostgreSQL credentials, a random
    `SECRET_KEY`, and the first administrator account.
-
-3. Ensure the external Docker network exists and configure your reverse proxy
-   to forward the public frontend and API hostnames to the aliases above.
-
-4. Pull and start the stack. The `prestart` service runs database migrations
+2. Ensure the external Docker network exists and configure your reverse proxy
+   to forward the frontend and API hostnames to the aliases above.
+3. Pull and start the stack. The `prestart` service runs database migrations
    before the application starts.
 
-   ```bash
-   docker compose pull
-   docker compose up -d
-   ```
+```bash
+docker compose pull
+docker compose up -d
+```
 
-5. Confirm that the services are healthy, then open the frontend URL from your
-   `.env` file.
+Confirm that the services are healthy, then open the frontend URL configured in
+`.env`.
 
-   ```bash
-   docker compose ps
-   ```
+```bash
+docker compose ps
+```
 
-For later releases, change `TAG` to the desired immutable version and run the
-same two Compose commands. Keep database backups and migration compatibility in
-mind before rolling a version back.
+### Upgrade
+
+Change `TAG` to the desired immutable release and run:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Keep database backups and migration compatibility in mind before rolling a
+version back.
+
+## Project status
+
+Findog Ledger is currently an early-stage project rather than a finished
+consumer product. The direction is to keep the core ledger small and predictable
+while building richer UX, external integrations, reporting, and automation on
+top of it.
+
+The project is developed in public under the
+[`findog-app`](https://github.com/findog-app) GitHub organisation.
