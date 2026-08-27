@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link,
@@ -23,13 +23,26 @@ export const Route = createFileRoute("/_layout/ledgers/$ledgerId")({
 function LedgerDetails() {
   const { ledgerId } = Route.useParams()
   const location = useLocation()
+  const isWorkspace = location.pathname === `/ledgers/${ledgerId}`
   const { user: currentUser } = useAuth()
   const { data: ledger } = useSuspenseQuery({
     queryFn: () => LedgersService.readLedger({ ledgerId }),
     queryKey: ["ledger", ledgerId],
   })
+  const members = useQuery({
+    queryFn: () => LedgersService.readLedgerMembers({ ledgerId }),
+    queryKey: ["ledger-members", ledgerId],
+    enabled: isWorkspace && currentUser !== undefined,
+  })
+  const canManageComponents =
+    ledger.owner_user_id === currentUser?.id ||
+    members.data?.data.some(
+      (member) =>
+        member.user_id === currentUser?.id &&
+        (member.role === "owner" || member.role === "editor"),
+    ) === true
 
-  if (location.pathname !== `/ledgers/${ledgerId}`) {
+  if (!isWorkspace) {
     return <Outlet />
   }
 
@@ -72,7 +85,10 @@ function LedgerDetails() {
         </div>
       </div>
       <Suspense fallback={<ObligationWorkspaceSkeleton />}>
-        <ObligationWorkspace ledgerId={ledgerId} />
+        <ObligationWorkspace
+          ledgerId={ledgerId}
+          canManageComponents={canManageComponents}
+        />
       </Suspense>
     </div>
   )
