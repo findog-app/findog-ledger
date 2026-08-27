@@ -29,6 +29,8 @@ type ComponentFormValues = {
   amount: string
 }
 
+type ComponentFormMode = "create" | ObligationComponentPublic | null
+
 const emptyForm: ComponentFormValues = {
   type: "invoice",
   customType: "",
@@ -211,11 +213,12 @@ export function ObligationComponentsSection({
   onSuccess: (message: string) => void
 }) {
   const queryClient = useQueryClient()
-  const [adding, setAdding] = useState(false)
-  const [editing, setEditing] = useState<ObligationComponentPublic | null>(null)
+  const [formMode, setFormMode] = useState<ComponentFormMode>(null)
   const [removing, setRemoving] = useState<ObligationComponentPublic | null>(
     null,
   )
+  const adding = formMode === "create"
+  const editing = typeof formMode === "object" ? formMode : null
   const queryKey = ["obligation-components", ledgerId, obligationKey]
   const components = useQuery({
     queryKey,
@@ -233,7 +236,7 @@ export function ObligationComponentsSection({
     onError: handleError.bind(onError),
     onSuccess: () => {
       onSuccess("Component added")
-      setAdding(false)
+      setFormMode(null)
       invalidate()
     },
   })
@@ -254,7 +257,7 @@ export function ObligationComponentsSection({
     onError: handleError.bind(onError),
     onSuccess: () => {
       onSuccess("Component updated")
-      setEditing(null)
+      setFormMode(null)
       invalidate()
     },
   })
@@ -289,7 +292,7 @@ export function ObligationComponentsSection({
           </p>
         </div>
         {canManage && !adding && !editing ? (
-          <Button size="sm" onClick={() => setAdding(true)}>
+          <Button size="sm" onClick={() => setFormMode("create")}>
             <Plus /> Add component
           </Button>
         ) : null}
@@ -299,7 +302,7 @@ export function ObligationComponentsSection({
         <ComponentForm
           currency={currency}
           submitting={create.isPending}
-          onCancel={() => setAdding(false)}
+          onCancel={() => setFormMode(null)}
           onSubmit={(requestBody) => create.mutate(requestBody)}
         />
       ) : null}
@@ -308,7 +311,7 @@ export function ObligationComponentsSection({
           component={editing}
           currency={currency}
           submitting={update.isPending}
-          onCancel={() => setEditing(null)}
+          onCancel={() => setFormMode(null)}
           onSubmit={(requestBody) =>
             update.mutate({ id: editing.id, requestBody })
           }
@@ -368,7 +371,7 @@ export function ObligationComponentsSection({
                           variant="ghost"
                           size="icon-sm"
                           aria-label={`Edit ${component.label}`}
-                          onClick={() => setEditing(component)}
+                          onClick={() => setFormMode(component)}
                         >
                           <Pencil />
                         </Button>

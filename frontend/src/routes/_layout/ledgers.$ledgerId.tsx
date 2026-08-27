@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_layout/ledgers/$ledgerId")({
 function LedgerDetails() {
   const { ledgerId } = Route.useParams()
   const location = useLocation()
+  const isWorkspace = location.pathname === `/ledgers/${ledgerId}`
   const { user: currentUser } = useAuth()
   const { data: ledger } = useSuspenseQuery({
     queryFn: () => LedgersService.readLedger({ ledgerId }),
@@ -31,7 +32,7 @@ function LedgerDetails() {
   const members = useQuery({
     queryFn: () => LedgersService.readLedgerMembers({ ledgerId }),
     queryKey: ["ledger-members", ledgerId],
-    enabled: currentUser !== undefined,
+    enabled: isWorkspace && currentUser !== undefined,
   })
   const canManageComponents =
     ledger.owner_user_id === currentUser?.id ||
@@ -41,7 +42,7 @@ function LedgerDetails() {
         (member.role === "owner" || member.role === "editor"),
     ) === true
 
-  if (location.pathname !== `/ledgers/${ledgerId}`) {
+  if (!isWorkspace) {
     return <Outlet />
   }
 
