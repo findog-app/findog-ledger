@@ -108,6 +108,42 @@ def test_integration_obligations_are_ledger_scoped_and_use_integration_sources(
     assert payload["effective_value_source"] == "integration"
 
 
+def test_integration_obligation_components_require_matching_api_key_scope(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    jwt_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger, obligation = _ledger_with_obligation(db, owner_id=owner.id)
+    read_key = _api_key(client, jwt_headers, str(ledger.id), ["ledger:read"])
+    write_key = _api_key(client, jwt_headers, str(ledger.id), ["ledger:write"])
+    read_headers = {"Authorization": f"Bearer {read_key['key']}"}
+    write_headers = {"Authorization": f"Bearer {write_key['key']}"}
+    url = (
+        f"{settings.API_V1_STR}/integration/obligations/"
+        f"{obligation.business_key}/components"
+    )
+    payload = {
+        "type": "invoice",
+        "label": "August invoice",
+        "amount": "100.00",
+        "source": "provider",
+        "external_id": "FV/2026/08/12345",
+    }
+
+    assert client.get(url, headers=read_headers).status_code == 200
+    assert (
+        client.put(f"{url}/upsert", headers=read_headers, json=payload).status_code
+        == 403
+    )
+
+    created = client.put(f"{url}/upsert", headers=write_headers, json=payload)
+    assert created.status_code == 200
+    assert created.json()["external_id"] == payload["external_id"]
+    assert client.get(url, headers=write_headers).status_code == 403
+
+
 def test_integration_obligation_lifecycle_actions_and_append_only_notes(
     client: TestClient, db: Session
 ) -> None:

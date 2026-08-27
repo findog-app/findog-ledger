@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 from typing import Any
 
@@ -12,6 +13,11 @@ from app.domain import BillingPeriod, ObligationKey, ObligationLifecycle
 from app.models import Ledger, Obligation
 from app.schemas import (
     EnsuredObligationsPublic,
+    ObligationComponentCreate,
+    ObligationComponentPublic,
+    ObligationComponentsPublic,
+    ObligationComponentUpdate,
+    ObligationComponentUpsert,
     ObligationCreate,
     ObligationPeriodPublic,
     ObligationPublic,
@@ -21,8 +27,10 @@ from app.schemas import (
 from app.use_cases import obligations as obligation_use_cases
 from app.use_cases.exceptions import (
     CategoryNotFoundError,
+    DuplicateObligationComponentError,
     DuplicateObligationError,
     ManualObligationNotAllowedError,
+    ObligationComponentNotFoundError,
     ObligationInvalidLifecycleError,
     ObligationNotFoundError,
     ObligationReadOnlyError,
@@ -59,6 +67,21 @@ def to_obligation_public(obligation: Obligation) -> ObligationPublic:
         paid_at=obligation.paid_at,
         created_at=obligation.created_at,
         updated_at=obligation.updated_at,
+    )
+
+
+def to_obligation_component_public(component: Any) -> ObligationComponentPublic:
+    return ObligationComponentPublic(
+        id=component.id,
+        obligation_id=component.obligation_id,
+        type=component.type,
+        label=component.label,
+        amount=component.amount,
+        source=component.source,
+        external_id=component.external_id,
+        metadata=component.component_metadata,
+        created_at=component.created_at,
+        updated_at=component.updated_at,
     )
 
 
@@ -145,6 +168,142 @@ def create_obligation(
         raise HTTPException(status_code=409, detail="Obligation already exists")
 
     return to_obligation_public(obligation)
+
+
+def _parse_obligation_key(obligation_key: str) -> ObligationKey:
+    try:
+        return ObligationKey.parse(obligation_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid obligation key") from exc
+
+
+@router.get(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/components",
+    response_model=ObligationComponentsPublic,
+)
+def read_obligation_components(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    ledger: Ledger = Depends(require_ledger_view_access),
+) -> Any:
+    try:
+        components = obligation_use_cases.list_obligation_components(
+            session=session,
+            ledger_id=ledger.id,
+            key=_parse_obligation_key(obligation_key),
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    return ObligationComponentsPublic(
+        data=[to_obligation_component_public(component) for component in components],
+        count=len(components),
+    )
+
+
+@router.post(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/components",
+    response_model=ObligationComponentPublic,
+)
+def add_obligation_component(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    component_in: ObligationComponentCreate,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        component = obligation_use_cases.add_obligation_component(
+            session=session,
+            ledger_id=ledger.id,
+            key=_parse_obligation_key(obligation_key),
+            **component_in.model_dump(),
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except DuplicateObligationComponentError:
+        raise HTTPException(
+            status_code=409, detail="Obligation component already exists"
+        )
+    return to_obligation_component_public(component)
+
+
+@router.put(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/components/upsert",
+    response_model=ObligationComponentPublic,
+)
+def upsert_obligation_component(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    component_in: ObligationComponentUpsert,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        component = obligation_use_cases.upsert_obligation_component(
+            session=session,
+            ledger_id=ledger.id,
+            key=_parse_obligation_key(obligation_key),
+            **component_in.model_dump(),
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    return to_obligation_component_public(component)
+
+
+@router.patch(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/components/{component_id}",
+    response_model=ObligationComponentPublic,
+)
+def update_obligation_component(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    component_id: uuid.UUID,
+    component_in: ObligationComponentUpdate,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> Any:
+    try:
+        component = obligation_use_cases.update_obligation_component(
+            session=session,
+            ledger_id=ledger.id,
+            key=_parse_obligation_key(obligation_key),
+            component_id=component_id,
+            **component_in.model_dump(exclude_unset=True),
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except ObligationComponentNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation component not found")
+    except DuplicateObligationComponentError:
+        raise HTTPException(
+            status_code=409, detail="Obligation component already exists"
+        )
+    return to_obligation_component_public(component)
+
+
+@router.delete(
+    "/ledgers/{ledger_id}/obligations/{obligation_key}/components/{component_id}",
+    status_code=204,
+)
+def remove_obligation_component(
+    *,
+    session: SessionDep,
+    obligation_key: str,
+    component_id: uuid.UUID,
+    ledger: Ledger = Depends(require_ledger_edit_access),
+) -> None:
+    try:
+        obligation_use_cases.remove_obligation_component(
+            session=session,
+            ledger_id=ledger.id,
+            key=_parse_obligation_key(obligation_key),
+            component_id=component_id,
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    except ObligationComponentNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation component not found")
 
 
 @router.patch(

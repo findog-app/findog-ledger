@@ -1277,6 +1277,342 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
+export const ObligationComponentCreateSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            maxLength: 64,
+            minLength: 1,
+            title: 'Type'
+        },
+        label: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['type', 'label'],
+    title: 'ObligationComponentCreate'
+} as const;
+
+export const ObligationComponentPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        obligation_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Obligation Id'
+        },
+        type: {
+            type: 'string',
+            title: 'Type'
+        },
+        label: {
+            type: 'string',
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'obligation_id', 'type', 'label', 'amount', 'source', 'external_id', 'metadata', 'created_at', 'updated_at'],
+    title: 'ObligationComponentPublic'
+} as const;
+
+export const ObligationComponentUpdateSchema = {
+    properties: {
+        type: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 64,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Type'
+        },
+        label: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    title: 'ObligationComponentUpdate'
+} as const;
+
+export const ObligationComponentUpsertSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            maxLength: 64,
+            minLength: 1,
+            title: 'Type'
+        },
+        label: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['type', 'label'],
+    title: 'ObligationComponentUpsert'
+} as const;
+
+export const ObligationComponentsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/ObligationComponentPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'ObligationComponentsPublic'
+} as const;
+
 export const ObligationCreateSchema = {
     properties: {
         category_code: {
