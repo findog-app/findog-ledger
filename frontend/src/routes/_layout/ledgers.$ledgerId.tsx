@@ -47,17 +47,17 @@ function LedgerDetails() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-2xl font-bold tracking-tight">{ledger.name}</h1>
             <p className="mt-1 text-muted-foreground">
               {ledger.description ||
                 "Review and manage obligations for this ledger."}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="hidden gap-2 md:flex">
             {ledger.owner_user_id === currentUser?.id && (
               <Button variant="outline" asChild>
                 <Link to="/ledgers/$ledgerId/system-run" params={{ ledgerId }}>

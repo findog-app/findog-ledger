@@ -1,5 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
-import { Link, useLocation, useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
   BookOpen,
   Check,
@@ -8,9 +7,6 @@ import {
   Settings,
   Tags,
 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-
-import { LedgersService } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
@@ -26,43 +22,16 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-
-const LAST_LEDGER_KEY = "last-ledger-id"
-
-function getLedgerIdFromPath(pathname: string) {
-  return pathname.match(/^\/ledgers\/([^/]+)/)?.[1] ?? null
-}
+import { useActiveLedger } from "@/hooks/useActiveLedger"
 
 export function LedgerSwitcher() {
-  const location = useLocation()
   const navigate = useNavigate()
   const { isMobile, setOpenMobile } = useSidebar()
-  const [lastLedgerId, setLastLedgerId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null
-    return window.localStorage.getItem(LAST_LEDGER_KEY)
-  })
-  const { data, isLoading } = useQuery({
-    queryFn: () => LedgersService.readLedgers(),
-    queryKey: ["ledgers"],
-  })
-
-  const ledgers = data?.data ?? []
-  const pathLedgerId = getLedgerIdFromPath(location.pathname)
-  const activeLedgerId = pathLedgerId ?? lastLedgerId
-  const activeLedger = useMemo(
-    () => ledgers.find((ledger) => ledger.id === activeLedgerId),
-    [activeLedgerId, ledgers],
-  )
-
-  useEffect(() => {
-    if (pathLedgerId) {
-      window.localStorage.setItem(LAST_LEDGER_KEY, pathLedgerId)
-      setLastLedgerId(pathLedgerId)
-    }
-  }, [pathLedgerId])
+  const { activeLedger, activeLedgerId, isLoading, ledgers, setLastLedgerId } =
+    useActiveLedger()
 
   const selectLedger = (ledgerId: string) => {
-    window.localStorage.setItem(LAST_LEDGER_KEY, ledgerId)
+    window.localStorage.setItem("last-ledger-id", ledgerId)
     setLastLedgerId(ledgerId)
     if (isMobile) setOpenMobile(false)
     void navigate({ to: "/ledgers/$ledgerId", params: { ledgerId } })
