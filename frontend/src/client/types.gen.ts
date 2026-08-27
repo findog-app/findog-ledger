@@ -589,6 +589,19 @@ export type IntegrationUpdateIntegrationObligationData = {
 
 export type IntegrationUpdateIntegrationObligationResponse = (ObligationPublic);
 
+export type IntegrationReadIntegrationObligationComponentsData = {
+    obligationKey: string;
+};
+
+export type IntegrationReadIntegrationObligationComponentsResponse = (ObligationComponentsPublic);
+
+export type IntegrationUpsertIntegrationObligationComponentData = {
+    obligationKey: string;
+    requestBody: ObligationComponentUpsert;
+};
+
+export type IntegrationUpsertIntegrationObligationComponentResponse = (ObligationComponentPublic);
+
 export type IntegrationMarkIntegrationObligationReadyData = {
     obligationKey: string;
 };

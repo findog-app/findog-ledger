@@ -27,6 +27,7 @@ from app.schemas import (
 from app.use_cases import obligations as obligation_use_cases
 from app.use_cases.exceptions import (
     CategoryNotFoundError,
+    DuplicateObligationComponentError,
     DuplicateObligationError,
     ManualObligationNotAllowedError,
     ObligationComponentNotFoundError,
@@ -220,6 +221,10 @@ def add_obligation_component(
         )
     except ObligationNotFoundError:
         raise HTTPException(status_code=404, detail="Obligation not found")
+    except DuplicateObligationComponentError:
+        raise HTTPException(
+            status_code=409, detail="Obligation component already exists"
+        )
     return to_obligation_component_public(component)
 
 
@@ -270,6 +275,10 @@ def update_obligation_component(
         raise HTTPException(status_code=404, detail="Obligation not found")
     except ObligationComponentNotFoundError:
         raise HTTPException(status_code=404, detail="Obligation component not found")
+    except DuplicateObligationComponentError:
+        raise HTTPException(
+            status_code=409, detail="Obligation component already exists"
+        )
     return to_obligation_component_public(component)
 
 

@@ -233,21 +233,25 @@ def test_upsert_obligation_component_is_idempotent_for_external_identity(
         session=db, ledger_id=ledger.id, period=period
     )
     key = ObligationKey(category_code=category.code, period=period)
-    kwargs = {
-        "session": db,
-        "ledger_id": ledger.id,
-        "key": key,
-        "type": "invoice",
-        "label": "August invoice",
-        "source": "provider",
-        "external_id": "FV/2026/08/12345",
-    }
-
     first = obligation_use_cases.upsert_obligation_component(
-        **kwargs, amount=Decimal("100.00")
+        session=db,
+        ledger_id=ledger.id,
+        key=key,
+        type="invoice",
+        label="August invoice",
+        source="provider",
+        external_id="FV/2026/08/12345",
+        amount=Decimal("100.00"),
     )
     second = obligation_use_cases.upsert_obligation_component(
-        **kwargs, amount=Decimal("120.00")
+        session=db,
+        ledger_id=ledger.id,
+        key=key,
+        type="invoice",
+        label="August invoice",
+        source="provider",
+        external_id="FV/2026/08/12345",
+        amount=Decimal("120.00"),
     )
 
     assert second.id == first.id
@@ -260,3 +264,39 @@ def test_upsert_obligation_component_is_idempotent_for_external_identity(
         )
         == 1
     )
+
+
+def test_upsert_obligation_component_is_atomic_across_separate_sessions(
+    db: Session,
+) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    period = BillingPeriod(2026, 8)
+    obligation_use_cases.ensure_obligations_for_period(
+        session=db, ledger_id=ledger.id, period=period
+    )
+    key = ObligationKey(category_code=category.code, period=period)
+    with Session(bind=db.get_bind()) as first_session:
+        first = obligation_use_cases.upsert_obligation_component(
+            session=first_session,
+            ledger_id=ledger.id,
+            key=key,
+            type="invoice",
+            label="August invoice",
+            source="provider",
+            external_id="FV/2026/08/12345",
+            amount=Decimal("100.00"),
+        )
+    with Session(bind=db.get_bind()) as second_session:
+        second = obligation_use_cases.upsert_obligation_component(
+            session=second_session,
+            ledger_id=ledger.id,
+            key=key,
+            type="invoice",
+            label="August invoice",
+            source="provider",
+            external_id="FV/2026/08/12345",
+            amount=Decimal("120.00"),
+        )
+
+    assert second.id == first.id
+    assert second.amount == Decimal("120.00")

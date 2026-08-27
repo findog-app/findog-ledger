@@ -102,6 +102,25 @@ def test_obligation_component_endpoints_support_manual_crud_and_external_upsert(
     assert first_upsert.json()["id"] == second_upsert.json()["id"]
     assert second_upsert.json()["amount"] == "120.00"
 
+    duplicate_create = client.post(
+        url,
+        headers=headers,
+        json={
+            "type": "invoice",
+            "label": "Duplicate invoice",
+            "source": "provider",
+            "external_id": "FV/2026/08/12345",
+        },
+    )
+    assert duplicate_create.status_code == 409
+
+    conflicting_update = client.patch(
+        f"{url}/{component_id}",
+        headers=headers,
+        json={"source": "provider", "external_id": "FV/2026/08/12345"},
+    )
+    assert conflicting_update.status_code == 409
+
     listed = client.get(url, headers=headers)
     assert listed.status_code == 200
     assert listed.json()["count"] == 2

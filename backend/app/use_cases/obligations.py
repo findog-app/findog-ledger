@@ -4,7 +4,9 @@ import uuid
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain import (
@@ -21,6 +23,7 @@ from app.models import Category, Ledger, Obligation, ObligationComponent
 from app.services import obligations as obligation_service
 from app.use_cases.exceptions import (
     CategoryNotFoundError,
+    DuplicateObligationComponentError,
     DuplicateObligationError,
     LedgerNotFoundError,
     ManualObligationNotAllowedError,
@@ -551,7 +554,11 @@ def add_obligation_component(
         component_metadata=metadata,
     )
     session.add(component)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise DuplicateObligationComponentError from exc
     session.refresh(component)
     return component
 
@@ -599,7 +606,11 @@ def update_obligation_component(
         component.external_id = external_id
     if not isinstance(metadata, _Unset):
         component.component_metadata = metadata
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise DuplicateObligationComponentError from exc
     session.refresh(component)
     return component
 
@@ -632,15 +643,9 @@ def upsert_obligation_component(
     metadata: dict[str, object] | None = None,
 ) -> ObligationComponent:
     obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
-    component = session.scalar(
-        select(ObligationComponent).where(
-            ObligationComponent.obligation_id == obligation.id,
-            ObligationComponent.source == source,
-            ObligationComponent.external_id == external_id,
-        )
-    )
-    if component is None:
-        component = ObligationComponent(
+    statement = (
+        pg_insert(ObligationComponent)
+        .values(
             obligation_id=obligation.id,
             type=type,
             label=label,
@@ -649,12 +654,22 @@ def upsert_obligation_component(
             external_id=external_id,
             component_metadata=metadata,
         )
-        session.add(component)
-    else:
-        component.type = type
-        component.label = label
-        component.amount = amount
-        component.component_metadata = metadata
+        .on_conflict_do_update(
+            index_elements=["obligation_id", "source", "external_id"],
+            index_where=text("source IS NOT NULL AND external_id IS NOT NULL"),
+            set_={
+                "type": type,
+                "label": label,
+                "amount": amount,
+                "metadata": metadata,
+                "updated_at": datetime.now(UTC),
+            },
+        )
+        .returning(ObligationComponent.id)
+    )
+    component_id = session.scalar(statement)
     session.commit()
+    component = session.get(ObligationComponent, component_id)
+    assert component is not None
     session.refresh(component)
     return component
