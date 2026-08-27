@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { ObligationComponentsSection } from "./ObligationComponentsSection"
 
 type LifecycleFilter = ObligationLifecycle | "" | "unpaid"
 
@@ -174,7 +175,13 @@ function canReopenObligation(obligation: ObligationPublic) {
   return ["ready", "paid", "canceled", "error"].includes(obligation.lifecycle)
 }
 
-export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
+export function ObligationWorkspace({
+  ledgerId,
+  canManageComponents,
+}: {
+  ledgerId: string
+  canManageComponents: boolean
+}) {
   const period = currentPeriod()
   const [year, setYear] = useState(String(period.year))
   const [month, setMonth] = useState(String(period.month))
@@ -424,7 +431,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
           open={selectedKey !== null}
           onOpenChange={(open) => !open && setSelectedKey(null)}
         >
-          <DialogContent>
+          <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl">
             <DialogHeader>
               <DialogTitle>{selected.data?.key ?? "Obligation"}</DialogTitle>
               <DialogDescription>Obligation details.</DialogDescription>
@@ -546,6 +553,14 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                     </tbody>
                   </table>
                 </div>
+                <ObligationComponentsSection
+                  ledgerId={ledgerId}
+                  obligationKey={selected.data.key}
+                  currency={selected.data.currency}
+                  canManage={canManageComponents}
+                  onError={showErrorToast}
+                  onSuccess={showSuccessToast}
+                />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Loading details…</p>
