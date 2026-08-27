@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesUpdateCategoryData, CategoriesUpdateCategoryResponse, CategoriesReadCategoryDataRecordsData, CategoriesReadCategoryDataRecordsResponse, CategoriesReadLatestCategoryDataRecordData, CategoriesReadLatestCategoryDataRecordResponse, CategoriesReadCategoryDataSchemaData, CategoriesReadCategoryDataSchemaResponse, CategoriesCreateCategoryDataSchemaData, CategoriesCreateCategoryDataSchemaResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, CategoriesRestoreCategoryData, CategoriesRestoreCategoryResponse, IntegrationReadLatestIntegrationCategoryDataRecordData, IntegrationReadLatestIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataRecordsData, IntegrationReadIntegrationCategoryDataRecordsResponse, IntegrationCreateIntegrationCategoryDataRecordData, IntegrationCreateIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataSchemaData, IntegrationReadIntegrationCategoryDataSchemaResponse, IntegrationReadIntegrationLedgerResponse, IntegrationUpdateIntegrationLedgerData, IntegrationUpdateIntegrationLedgerResponse, IntegrationReadIntegrationObligationsData, IntegrationReadIntegrationObligationsResponse, IntegrationReadIntegrationObligationData, IntegrationReadIntegrationObligationResponse, IntegrationUpdateIntegrationObligationData, IntegrationUpdateIntegrationObligationResponse, IntegrationMarkIntegrationObligationReadyData, IntegrationMarkIntegrationObligationReadyResponse, IntegrationMarkIntegrationObligationPaidData, IntegrationMarkIntegrationObligationPaidResponse, IntegrationCancelIntegrationObligationData, IntegrationCancelIntegrationObligationResponse, IntegrationReopenIntegrationObligationData, IntegrationReopenIntegrationObligationResponse, IntegrationMarkIntegrationObligationErrorData, IntegrationMarkIntegrationObligationErrorResponse, IntegrationAppendIntegrationObligationNoteData, IntegrationAppendIntegrationObligationNoteResponse, LedgersCreateApiKeyData, LedgersCreateApiKeyResponse, LedgersReadApiKeysData, LedgersReadApiKeysResponse, LedgersRevokeApiKeyData, LedgersRevokeApiKeyResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersUpdateLedgerData, LedgersUpdateLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LedgersDeleteAllCategoriesData, LedgersDeleteAllCategoriesResponse, LedgersDeleteAllObligationsData, LedgersDeleteAllObligationsResponse, LedgersUpdateLedgerMemberData, LedgersUpdateLedgerMemberResponse, LedgersRemoveLedgerMemberData, LedgersRemoveLedgerMemberResponse, LegacyImportStartLegacyImportData, LegacyImportStartLegacyImportResponse, LegacyImportReadLegacyImportJobData, LegacyImportReadLegacyImportJobResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ObligationsReadObligationsData, ObligationsReadObligationsResponse, ObligationsCreateObligationData, ObligationsCreateObligationResponse, ObligationsEnsureObligationsData, ObligationsEnsureObligationsResponse, ObligationsUpdateObligationData, ObligationsUpdateObligationResponse, ObligationsReadObligationData, ObligationsReadObligationResponse, ObligationsMarkObligationReadyData, ObligationsMarkObligationReadyResponse, ObligationsMarkObligationPaidData, ObligationsMarkObligationPaidResponse, ObligationsCancelObligationData, ObligationsCancelObligationResponse, ObligationsReopenObligationData, ObligationsReopenObligationResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesUpdateCategoryData, CategoriesUpdateCategoryResponse, CategoriesReadCategoryDataRecordsData, CategoriesReadCategoryDataRecordsResponse, CategoriesReadLatestCategoryDataRecordData, CategoriesReadLatestCategoryDataRecordResponse, CategoriesReadCategoryDataSchemaData, CategoriesReadCategoryDataSchemaResponse, CategoriesCreateCategoryDataSchemaData, CategoriesCreateCategoryDataSchemaResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, CategoriesRestoreCategoryData, CategoriesRestoreCategoryResponse, IntegrationReadLatestIntegrationCategoryDataRecordData, IntegrationReadLatestIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataRecordsData, IntegrationReadIntegrationCategoryDataRecordsResponse, IntegrationCreateIntegrationCategoryDataRecordData, IntegrationCreateIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataSchemaData, IntegrationReadIntegrationCategoryDataSchemaResponse, IntegrationReadIntegrationLedgerResponse, IntegrationUpdateIntegrationLedgerData, IntegrationUpdateIntegrationLedgerResponse, IntegrationReadIntegrationObligationsData, IntegrationReadIntegrationObligationsResponse, IntegrationReadIntegrationObligationData, IntegrationReadIntegrationObligationResponse, IntegrationUpdateIntegrationObligationData, IntegrationUpdateIntegrationObligationResponse, IntegrationMarkIntegrationObligationReadyData, IntegrationMarkIntegrationObligationReadyResponse, IntegrationMarkIntegrationObligationPaidData, IntegrationMarkIntegrationObligationPaidResponse, IntegrationCancelIntegrationObligationData, IntegrationCancelIntegrationObligationResponse, IntegrationReopenIntegrationObligationData, IntegrationReopenIntegrationObligationResponse, IntegrationMarkIntegrationObligationErrorData, IntegrationMarkIntegrationObligationErrorResponse, IntegrationAppendIntegrationObligationNoteData, IntegrationAppendIntegrationObligationNoteResponse, LedgersCreateApiKeyData, LedgersCreateApiKeyResponse, LedgersReadApiKeysData, LedgersReadApiKeysResponse, LedgersRevokeApiKeyData, LedgersRevokeApiKeyResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersUpdateLedgerData, LedgersUpdateLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LedgersDeleteAllCategoriesData, LedgersDeleteAllCategoriesResponse, LedgersDeleteAllObligationsData, LedgersDeleteAllObligationsResponse, LedgersUpdateLedgerMemberData, LedgersUpdateLedgerMemberResponse, LedgersRemoveLedgerMemberData, LedgersRemoveLedgerMemberResponse, LegacyImportStartLegacyImportData, LegacyImportStartLegacyImportResponse, LegacyImportReadLegacyImportJobData, LegacyImportReadLegacyImportJobResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ObligationsReadObligationsData, ObligationsReadObligationsResponse, ObligationsCreateObligationData, ObligationsCreateObligationResponse, ObligationsEnsureObligationsData, ObligationsEnsureObligationsResponse, ObligationsReadObligationComponentsData, ObligationsReadObligationComponentsResponse, ObligationsAddObligationComponentData, ObligationsAddObligationComponentResponse, ObligationsUpsertObligationComponentData, ObligationsUpsertObligationComponentResponse, ObligationsUpdateObligationComponentData, ObligationsUpdateObligationComponentResponse, ObligationsRemoveObligationComponentData, ObligationsRemoveObligationComponentResponse, ObligationsUpdateObligationData, ObligationsUpdateObligationResponse, ObligationsReadObligationData, ObligationsReadObligationResponse, ObligationsMarkObligationReadyData, ObligationsMarkObligationReadyResponse, ObligationsMarkObligationPaidData, ObligationsMarkObligationPaidResponse, ObligationsCancelObligationData, ObligationsCancelObligationResponse, ObligationsReopenObligationData, ObligationsReopenObligationResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class CategoriesService {
     /**
@@ -31,7 +31,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Create Category
      * @param data The data for the request.
@@ -54,7 +54,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Read Category Groups
      * @param data The data for the request.
@@ -296,7 +296,7 @@ export class CategoriesService {
             }
         });
     }
-
+    
     /**
      * Restore Category
      * @param data The data for the request.
@@ -1123,6 +1123,129 @@ export class ObligationsService {
             query: {
                 year: data.year,
                 month: data.month
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Obligation Components
+     * @param data The data for the request.
+     * @param data.obligationKey
+     * @param data.ledgerId
+     * @returns ObligationComponentsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readObligationComponents(data: ObligationsReadObligationComponentsData): CancelablePromise<ObligationsReadObligationComponentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/components',
+            path: {
+                obligation_key: data.obligationKey,
+                ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Add Obligation Component
+     * @param data The data for the request.
+     * @param data.obligationKey
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns ObligationComponentPublic Successful Response
+     * @throws ApiError
+     */
+    public static addObligationComponent(data: ObligationsAddObligationComponentData): CancelablePromise<ObligationsAddObligationComponentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/components',
+            path: {
+                obligation_key: data.obligationKey,
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Upsert Obligation Component
+     * @param data The data for the request.
+     * @param data.obligationKey
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns ObligationComponentPublic Successful Response
+     * @throws ApiError
+     */
+    public static upsertObligationComponent(data: ObligationsUpsertObligationComponentData): CancelablePromise<ObligationsUpsertObligationComponentResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/components/upsert',
+            path: {
+                obligation_key: data.obligationKey,
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Obligation Component
+     * @param data The data for the request.
+     * @param data.obligationKey
+     * @param data.componentId
+     * @param data.ledgerId
+     * @param data.requestBody
+     * @returns ObligationComponentPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateObligationComponent(data: ObligationsUpdateObligationComponentData): CancelablePromise<ObligationsUpdateObligationComponentResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/components/{component_id}',
+            path: {
+                obligation_key: data.obligationKey,
+                component_id: data.componentId,
+                ledger_id: data.ledgerId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove Obligation Component
+     * @param data The data for the request.
+     * @param data.obligationKey
+     * @param data.componentId
+     * @param data.ledgerId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static removeObligationComponent(data: ObligationsRemoveObligationComponentData): CancelablePromise<ObligationsRemoveObligationComponentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/components/{component_id}',
+            path: {
+                obligation_key: data.obligationKey,
+                component_id: data.componentId,
+                ledger_id: data.ledgerId
             },
             errors: {
                 422: 'Validation Error'

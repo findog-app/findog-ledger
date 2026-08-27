@@ -255,6 +255,59 @@ export type NewPassword = {
     new_password: string;
 };
 
+export type ObligationComponentCreate = {
+    type: string;
+    label: string;
+    amount?: (number | string | null);
+    source?: (string | null);
+    external_id?: (string | null);
+    metadata?: ({
+    [key: string]: unknown;
+} | null);
+};
+
+export type ObligationComponentPublic = {
+    id: string;
+    obligation_id: string;
+    type: string;
+    label: string;
+    amount: (string | null);
+    source: (string | null);
+    external_id: (string | null);
+    metadata: ({
+    [key: string]: unknown;
+} | null);
+    created_at: string;
+    updated_at: string;
+};
+
+export type ObligationComponentsPublic = {
+    data: Array<ObligationComponentPublic>;
+    count: number;
+};
+
+export type ObligationComponentUpdate = {
+    type?: (string | null);
+    label?: (string | null);
+    amount?: (number | string | null);
+    source?: (string | null);
+    external_id?: (string | null);
+    metadata?: ({
+    [key: string]: unknown;
+} | null);
+};
+
+export type ObligationComponentUpsert = {
+    type: string;
+    label: string;
+    amount?: (number | string | null);
+    source?: (string | null);
+    external_id?: (string | null);
+    metadata?: ({
+    [key: string]: unknown;
+} | null);
+};
+
 export type ObligationCreate = {
     category_code: string;
     period: BillingPeriodInput;
@@ -716,6 +769,46 @@ export type ObligationsEnsureObligationsData = {
 };
 
 export type ObligationsEnsureObligationsResponse = (EnsuredObligationsPublic);
+
+export type ObligationsReadObligationComponentsData = {
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsReadObligationComponentsResponse = (ObligationComponentsPublic);
+
+export type ObligationsAddObligationComponentData = {
+    ledgerId: string;
+    obligationKey: string;
+    requestBody: ObligationComponentCreate;
+};
+
+export type ObligationsAddObligationComponentResponse = (ObligationComponentPublic);
+
+export type ObligationsUpsertObligationComponentData = {
+    ledgerId: string;
+    obligationKey: string;
+    requestBody: ObligationComponentUpsert;
+};
+
+export type ObligationsUpsertObligationComponentResponse = (ObligationComponentPublic);
+
+export type ObligationsUpdateObligationComponentData = {
+    componentId: string;
+    ledgerId: string;
+    obligationKey: string;
+    requestBody: ObligationComponentUpdate;
+};
+
+export type ObligationsUpdateObligationComponentResponse = (ObligationComponentPublic);
+
+export type ObligationsRemoveObligationComponentData = {
+    componentId: string;
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsRemoveObligationComponentResponse = (void);
 
 export type ObligationsUpdateObligationData = {
     ledgerId: string;

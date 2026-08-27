@@ -176,3 +176,87 @@ def test_reopen_obligation_moves_reopenable_lifecycles_to_collecting_data(
     )
 
     assert reopened.lifecycle is ObligationLifecycle.COLLECTING_DATA
+
+
+def test_obligation_components_support_crud_without_external_identity(
+    db: Session,
+) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    period = BillingPeriod(2026, 8)
+    obligation_use_cases.ensure_obligations_for_period(
+        session=db, ledger_id=ledger.id, period=period
+    )
+    key = ObligationKey(category_code=category.code, period=period)
+
+    component = obligation_use_cases.add_obligation_component(
+        session=db,
+        ledger_id=ledger.id,
+        key=key,
+        type="consumption",
+        label="Water settlement",
+        metadata={"consumption_m3": 12.5},
+    )
+    assert component.external_id is None
+    assert component.component_metadata == {"consumption_m3": 12.5}
+
+    updated = obligation_use_cases.update_obligation_component(
+        session=db,
+        ledger_id=ledger.id,
+        key=key,
+        component_id=component.id,
+        amount=Decimal("43.21"),
+    )
+    assert updated.amount == Decimal("43.21")
+    assert (
+        len(
+            obligation_use_cases.list_obligation_components(
+                session=db, ledger_id=ledger.id, key=key
+            )
+        )
+        == 1
+    )
+
+    obligation_use_cases.remove_obligation_component(
+        session=db, ledger_id=ledger.id, key=key, component_id=component.id
+    )
+    assert not obligation_use_cases.list_obligation_components(
+        session=db, ledger_id=ledger.id, key=key
+    )
+
+
+def test_upsert_obligation_component_is_idempotent_for_external_identity(
+    db: Session,
+) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    period = BillingPeriod(2026, 8)
+    obligation_use_cases.ensure_obligations_for_period(
+        session=db, ledger_id=ledger.id, period=period
+    )
+    key = ObligationKey(category_code=category.code, period=period)
+    kwargs = {
+        "session": db,
+        "ledger_id": ledger.id,
+        "key": key,
+        "type": "invoice",
+        "label": "August invoice",
+        "source": "provider",
+        "external_id": "FV/2026/08/12345",
+    }
+
+    first = obligation_use_cases.upsert_obligation_component(
+        **kwargs, amount=Decimal("100.00")
+    )
+    second = obligation_use_cases.upsert_obligation_component(
+        **kwargs, amount=Decimal("120.00")
+    )
+
+    assert second.id == first.id
+    assert second.amount == Decimal("120.00")
+    assert (
+        len(
+            obligation_use_cases.list_obligation_components(
+                session=db, ledger_id=ledger.id, key=key
+            )
+        )
+        == 1
+    )

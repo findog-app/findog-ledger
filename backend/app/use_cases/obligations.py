@@ -17,13 +17,14 @@ from app.domain import (
     ValueState,
     due_date_range,
 )
-from app.models import Category, Ledger, Obligation
+from app.models import Category, Ledger, Obligation, ObligationComponent
 from app.services import obligations as obligation_service
 from app.use_cases.exceptions import (
     CategoryNotFoundError,
     DuplicateObligationError,
     LedgerNotFoundError,
     ManualObligationNotAllowedError,
+    ObligationComponentNotFoundError,
     ObligationInvalidLifecycleError,
     ObligationNotFoundError,
     ObligationReadOnlyError,
@@ -510,3 +511,150 @@ def get_obligation_by_key(
     if obligation is None:
         raise ObligationNotFoundError
     return obligation
+
+
+def list_obligation_components(
+    *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
+) -> list[ObligationComponent]:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    return list(
+        session.scalars(
+            select(ObligationComponent)
+            .where(ObligationComponent.obligation_id == obligation.id)
+            .order_by(
+                ObligationComponent.created_at.asc(), ObligationComponent.id.asc()
+            )
+        ).all()
+    )
+
+
+def add_obligation_component(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    type: str,
+    label: str,
+    amount: Decimal | None = None,
+    source: str | None = None,
+    external_id: str | None = None,
+    metadata: dict[str, object] | None = None,
+) -> ObligationComponent:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    component = ObligationComponent(
+        obligation_id=obligation.id,
+        type=type,
+        label=label,
+        amount=amount,
+        source=source,
+        external_id=external_id,
+        component_metadata=metadata,
+    )
+    session.add(component)
+    session.commit()
+    session.refresh(component)
+    return component
+
+
+def _get_obligation_component(
+    *, session: Session, obligation_id: uuid.UUID, component_id: uuid.UUID
+) -> ObligationComponent:
+    component = session.scalar(
+        select(ObligationComponent).where(
+            ObligationComponent.id == component_id,
+            ObligationComponent.obligation_id == obligation_id,
+        )
+    )
+    if component is None:
+        raise ObligationComponentNotFoundError
+    return component
+
+
+def update_obligation_component(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    component_id: uuid.UUID,
+    type: str | _Unset = UNSET,
+    label: str | _Unset = UNSET,
+    amount: Decimal | None | _Unset = UNSET,
+    source: str | None | _Unset = UNSET,
+    external_id: str | None | _Unset = UNSET,
+    metadata: dict[str, object] | None | _Unset = UNSET,
+) -> ObligationComponent:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    component = _get_obligation_component(
+        session=session, obligation_id=obligation.id, component_id=component_id
+    )
+    if not isinstance(type, _Unset):
+        component.type = type
+    if not isinstance(label, _Unset):
+        component.label = label
+    if not isinstance(amount, _Unset):
+        component.amount = amount
+    if not isinstance(source, _Unset):
+        component.source = source
+    if not isinstance(external_id, _Unset):
+        component.external_id = external_id
+    if not isinstance(metadata, _Unset):
+        component.component_metadata = metadata
+    session.commit()
+    session.refresh(component)
+    return component
+
+
+def remove_obligation_component(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    component_id: uuid.UUID,
+) -> None:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    component = _get_obligation_component(
+        session=session, obligation_id=obligation.id, component_id=component_id
+    )
+    session.delete(component)
+    session.commit()
+
+
+def upsert_obligation_component(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    key: ObligationKey,
+    type: str,
+    label: str,
+    source: str,
+    external_id: str,
+    amount: Decimal | None = None,
+    metadata: dict[str, object] | None = None,
+) -> ObligationComponent:
+    obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
+    component = session.scalar(
+        select(ObligationComponent).where(
+            ObligationComponent.obligation_id == obligation.id,
+            ObligationComponent.source == source,
+            ObligationComponent.external_id == external_id,
+        )
+    )
+    if component is None:
+        component = ObligationComponent(
+            obligation_id=obligation.id,
+            type=type,
+            label=label,
+            amount=amount,
+            source=source,
+            external_id=external_id,
+            component_metadata=metadata,
+        )
+        session.add(component)
+    else:
+        component.type = type
+        component.label = label
+        component.amount = amount
+        component.component_metadata = metadata
+    session.commit()
+    session.refresh(component)
+    return component

@@ -45,6 +45,71 @@ def _create_ready_obligation(db: Session, *, ledger_id: uuid.UUID):
     )
 
 
+def test_obligation_component_endpoints_support_manual_crud_and_external_upsert(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    obligation = _create_ready_obligation(db, ledger_id=ledger.id)
+    url = (
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/obligations/"
+        f"{obligation.business_key}/components"
+    )
+
+    created = client.post(
+        url,
+        headers=headers,
+        json={"type": "consumption", "label": "Water settlement"},
+    )
+    assert created.status_code == 200
+    assert created.json()["external_id"] is None
+
+    component_id = created.json()["id"]
+    updated = client.patch(
+        f"{url}/{component_id}",
+        headers=headers,
+        json={"amount": "43.21"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["amount"] == "43.21"
+
+    first_upsert = client.put(
+        f"{url}/upsert",
+        headers=headers,
+        json={
+            "type": "invoice",
+            "label": "August invoice",
+            "amount": "100.00",
+            "source": "provider",
+            "external_id": "FV/2026/08/12345",
+        },
+    )
+    second_upsert = client.put(
+        f"{url}/upsert",
+        headers=headers,
+        json={
+            "type": "invoice",
+            "label": "Corrected August invoice",
+            "amount": "120.00",
+            "source": "provider",
+            "external_id": "FV/2026/08/12345",
+        },
+    )
+    assert first_upsert.status_code == second_upsert.status_code == 200
+    assert first_upsert.json()["id"] == second_upsert.json()["id"]
+    assert second_upsert.json()["amount"] == "120.00"
+
+    listed = client.get(url, headers=headers)
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 2
+
+    deleted = client.delete(f"{url}/{component_id}", headers=headers)
+    assert deleted.status_code == 204
+
+
 def test_mark_obligation_paid_sets_paid_at_for_ready_obligation(
     client: TestClient, db: Session
 ) -> None:
