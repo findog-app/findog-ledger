@@ -15,6 +15,13 @@ async function openCategoryAction(
   await page.getByRole("menuitem", { name: action }).click()
 }
 
+async function openCategories(page: Page) {
+  await page
+    .locator('[data-sidebar="sidebar"]')
+    .getByRole("link", { name: "Categories" })
+    .click()
+}
+
 test("manages category custom fields with the builder", async ({ page }) => {
   const ledgerName = uniqueName("Custom fields")
   const groupName = uniqueName("Utilities")
@@ -27,7 +34,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
   await expect(page.getByText("Ledger created successfully")).toBeVisible()
   await page.getByRole("link", { name: ledgerName }).click()
 
-  await page.getByRole("link", { name: "Categories" }).click()
+  await openCategories(page)
   await page.getByRole("button", { name: "New group" }).click()
   await page.getByLabel("Name").fill(groupName)
   await page.getByRole("button", { name: "Create group" }).click()
@@ -87,7 +94,7 @@ test("shows the empty category custom-data history", async ({ page }) => {
   await page.getByLabel("Name").fill(ledgerName)
   await page.getByRole("button", { name: "Create ledger" }).click()
   await page.getByRole("link", { name: ledgerName }).click()
-  await page.getByRole("link", { name: "Categories" }).click()
+  await openCategories(page)
   await page.getByRole("button", { name: "New group" }).click()
   await page.getByLabel("Name").fill(groupName)
   await page.getByRole("button", { name: "Create group" }).click()
@@ -147,7 +154,7 @@ test("filters the category table and moves a category between groups", async ({
   await page.getByLabel("Name").fill(ledgerName)
   await page.getByRole("button", { name: "Create ledger" }).click()
   await page.getByRole("link", { name: ledgerName }).click()
-  await page.getByRole("link", { name: "Categories" }).click()
+  await openCategories(page)
 
   for (const groupName of [firstGroup, secondGroup]) {
     await page.getByRole("button", { name: "New group" }).click()
