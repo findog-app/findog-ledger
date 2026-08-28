@@ -90,6 +90,14 @@ class ObligationNotFoundError(ApplicationError):
     pass
 
 
+class ObligationComponentNotFoundError(ApplicationError):
+    pass
+
+
+class DuplicateObligationComponentError(ApplicationError):
+    pass
+
+
 class ObligationInvalidLifecycleError(ApplicationError):
     pass
 

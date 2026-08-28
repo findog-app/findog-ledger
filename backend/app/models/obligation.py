@@ -11,12 +11,14 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Numeric,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain import (
@@ -106,8 +108,54 @@ class Obligation(Base):
         back_populates="obligations",
         overlaps="ledger,obligations",
     )
+    components: Mapped[list[ObligationComponent]] = relationship(
+        back_populates="obligation", cascade="all, delete-orphan"
+    )
 
     @property
     def business_key(self) -> str:
         """Stable public key derived from the immutable category code and period."""
         return f"{self.category.code}-{self.period_year:04d}-{self.period_month:02d}"
+
+
+class ObligationComponent(Base):
+    __tablename__ = "obligation_component"
+    __table_args__ = (
+        Index("ix_obligation_component_obligation_id", "obligation_id"),
+        Index(
+            "uq_obligation_component_source_external_id",
+            "obligation_id",
+            "source",
+            "external_id",
+            unique=True,
+            postgresql_where=text("source IS NOT NULL AND external_id IS NOT NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    obligation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("obligation.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    type: Mapped[str] = mapped_column(String(64), nullable=False)
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    component_metadata: Mapped[dict[str, object] | None] = mapped_column(
+        "metadata", JSONB, nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=get_datetime_utc, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=get_datetime_utc,
+        onupdate=get_datetime_utc,
+        nullable=False,
+    )
+
+    obligation: Mapped[Obligation] = relationship(back_populates="components")

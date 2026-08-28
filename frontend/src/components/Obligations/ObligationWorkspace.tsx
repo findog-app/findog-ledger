@@ -19,7 +19,6 @@ import {
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -40,6 +39,7 @@ import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { ObligationComponentsSection } from "./ObligationComponentsSection"
 
 type LifecycleFilter = ObligationLifecycle | "" | "unpaid"
 
@@ -174,7 +174,13 @@ function canReopenObligation(obligation: ObligationPublic) {
   return ["ready", "paid", "canceled", "error"].includes(obligation.lifecycle)
 }
 
-export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
+export function ObligationWorkspace({
+  ledgerId,
+  canManageComponents,
+}: {
+  ledgerId: string
+  canManageComponents: boolean
+}) {
   const period = currentPeriod()
   const [year, setYear] = useState(String(period.year))
   const [month, setMonth] = useState(String(period.month))
@@ -302,11 +308,11 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
   })
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-4">
+    <section>
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <CardTitle>Obligations</CardTitle>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="text-xl font-semibold md:text-2xl">Obligations</h1>
+          <p className="mt-1 hidden text-sm text-muted-foreground md:block">
             Review and add manual obligations for this ledger.
           </p>
         </div>
@@ -320,8 +326,8 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
           onError={showErrorToast}
           onSuccess={showSuccessToast}
         />
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="mt-4 space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <Input
             aria-label="Billing period"
@@ -424,7 +430,7 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
           open={selectedKey !== null}
           onOpenChange={(open) => !open && setSelectedKey(null)}
         >
-          <DialogContent>
+          <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-3xl">
             <DialogHeader>
               <DialogTitle>{selected.data?.key ?? "Obligation"}</DialogTitle>
               <DialogDescription>Obligation details.</DialogDescription>
@@ -546,6 +552,14 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
                     </tbody>
                   </table>
                 </div>
+                <ObligationComponentsSection
+                  ledgerId={ledgerId}
+                  obligationKey={selected.data.key}
+                  currency={selected.data.currency}
+                  canManage={canManageComponents}
+                  onError={showErrorToast}
+                  onSuccess={showSuccessToast}
+                />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Loading details…</p>
@@ -562,8 +576,8 @@ export function ObligationWorkspace({ ledgerId }: { ledgerId: string }) {
             onSuccess={showSuccessToast}
           />
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   )
 }
 

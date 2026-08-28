@@ -5,6 +5,7 @@ import { useEffect } from "react"
 import {
   type Body_login_login_access_token as AccessToken,
   ApiError,
+  LedgersService,
   LoginService,
   type UserPublic,
   UsersService,
@@ -49,7 +50,26 @@ const useAuth = () => {
 
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: () => {
+    onSuccess: async () => {
+      try {
+        const ledgers = await LedgersService.readLedgers()
+        const lastLedgerId = localStorage.getItem("last-ledger-id")
+        const activeLedger = ledgers.data.find(
+          (ledger) => ledger.id === lastLedgerId,
+        )
+        const ledger = activeLedger ?? ledgers.data[0]
+
+        if (ledger) {
+          navigate({
+            to: "/ledgers/$ledgerId",
+            params: { ledgerId: ledger.id },
+          })
+          return
+        }
+      } catch {
+        // The session is valid even when the optional landing lookup fails.
+      }
+
       navigate({ to: "/" })
     },
     onError: handleError.bind(showErrorToast),

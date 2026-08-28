@@ -7,3 +7,4 @@
 5. Ledger sharing uses a dedicated membership table with roles. `ledger.owner_user_id` is the canonical owner, while memberships provide uniform access control for owner, editor, and viewer roles.
 6. Category archiving is soft-archive only so historical obligations keep stable references to archived groups and categories while normal assignment flows can filter to active records.
 7. Obligation creation for current and next period is handled by a deterministic service that only targets `precreate` categories and relies on a unique database constraint to keep repeated runs idempotent.
+8. Obligation components are structured children of a concrete obligation. Their optional `source` and `external_id` support integrations, but do not define a component's domain identity or restrict components entered without an external identifier.

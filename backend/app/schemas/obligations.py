@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.domain import (
     BillingPeriod,
@@ -56,6 +56,63 @@ class ObligationUpdate(BaseModel):
     issue_date: date | None = None
     due_date: date | None = None
     notes: str | None = None
+
+
+class ObligationComponentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=255)
+    amount: Decimal | None = None
+    source: str | None = Field(default=None, min_length=1, max_length=255)
+    external_id: str | None = Field(default=None, min_length=1, max_length=255)
+    metadata: dict[str, object] | None = None
+
+
+class ObligationComponentUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: str | None = Field(default=None, min_length=1, max_length=64)
+    label: str | None = Field(default=None, min_length=1, max_length=255)
+    amount: Decimal | None = None
+    source: str | None = Field(default=None, min_length=1, max_length=255)
+    external_id: str | None = Field(default=None, min_length=1, max_length=255)
+    metadata: dict[str, object] | None = None
+
+    @field_validator("type", "label")
+    @classmethod
+    def require_non_null_identity_fields(cls, value: str | None) -> str | None:
+        if value is None:
+            raise ValueError("field cannot be null")
+        return value
+
+
+class ObligationComponentUpsert(ObligationComponentCreate):
+    @model_validator(mode="after")
+    def require_external_identity(self) -> "ObligationComponentUpsert":
+        if self.source is None or self.external_id is None:
+            raise ValueError("source and external_id are required for upsert")
+        return self
+
+
+class ObligationComponentPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    obligation_id: uuid.UUID
+    type: str
+    label: str
+    amount: Decimal | None
+    source: str | None
+    external_id: str | None
+    metadata: dict[str, object] | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ObligationComponentsPublic(BaseModel):
+    data: list[ObligationComponentPublic]
+    count: int
 
 
 class ObligationIntegrationUpdate(BaseModel):

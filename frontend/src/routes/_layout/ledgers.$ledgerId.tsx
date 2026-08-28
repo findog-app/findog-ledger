@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link,
@@ -23,28 +23,41 @@ export const Route = createFileRoute("/_layout/ledgers/$ledgerId")({
 function LedgerDetails() {
   const { ledgerId } = Route.useParams()
   const location = useLocation()
+  const isWorkspace = location.pathname === `/ledgers/${ledgerId}`
   const { user: currentUser } = useAuth()
   const { data: ledger } = useSuspenseQuery({
     queryFn: () => LedgersService.readLedger({ ledgerId }),
     queryKey: ["ledger", ledgerId],
   })
+  const members = useQuery({
+    queryFn: () => LedgersService.readLedgerMembers({ ledgerId }),
+    queryKey: ["ledger-members", ledgerId],
+    enabled: isWorkspace && currentUser !== undefined,
+  })
+  const canManageComponents =
+    ledger.owner_user_id === currentUser?.id ||
+    members.data?.data.some(
+      (member) =>
+        member.user_id === currentUser?.id &&
+        (member.role === "owner" || member.role === "editor"),
+    ) === true
 
-  if (location.pathname !== `/ledgers/${ledgerId}`) {
+  if (!isWorkspace) {
     return <Outlet />
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-2xl font-bold tracking-tight">{ledger.name}</h1>
             <p className="mt-1 text-muted-foreground">
               {ledger.description ||
                 "Review and manage obligations for this ledger."}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="hidden gap-2 md:flex">
             {ledger.owner_user_id === currentUser?.id && (
               <Button variant="outline" asChild>
                 <Link to="/ledgers/$ledgerId/system-run" params={{ ledgerId }}>
@@ -72,7 +85,10 @@ function LedgerDetails() {
         </div>
       </div>
       <Suspense fallback={<ObligationWorkspaceSkeleton />}>
-        <ObligationWorkspace ledgerId={ledgerId} />
+        <ObligationWorkspace
+          ledgerId={ledgerId}
+          canManageComponents={canManageComponents}
+        />
       </Suspense>
     </div>
   )

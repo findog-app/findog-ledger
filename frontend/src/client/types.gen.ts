@@ -55,6 +55,23 @@ export type CategoriesPublic = {
     count: number;
 };
 
+/**
+ * A period's amount, keeping missing and unknown values distinct.
+ */
+export type CategoryAmountHistoryPointPublic = {
+    period: ObligationPeriodPublic;
+    state: 'missing' | 'unknown' | 'known';
+    current_amount: (string | null);
+    currency: (string | null);
+};
+
+export type state = 'missing' | 'unknown' | 'known';
+
+export type CategoryAmountHistoryPublic = {
+    category_id: string;
+    points: Array<CategoryAmountHistoryPointPublic>;
+};
+
 export type CategoryCreate = {
     category_group_id: string;
     name: string;
@@ -163,7 +180,36 @@ export type CategoryUpdate = {
 
 export type Currency = 'PLN' | 'EUR' | 'USD' | 'GBP' | 'CHF';
 
+/**
+ * Amounts are grouped by currency and are never converted or combined.
+ */
+export type CurrencyCashflowPublic = {
+    currency: (string | null);
+    total_known_amount: string;
+    scheduled_known_amount: string;
+    unscheduled_known_amount: string;
+    overdue_known_amount: string;
+    daily: Array<DailyCashflowPublic>;
+};
+
+/**
+ * Amounts are grouped by currency and are never converted or combined.
+ */
+export type CurrencyPaymentSummaryPublic = {
+    currency: (string | null);
+    total_known_amount: string;
+    paid_known_amount: string;
+    paid_percentage: (string | null);
+};
+
 export type CurrentValueSource = 'unknown' | 'automatic' | 'manual' | 'integration' | 'legacy';
+
+export type DailyCashflowPublic = {
+    due_date: string;
+    amount: string;
+    cumulative_amount: string;
+    is_overdue: boolean;
+};
 
 export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
 
@@ -255,6 +301,59 @@ export type NewPassword = {
     new_password: string;
 };
 
+export type ObligationComponentCreate = {
+    type: string;
+    label: string;
+    amount?: (number | string | null);
+    source?: (string | null);
+    external_id?: (string | null);
+    metadata?: ({
+    [key: string]: unknown;
+} | null);
+};
+
+export type ObligationComponentPublic = {
+    id: string;
+    obligation_id: string;
+    type: string;
+    label: string;
+    amount: (string | null);
+    source: (string | null);
+    external_id: (string | null);
+    metadata: ({
+    [key: string]: unknown;
+} | null);
+    created_at: string;
+    updated_at: string;
+};
+
+export type ObligationComponentsPublic = {
+    data: Array<ObligationComponentPublic>;
+    count: number;
+};
+
+export type ObligationComponentUpdate = {
+    type?: (string | null);
+    label?: (string | null);
+    amount?: (number | string | null);
+    source?: (string | null);
+    external_id?: (string | null);
+    metadata?: ({
+    [key: string]: unknown;
+} | null);
+};
+
+export type ObligationComponentUpsert = {
+    type: string;
+    label: string;
+    amount?: (number | string | null);
+    source?: (string | null);
+    external_id?: (string | null);
+    metadata?: ({
+    [key: string]: unknown;
+} | null);
+};
+
 export type ObligationCreate = {
     category_code: string;
     period: BillingPeriodInput;
@@ -323,6 +422,25 @@ export type ObligationUpdate = {
     notes?: (string | null);
 };
 
+export type PeriodCashflowPublic = {
+    period: ObligationPeriodPublic;
+    as_of_date: string;
+    unknown_amount_count: number;
+    without_due_date_count: number;
+    is_complete: boolean;
+    currency_summaries: Array<CurrencyCashflowPublic>;
+};
+
+export type PeriodPaymentSummaryPublic = {
+    period: ObligationPeriodPublic;
+    total_obligation_count: number;
+    paid_obligation_count: number;
+    paid_percentage: (string | null);
+    unknown_amount_count: number;
+    is_complete: boolean;
+    amount_summaries: Array<CurrencyPaymentSummaryPublic>;
+};
+
 export type RecurrenceUnit = 'month' | 'year';
 
 export type Token = {
@@ -377,6 +495,31 @@ export type ValidationError = {
 };
 
 export type ValueState = 'unknown' | 'estimated' | 'confirmed' | 'overridden';
+
+export type AnalyticsReadPeriodPaymentSummaryData = {
+    ledgerId: string;
+    month: number;
+    year: number;
+};
+
+export type AnalyticsReadPeriodPaymentSummaryResponse = (PeriodPaymentSummaryPublic);
+
+export type AnalyticsReadCategoryAmountHistoryData = {
+    _from: string;
+    categoryId: string;
+    ledgerId: string;
+    to: string;
+};
+
+export type AnalyticsReadCategoryAmountHistoryResponse = (CategoryAmountHistoryPublic);
+
+export type AnalyticsReadRemainingPeriodCashflowData = {
+    ledgerId: string;
+    month: number;
+    year: number;
+};
+
+export type AnalyticsReadRemainingPeriodCashflowResponse = (PeriodCashflowPublic);
 
 export type CategoriesReadCategoriesData = {
     categoryGroupId?: (string | null);
@@ -535,6 +678,19 @@ export type IntegrationUpdateIntegrationObligationData = {
 };
 
 export type IntegrationUpdateIntegrationObligationResponse = (ObligationPublic);
+
+export type IntegrationReadIntegrationObligationComponentsData = {
+    obligationKey: string;
+};
+
+export type IntegrationReadIntegrationObligationComponentsResponse = (ObligationComponentsPublic);
+
+export type IntegrationUpsertIntegrationObligationComponentData = {
+    obligationKey: string;
+    requestBody: ObligationComponentUpsert;
+};
+
+export type IntegrationUpsertIntegrationObligationComponentResponse = (ObligationComponentPublic);
 
 export type IntegrationMarkIntegrationObligationReadyData = {
     obligationKey: string;
@@ -716,6 +872,46 @@ export type ObligationsEnsureObligationsData = {
 };
 
 export type ObligationsEnsureObligationsResponse = (EnsuredObligationsPublic);
+
+export type ObligationsReadObligationComponentsData = {
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsReadObligationComponentsResponse = (ObligationComponentsPublic);
+
+export type ObligationsAddObligationComponentData = {
+    ledgerId: string;
+    obligationKey: string;
+    requestBody: ObligationComponentCreate;
+};
+
+export type ObligationsAddObligationComponentResponse = (ObligationComponentPublic);
+
+export type ObligationsUpsertObligationComponentData = {
+    ledgerId: string;
+    obligationKey: string;
+    requestBody: ObligationComponentUpsert;
+};
+
+export type ObligationsUpsertObligationComponentResponse = (ObligationComponentPublic);
+
+export type ObligationsUpdateObligationComponentData = {
+    componentId: string;
+    ledgerId: string;
+    obligationKey: string;
+    requestBody: ObligationComponentUpdate;
+};
+
+export type ObligationsUpdateObligationComponentResponse = (ObligationComponentPublic);
+
+export type ObligationsRemoveObligationComponentData = {
+    componentId: string;
+    ledgerId: string;
+    obligationKey: string;
+};
+
+export type ObligationsRemoveObligationComponentResponse = (void);
 
 export type ObligationsUpdateObligationData = {
     ledgerId: string;

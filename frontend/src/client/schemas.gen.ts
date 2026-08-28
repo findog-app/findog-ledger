@@ -305,6 +305,66 @@ export const CategoriesPublicSchema = {
     title: 'CategoriesPublic'
 } as const;
 
+export const CategoryAmountHistoryPointPublicSchema = {
+    properties: {
+        period: {
+            '$ref': '#/components/schemas/ObligationPeriodPublic'
+        },
+        state: {
+            type: 'string',
+            enum: ['missing', 'unknown', 'known'],
+            title: 'State'
+        },
+        current_amount: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Amount'
+        },
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        }
+    },
+    type: 'object',
+    required: ['period', 'state', 'current_amount', 'currency'],
+    title: 'CategoryAmountHistoryPointPublic',
+    description: "A period's amount, keeping missing and unknown values distinct."
+} as const;
+
+export const CategoryAmountHistoryPublicSchema = {
+    properties: {
+        category_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Category Id'
+        },
+        points: {
+            items: {
+                '$ref': '#/components/schemas/CategoryAmountHistoryPointPublic'
+            },
+            type: 'array',
+            title: 'Points'
+        }
+    },
+    type: 'object',
+    required: ['category_id', 'points'],
+    title: 'CategoryAmountHistoryPublic'
+} as const;
+
 export const CategoryCreateSchema = {
     properties: {
         category_group_id: {
@@ -852,10 +912,126 @@ export const CurrencySchema = {
     title: 'Currency'
 } as const;
 
+export const CurrencyCashflowPublicSchema = {
+    properties: {
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        total_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Total Known Amount'
+        },
+        scheduled_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Scheduled Known Amount'
+        },
+        unscheduled_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Unscheduled Known Amount'
+        },
+        overdue_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Overdue Known Amount'
+        },
+        daily: {
+            items: {
+                '$ref': '#/components/schemas/DailyCashflowPublic'
+            },
+            type: 'array',
+            title: 'Daily'
+        }
+    },
+    type: 'object',
+    required: ['currency', 'total_known_amount', 'scheduled_known_amount', 'unscheduled_known_amount', 'overdue_known_amount', 'daily'],
+    title: 'CurrencyCashflowPublic',
+    description: 'Amounts are grouped by currency and are never converted or combined.'
+} as const;
+
+export const CurrencyPaymentSummaryPublicSchema = {
+    properties: {
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        total_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Total Known Amount'
+        },
+        paid_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Paid Known Amount'
+        },
+        paid_percentage: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Paid Percentage'
+        }
+    },
+    type: 'object',
+    required: ['currency', 'total_known_amount', 'paid_known_amount', 'paid_percentage'],
+    title: 'CurrencyPaymentSummaryPublic',
+    description: 'Amounts are grouped by currency and are never converted or combined.'
+} as const;
+
 export const CurrentValueSourceSchema = {
     type: 'string',
     enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy'],
     title: 'CurrentValueSource'
+} as const;
+
+export const DailyCashflowPublicSchema = {
+    properties: {
+        due_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Due Date'
+        },
+        amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Amount'
+        },
+        cumulative_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Cumulative Amount'
+        },
+        is_overdue: {
+            type: 'boolean',
+            title: 'Is Overdue'
+        }
+    },
+    type: 'object',
+    required: ['due_date', 'amount', 'cumulative_amount', 'is_overdue'],
+    title: 'DailyCashflowPublic'
 } as const;
 
 export const DataSourcePolicySchema = {
@@ -1277,6 +1453,342 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
+export const ObligationComponentCreateSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            maxLength: 64,
+            minLength: 1,
+            title: 'Type'
+        },
+        label: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['type', 'label'],
+    title: 'ObligationComponentCreate'
+} as const;
+
+export const ObligationComponentPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        obligation_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Obligation Id'
+        },
+        type: {
+            type: 'string',
+            title: 'Type'
+        },
+        label: {
+            type: 'string',
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'obligation_id', 'type', 'label', 'amount', 'source', 'external_id', 'metadata', 'created_at', 'updated_at'],
+    title: 'ObligationComponentPublic'
+} as const;
+
+export const ObligationComponentUpdateSchema = {
+    properties: {
+        type: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 64,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Type'
+        },
+        label: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    title: 'ObligationComponentUpdate'
+} as const;
+
+export const ObligationComponentUpsertSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            maxLength: 64,
+            minLength: 1,
+            title: 'Type'
+        },
+        label: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Label'
+        },
+        amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        source: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Source'
+        },
+        external_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'External Id'
+        },
+        metadata: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Metadata'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['type', 'label'],
+    title: 'ObligationComponentUpsert'
+} as const;
+
+export const ObligationComponentsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/ObligationComponentPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'ObligationComponentsPublic'
+} as const;
+
 export const ObligationCreateSchema = {
     properties: {
         category_code: {
@@ -1656,6 +2168,87 @@ export const ObligationsPublicSchema = {
     type: 'object',
     required: ['data', 'count'],
     title: 'ObligationsPublic'
+} as const;
+
+export const PeriodCashflowPublicSchema = {
+    properties: {
+        period: {
+            '$ref': '#/components/schemas/ObligationPeriodPublic'
+        },
+        as_of_date: {
+            type: 'string',
+            format: 'date',
+            title: 'As Of Date'
+        },
+        unknown_amount_count: {
+            type: 'integer',
+            title: 'Unknown Amount Count'
+        },
+        without_due_date_count: {
+            type: 'integer',
+            title: 'Without Due Date Count'
+        },
+        is_complete: {
+            type: 'boolean',
+            title: 'Is Complete'
+        },
+        currency_summaries: {
+            items: {
+                '$ref': '#/components/schemas/CurrencyCashflowPublic'
+            },
+            type: 'array',
+            title: 'Currency Summaries'
+        }
+    },
+    type: 'object',
+    required: ['period', 'as_of_date', 'unknown_amount_count', 'without_due_date_count', 'is_complete', 'currency_summaries'],
+    title: 'PeriodCashflowPublic'
+} as const;
+
+export const PeriodPaymentSummaryPublicSchema = {
+    properties: {
+        period: {
+            '$ref': '#/components/schemas/ObligationPeriodPublic'
+        },
+        total_obligation_count: {
+            type: 'integer',
+            title: 'Total Obligation Count'
+        },
+        paid_obligation_count: {
+            type: 'integer',
+            title: 'Paid Obligation Count'
+        },
+        paid_percentage: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Paid Percentage'
+        },
+        unknown_amount_count: {
+            type: 'integer',
+            title: 'Unknown Amount Count'
+        },
+        is_complete: {
+            type: 'boolean',
+            title: 'Is Complete'
+        },
+        amount_summaries: {
+            items: {
+                '$ref': '#/components/schemas/CurrencyPaymentSummaryPublic'
+            },
+            type: 'array',
+            title: 'Amount Summaries'
+        }
+    },
+    type: 'object',
+    required: ['period', 'total_obligation_count', 'paid_obligation_count', 'paid_percentage', 'unknown_amount_count', 'is_complete', 'amount_summaries'],
+    title: 'PeriodPaymentSummaryPublic'
 } as const;
 
 export const RecurrenceUnitSchema = {

@@ -153,3 +153,19 @@ class Obligation:
     def business_key(self) -> str:
         """Stable public key derived from the immutable category code and period."""
         return str(ObligationKey(category_code=self.category_code, period=self.period))
+
+
+@dataclass(slots=True)
+class ObligationComponent:
+    """A structured value that contributes context or amount to an obligation."""
+
+    id: uuid.UUID
+    obligation_id: uuid.UUID
+    type: str
+    label: str
+    amount: Decimal | None
+    source: str | None
+    external_id: str | None
+    metadata: dict[str, object] | None
+    created_at: datetime
+    updated_at: datetime

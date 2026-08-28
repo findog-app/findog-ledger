@@ -43,11 +43,8 @@ test("Log in with valid email and password ", async ({ page }) => {
   await fillForm(page, firstSuperuser, firstSuperuserPassword)
   await page.getByRole("button", { name: "Log In" }).click()
 
-  await page.waitForURL("/")
-
-  await expect(
-    page.getByText("Private payment-obligation repository foundation."),
-  ).toBeVisible()
+  await page.waitForURL(/\/(?:$|ledgers\/[^/]+$)/)
+  await expect(page.getByTestId("user-menu")).toBeVisible()
 })
 
 test("Log in with invalid email", async ({ page }) => {
@@ -75,11 +72,8 @@ test("Successful log out", async ({ page }) => {
   await fillForm(page, firstSuperuser, firstSuperuserPassword)
   await page.getByRole("button", { name: "Log In" }).click()
 
-  await page.waitForURL("/")
-
-  await expect(
-    page.getByText("Private payment-obligation repository foundation."),
-  ).toBeVisible()
+  await page.waitForURL(/\/(?:$|ledgers\/[^/]+$)/)
+  await expect(page.getByTestId("user-menu")).toBeVisible()
 
   await page.getByTestId("user-menu").click()
   await page.getByRole("menuitem", { name: "Log out" }).click()
@@ -92,11 +86,8 @@ test("Logged-out user cannot access protected routes", async ({ page }) => {
   await fillForm(page, firstSuperuser, firstSuperuserPassword)
   await page.getByRole("button", { name: "Log In" }).click()
 
-  await page.waitForURL("/")
-
-  await expect(
-    page.getByRole("heading", { name: "Current Scope" }),
-  ).toBeVisible()
+  await page.waitForURL(/\/(?:$|ledgers\/[^/]+$)/)
+  await expect(page.getByTestId("user-menu")).toBeVisible()
 
   await page.getByTestId("user-menu").click()
   await page.getByRole("menuitem", { name: "Log out" }).click()

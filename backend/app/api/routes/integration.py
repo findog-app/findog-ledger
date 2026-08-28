@@ -10,13 +10,19 @@ from app.api.routes.categories import (
     _to_category_data_record_public,
     _to_category_data_schema_public,
 )
-from app.api.routes.obligations import to_obligation_public
+from app.api.routes.obligations import (
+    to_obligation_component_public,
+    to_obligation_public,
+)
 from app.domain import ObligationKey, ObligationLifecycle
 from app.schemas import (
     CategoryDataRecordCreate,
     CategoryDataRecordPublic,
     CategoryDataRecordsPublic,
     CategoryDataSchemaPublic,
+    ObligationComponentPublic,
+    ObligationComponentsPublic,
+    ObligationComponentUpsert,
     ObligationIntegrationUpdate,
     ObligationNoteAppend,
     ObligationPublic,
@@ -232,6 +238,49 @@ def read_integration_obligation(
             session=context.session, ledger_id=context.ledger.id, key=key
         )
     )
+
+
+@router.get(
+    "/obligations/{obligation_key}/components",
+    response_model=ObligationComponentsPublic,
+)
+def read_integration_obligation_components(
+    obligation_key: str,
+    context: ApiContext = Depends(require_scope("ledger:read")),
+) -> ObligationComponentsPublic:
+    key = _parse_obligation_key(obligation_key)
+    try:
+        components = obligation_use_cases.list_obligation_components(
+            session=context.session, ledger_id=context.ledger.id, key=key
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    return ObligationComponentsPublic(
+        data=[to_obligation_component_public(component) for component in components],
+        count=len(components),
+    )
+
+
+@router.put(
+    "/obligations/{obligation_key}/components/upsert",
+    response_model=ObligationComponentPublic,
+)
+def upsert_integration_obligation_component(
+    obligation_key: str,
+    component_in: ObligationComponentUpsert,
+    context: ApiContext = Depends(require_scope("ledger:write")),
+) -> ObligationComponentPublic:
+    key = _parse_obligation_key(obligation_key)
+    try:
+        component = obligation_use_cases.upsert_obligation_component(
+            session=context.session,
+            ledger_id=context.ledger.id,
+            key=key,
+            **component_in.model_dump(),
+        )
+    except ObligationNotFoundError:
+        raise HTTPException(status_code=404, detail="Obligation not found")
+    return to_obligation_component_public(component)
 
 
 @router.patch("/obligations/{obligation_key}", response_model=ObligationPublic)
