@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query"
@@ -25,6 +26,7 @@ import {
 } from "react-hook-form"
 import { z } from "zod"
 import {
+  AnalyticsService,
   CategoriesService,
   type CategoryCreate,
   type CategoryGroupCreate,
@@ -38,6 +40,7 @@ import {
   DataTable,
   type DataTableFeatures,
 } from "@/components/Common/DataTable"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -80,6 +83,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
@@ -1139,6 +1143,15 @@ function CategoryActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <CategoryHistoryDialog
+            ledgerId={ledgerId}
+            category={category}
+            trigger={
+              <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                View amount history
+              </DropdownMenuItem>
+            }
+          />
           <CategoryCustomFieldsDialog
             ledgerId={ledgerId}
             category={category}
@@ -1174,6 +1187,102 @@ function CategoryActions({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  )
+}
+
+function historyRange() {
+  const end = new Date()
+  const start = new Date(end.getFullYear(), end.getMonth() - 5, 1)
+  const toPeriod = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+  return { from: toPeriod(start), to: toPeriod(end) }
+}
+
+function CategoryHistoryDialog({
+  ledgerId,
+  category,
+  trigger,
+}: {
+  ledgerId: string
+  category: CategoryPublic
+  trigger: ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const range = historyRange()
+  const history = useQuery({
+    queryFn: () =>
+      AnalyticsService.readCategoryAmountHistory({
+        ledgerId,
+        categoryId: category.id,
+        _from: range.from,
+        to: range.to,
+      }),
+    queryKey: ["analytics", "category-history", ledgerId, category.id, range],
+    enabled: open,
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{category.name} amount history</DialogTitle>
+          <DialogDescription>
+            Last six periods. Missing and unknown amounts are kept distinct.
+          </DialogDescription>
+        </DialogHeader>
+        {history.isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : history.isError || !history.data ? (
+          <Alert variant="destructive">
+            <AlertTitle>History is unavailable</AlertTitle>
+            <AlertDescription>
+              The category history could not be loaded right now.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="space-y-2">
+            {history.data.points.map((point) => (
+              <div
+                className="flex items-center justify-between gap-4 rounded-lg border px-3 py-2"
+                key={`${point.period.year}-${point.period.month}`}
+              >
+                <span className="text-sm font-medium">
+                  {new Intl.DateTimeFormat(undefined, {
+                    month: "long",
+                    year: "numeric",
+                  }).format(
+                    new Date(point.period.year, point.period.month - 1, 1),
+                  )}
+                </span>
+                {point.state === "known" ? (
+                  <span>
+                    {Number(point.current_amount).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {point.currency}
+                  </span>
+                ) : (
+                  <Badge
+                    variant={
+                      point.state === "unknown" ? "outline" : "secondary"
+                    }
+                  >
+                    {point.state === "unknown"
+                      ? "Amount unknown"
+                      : "No obligation"}
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 

@@ -33,7 +33,7 @@ export function MobileShell() {
           <Menu />
         </Button>
       </header>
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid h-16 grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
         {items.map((item) => {
           const active = pathname === item.path
           return (

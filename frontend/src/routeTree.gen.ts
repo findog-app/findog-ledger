@@ -19,6 +19,7 @@ import { Route as LayoutLedgersRouteImport } from './routes/_layout/ledgers'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutLedgersIndexRouteImport } from './routes/_layout/ledgers.index'
 import { Route as LayoutLedgersLedgerIdRouteImport } from './routes/_layout/ledgers.$ledgerId'
+import { Route as LayoutLedgersLedgerIdAnalyticsRouteImport } from './routes/_layout/ledgers.$ledgerId.analytics'
 import { Route as LayoutLedgersLedgerIdCategoriesRouteImport } from './routes/_layout/ledgers.$ledgerId.categories'
 import { Route as LayoutLedgersLedgerIdSettingsRouteImport } from './routes/_layout/ledgers.$ledgerId.settings'
 import { Route as LayoutLedgersLedgerIdSystemRunRouteImport } from './routes/_layout/ledgers.$ledgerId.system-run'
@@ -72,6 +73,12 @@ const LayoutLedgersLedgerIdRoute = LayoutLedgersLedgerIdRouteImport.update({
   path: '/$ledgerId',
   getParentRoute: () => LayoutLedgersRoute,
 } as any)
+const LayoutLedgersLedgerIdAnalyticsRoute =
+  LayoutLedgersLedgerIdAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => LayoutLedgersLedgerIdRoute,
+  } as any)
 const LayoutLedgersLedgerIdCategoriesRoute =
   LayoutLedgersLedgerIdCategoriesRouteImport.update({
     id: '/categories',
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRoute
   '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/ledgers/': typeof LayoutLedgersIndexRoute
+  '/ledgers/$ledgerId/analytics': typeof LayoutLedgersLedgerIdAnalyticsRoute
   '/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
   '/ledgers/$ledgerId/system-run': typeof LayoutLedgersLedgerIdSystemRunRoute
@@ -114,6 +122,7 @@ export interface FileRoutesByTo {
   '/': typeof LayoutIndexRoute
   '/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/ledgers': typeof LayoutLedgersIndexRoute
+  '/ledgers/$ledgerId/analytics': typeof LayoutLedgersLedgerIdAnalyticsRoute
   '/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
   '/ledgers/$ledgerId/system-run': typeof LayoutLedgersLedgerIdSystemRunRoute
@@ -130,6 +139,7 @@ export interface FileRoutesById {
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/ledgers/$ledgerId': typeof LayoutLedgersLedgerIdRouteWithChildren
   '/_layout/ledgers/': typeof LayoutLedgersIndexRoute
+  '/_layout/ledgers/$ledgerId/analytics': typeof LayoutLedgersLedgerIdAnalyticsRoute
   '/_layout/ledgers/$ledgerId/categories': typeof LayoutLedgersLedgerIdCategoriesRoute
   '/_layout/ledgers/$ledgerId/settings': typeof LayoutLedgersLedgerIdSettingsRoute
   '/_layout/ledgers/$ledgerId/system-run': typeof LayoutLedgersLedgerIdSystemRunRoute
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/ledgers/$ledgerId'
     | '/ledgers/'
+    | '/ledgers/$ledgerId/analytics'
     | '/ledgers/$ledgerId/categories'
     | '/ledgers/$ledgerId/settings'
     | '/ledgers/$ledgerId/system-run'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ledgers/$ledgerId'
     | '/ledgers'
+    | '/ledgers/$ledgerId/analytics'
     | '/ledgers/$ledgerId/categories'
     | '/ledgers/$ledgerId/settings'
     | '/ledgers/$ledgerId/system-run'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/ledgers/$ledgerId'
     | '/_layout/ledgers/'
+    | '/_layout/ledgers/$ledgerId/analytics'
     | '/_layout/ledgers/$ledgerId/categories'
     | '/_layout/ledgers/$ledgerId/settings'
     | '/_layout/ledgers/$ledgerId/system-run'
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLedgersLedgerIdRouteImport
       parentRoute: typeof LayoutLedgersRoute
     }
+    '/_layout/ledgers/$ledgerId/analytics': {
+      id: '/_layout/ledgers/$ledgerId/analytics'
+      path: '/analytics'
+      fullPath: '/ledgers/$ledgerId/analytics'
+      preLoaderRoute: typeof LayoutLedgersLedgerIdAnalyticsRouteImport
+      parentRoute: typeof LayoutLedgersLedgerIdRoute
+    }
     '/_layout/ledgers/$ledgerId/categories': {
       id: '/_layout/ledgers/$ledgerId/categories'
       path: '/categories'
@@ -283,12 +303,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface LayoutLedgersLedgerIdRouteChildren {
+  LayoutLedgersLedgerIdAnalyticsRoute: typeof LayoutLedgersLedgerIdAnalyticsRoute
   LayoutLedgersLedgerIdCategoriesRoute: typeof LayoutLedgersLedgerIdCategoriesRoute
   LayoutLedgersLedgerIdSettingsRoute: typeof LayoutLedgersLedgerIdSettingsRoute
   LayoutLedgersLedgerIdSystemRunRoute: typeof LayoutLedgersLedgerIdSystemRunRoute
 }
 
 const LayoutLedgersLedgerIdRouteChildren: LayoutLedgersLedgerIdRouteChildren = {
+  LayoutLedgersLedgerIdAnalyticsRoute: LayoutLedgersLedgerIdAnalyticsRoute,
   LayoutLedgersLedgerIdCategoriesRoute: LayoutLedgersLedgerIdCategoriesRoute,
   LayoutLedgersLedgerIdSettingsRoute: LayoutLedgersLedgerIdSettingsRoute,
   LayoutLedgersLedgerIdSystemRunRoute: LayoutLedgersLedgerIdSystemRunRoute,
