@@ -1,3 +1,17 @@
+## v0.4.0 (2026-08-28)
+
+### Feat
+
+- **analytics**: add remaining period cashflow (#129)
+- **analytics**: add category amount history (#128)
+- add responsive authenticated navigation (#124)
+- manage obligation components (#123)
+- add obligation components (#121)
+
+### Fix
+
+- **tests**: use secure randomness for passwords
+
 ## v0.3.0 (2026-08-25)
 
 ### Feat
