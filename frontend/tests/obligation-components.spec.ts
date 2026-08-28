@@ -150,3 +150,27 @@ test("does not show component management actions to viewers", async ({
   ).toHaveCount(0)
   await viewerContext.close()
 })
+
+test("keeps primary and secondary navigation available on mobile", async ({
+  page,
+}) => {
+  const fixture = await createObligationFixture()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`/ledgers/${fixture.ledger.id}`)
+
+  await expect(page.getByRole("img", { name: "Findog" })).toBeVisible()
+  await expect(
+    page.locator("header").getByText(fixture.ledger.name, { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByRole("link", { name: "Obligations" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Categories" })).toBeVisible()
+
+  await page.getByRole("button", { name: "More" }).first().click()
+  await page
+    .getByRole("button", { name: /Components .*Current workspace/ })
+    .click()
+  await expect(
+    page.getByRole("menuitem", { name: "Ledger settings" }),
+  ).toBeVisible()
+  await expect(page.getByRole("menuitem", { name: "System Run" })).toBeVisible()
+})

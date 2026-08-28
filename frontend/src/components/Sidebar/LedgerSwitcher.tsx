@@ -4,6 +4,7 @@ import {
   Check,
   ChevronsUpDown,
   List,
+  Play,
   Settings,
   Tags,
 } from "lucide-react"
@@ -23,10 +24,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useActiveLedger } from "@/hooks/useActiveLedger"
+import useAuth from "@/hooks/useAuth"
 
 export function LedgerSwitcher() {
   const navigate = useNavigate()
   const { isMobile, setOpenMobile } = useSidebar()
+  const { user: currentUser } = useAuth()
   const { activeLedger, activeLedgerId, isLoading, ledgers, setLastLedgerId } =
     useActiveLedger()
 
@@ -100,6 +103,17 @@ export function LedgerSwitcher() {
                     Categories
                   </Link>
                 </DropdownMenuItem>
+                {activeLedger?.owner_user_id === currentUser?.id ? (
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/ledgers/$ledgerId/system-run"
+                      params={{ ledgerId: activeLedgerId }}
+                    >
+                      <Play />
+                      System Run
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
               </>
             )}
             <DropdownMenuItem asChild>

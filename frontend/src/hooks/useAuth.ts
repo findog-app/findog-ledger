@@ -51,16 +51,23 @@ const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: async () => {
-      const ledgers = await LedgersService.readLedgers()
-      const lastLedgerId = localStorage.getItem("last-ledger-id")
-      const activeLedger = ledgers.data.find(
-        (ledger) => ledger.id === lastLedgerId,
-      )
-      const ledger = activeLedger ?? ledgers.data[0]
+      try {
+        const ledgers = await LedgersService.readLedgers()
+        const lastLedgerId = localStorage.getItem("last-ledger-id")
+        const activeLedger = ledgers.data.find(
+          (ledger) => ledger.id === lastLedgerId,
+        )
+        const ledger = activeLedger ?? ledgers.data[0]
 
-      if (ledger) {
-        navigate({ to: "/ledgers/$ledgerId", params: { ledgerId: ledger.id } })
-        return
+        if (ledger) {
+          navigate({
+            to: "/ledgers/$ledgerId",
+            params: { ledgerId: ledger.id },
+          })
+          return
+        }
+      } catch {
+        // The session is valid even when the optional landing lookup fails.
       }
 
       navigate({ to: "/" })

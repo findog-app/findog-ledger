@@ -22,16 +22,25 @@ export function useActiveLedger() {
     queryKey: ["ledgers"],
   })
   const pathLedgerId = getLedgerIdFromPath(location.pathname)
-  const activeLedgerId = pathLedgerId ?? lastLedgerId
+  const requestedLedgerId = pathLedgerId ?? lastLedgerId
   const ledgers = data?.data ?? []
   const activeLedger =
-    ledgers.find((ledger) => ledger.id === activeLedgerId) ?? null
+    ledgers.find((ledger) => ledger.id === requestedLedgerId) ??
+    ledgers[0] ??
+    null
+  const activeLedgerId = activeLedger?.id ?? null
 
   useEffect(() => {
     if (!pathLedgerId) return
     window.localStorage.setItem(LAST_LEDGER_KEY, pathLedgerId)
     setLastLedgerId(pathLedgerId)
   }, [pathLedgerId])
+
+  useEffect(() => {
+    if (!activeLedgerId || pathLedgerId) return
+    window.localStorage.setItem(LAST_LEDGER_KEY, activeLedgerId)
+    setLastLedgerId(activeLedgerId)
+  }, [activeLedgerId, pathLedgerId])
 
   return { activeLedger, activeLedgerId, isLoading, ledgers, setLastLedgerId }
 }
