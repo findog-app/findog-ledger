@@ -450,3 +450,78 @@ def test_cashflow_separates_currencies_and_exposes_incomplete_unpaid_data(
         "EUR",
         "PLN",
     ]
+
+
+def _cashflow_url(ledger_id: uuid.UUID) -> str:
+    return f"{settings.API_V1_STR}/ledgers/{ledger_id}/analytics/cashflow?year=2026&month=8"
+
+
+def test_cashflow_excludes_paid_obligations_and_isolates_ledgers(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="cashflow"
+    )
+    other = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="other"
+    )
+    paid = _create_obligation(
+        db, ledger_id=ledger.id, code="PAID", amount=Decimal("10")
+    )
+    obligation_use_cases.mark_obligation_paid(
+        session=db, ledger_id=ledger.id, key=ObligationKey.parse(paid.business_key)
+    )
+    _create_obligation(db, ledger_id=other.id, code="OTHR", amount=Decimal("99"))
+
+    response = client.get(_cashflow_url(ledger.id), headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["currency_summaries"] == []
+    assert response.json()["is_complete"] is True
+
+
+def test_cashflow_reports_unscheduled_and_unknown_unpaid_obligations(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="cashflow"
+    )
+    known = _create_obligation(
+        db, ledger_id=ledger.id, code="KNWN", amount=Decimal("30")
+    )
+    unknown = _create_obligation(db, ledger_id=ledger.id, code="UNKN", amount=None)
+    known.due_date = None
+    unknown.due_date = None
+    db.commit()
+
+    response = client.get(_cashflow_url(ledger.id), headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["unknown_amount_count"] == 1
+    assert response.json()["without_due_date_count"] == 2
+    assert response.json()["is_complete"] is False
+    assert (
+        response.json()["currency_summaries"][0]["unscheduled_known_amount"] == "30.00"
+    )
+
+
+def test_cashflow_for_empty_period_returns_an_empty_complete_summary(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="cashflow"
+    )
+
+    response = client.get(_cashflow_url(ledger.id), headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["currency_summaries"] == []
+    assert response.json()["unknown_amount_count"] == 0
+    assert response.json()["without_due_date_count"] == 0
+    assert response.json()["is_complete"] is True
