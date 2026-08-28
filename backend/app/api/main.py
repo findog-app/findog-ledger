@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    analytics,
     categories,
     integration,
     ledgers,
@@ -14,6 +15,7 @@ from app.api.routes import (
 api_router = APIRouter()
 api_router.include_router(login.router)
 api_router.include_router(ledgers.router)
+api_router.include_router(analytics.router)
 api_router.include_router(categories.router)
 api_router.include_router(integration.router)
 api_router.include_router(legacy_import.router)

@@ -852,6 +852,48 @@ export const CurrencySchema = {
     title: 'Currency'
 } as const;
 
+export const CurrencyPaymentSummaryPublicSchema = {
+    properties: {
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        total_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Total Known Amount'
+        },
+        paid_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Paid Known Amount'
+        },
+        paid_percentage: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Paid Percentage'
+        }
+    },
+    type: 'object',
+    required: ['currency', 'total_known_amount', 'paid_known_amount', 'paid_percentage'],
+    title: 'CurrencyPaymentSummaryPublic',
+    description: 'Amounts are grouped by currency and are never converted or combined.'
+} as const;
+
 export const CurrentValueSourceSchema = {
     type: 'string',
     enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy'],
@@ -1992,6 +2034,52 @@ export const ObligationsPublicSchema = {
     type: 'object',
     required: ['data', 'count'],
     title: 'ObligationsPublic'
+} as const;
+
+export const PeriodPaymentSummaryPublicSchema = {
+    properties: {
+        period: {
+            '$ref': '#/components/schemas/ObligationPeriodPublic'
+        },
+        total_obligation_count: {
+            type: 'integer',
+            title: 'Total Obligation Count'
+        },
+        paid_obligation_count: {
+            type: 'integer',
+            title: 'Paid Obligation Count'
+        },
+        paid_percentage: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Paid Percentage'
+        },
+        unknown_amount_count: {
+            type: 'integer',
+            title: 'Unknown Amount Count'
+        },
+        is_complete: {
+            type: 'boolean',
+            title: 'Is Complete'
+        },
+        amount_summaries: {
+            items: {
+                '$ref': '#/components/schemas/CurrencyPaymentSummaryPublic'
+            },
+            type: 'array',
+            title: 'Amount Summaries'
+        }
+    },
+    type: 'object',
+    required: ['period', 'total_obligation_count', 'paid_obligation_count', 'paid_percentage', 'unknown_amount_count', 'is_complete', 'amount_summaries'],
+    title: 'PeriodPaymentSummaryPublic'
 } as const;
 
 export const RecurrenceUnitSchema = {
