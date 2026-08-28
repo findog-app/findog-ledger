@@ -55,7 +55,11 @@ def _summary_url(ledger_id: uuid.UUID) -> str:
 
 
 def _create_history_category(
-    db: Session, *, ledger_id: uuid.UUID, currency: Currency = Currency.PLN
+    db: Session,
+    *,
+    ledger_id: uuid.UUID,
+    currency: Currency = Currency.PLN,
+    code: str = "HIST",
 ):
     group = category_use_cases.create_category_group(
         session=db, ledger_id=ledger_id, name=f"group-{random_lower_string()}"
@@ -65,7 +69,7 @@ def _create_history_category(
         ledger_id=ledger_id,
         category_group_id=group.id,
         name=f"Category {random_lower_string()}",
-        code="HIST",
+        code=code,
         currency=currency,
     )
 
@@ -387,3 +391,62 @@ def test_category_history_is_scoped_to_its_ledger_and_validates_ranges(
 
     assert wrong_ledger.status_code == 404
     assert invalid_range.status_code == 422
+
+
+def test_cashflow_separates_currencies_and_exposes_incomplete_unpaid_data(
+    client: TestClient, db: Session, monkeypatch
+) -> None:
+    class FrozenDate(date):
+        @classmethod
+        def today(cls) -> date:
+            return cls(2026, 8, 15)
+
+    from app.use_cases import analytics as analytics_use_cases
+
+    monkeypatch.setattr(analytics_use_cases, "date", FrozenDate)
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    pln = _create_history_category(
+        db, ledger_id=ledger.id, currency=Currency.PLN, code="PLNC"
+    )
+    eur = _create_history_category(
+        db, ledger_id=ledger.id, currency=Currency.EUR, code="EURC"
+    )
+    _create_history_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=pln.code,
+        period=PERIOD,
+        amount=Decimal("100.00"),
+    ).due_date = date(2026, 8, 10)
+    _create_history_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=eur.code,
+        period=PERIOD,
+        amount=Decimal("20.00"),
+    ).due_date = date(2026, 8, 20)
+    _create_history_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=pln.code,
+        period=BillingPeriod(2026, 7),
+        amount=None,
+    )
+    db.commit()
+
+    response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/analytics/cashflow?year=2026&month=8",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["unknown_amount_count"] == 0
+    assert response.json()["is_complete"] is True
+    assert [item["currency"] for item in response.json()["currency_summaries"]] == [
+        "EUR",
+        "PLN",
+    ]

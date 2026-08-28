@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
 from typing import Literal
 
@@ -185,3 +186,119 @@ def get_category_amount_history(
         period = period.next()
 
     return CategoryAmountHistory(category_id=category.id, points=points)
+
+
+@dataclass(frozen=True, slots=True)
+class DailyCashflow:
+    due_date: date
+    amount: Decimal
+    cumulative_amount: Decimal
+    is_overdue: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CurrencyCashflow:
+    currency: str | None
+    total_known_amount: Decimal
+    scheduled_known_amount: Decimal
+    unscheduled_known_amount: Decimal
+    overdue_known_amount: Decimal
+    daily: list[DailyCashflow]
+
+
+@dataclass(frozen=True, slots=True)
+class PeriodCashflow:
+    as_of_date: date
+    unknown_amount_count: int
+    without_due_date_count: int
+    is_complete: bool
+    currency_summaries: list[CurrencyCashflow]
+
+
+@dataclass(slots=True)
+class _CashflowAccumulator:
+    total: Decimal = Decimal("0.00")
+    scheduled: Decimal = Decimal("0.00")
+    unscheduled: Decimal = Decimal("0.00")
+    overdue: Decimal = Decimal("0.00")
+    by_date: defaultdict[date, Decimal] = field(
+        default_factory=lambda: defaultdict(lambda: Decimal("0.00"))
+    )
+
+
+def get_remaining_period_cashflow(
+    *, session: Session, ledger_id: uuid.UUID, period: BillingPeriod
+) -> PeriodCashflow:
+    """Read unpaid scheduled outflow without treating unknown amounts as zero."""
+
+    obligations = list(
+        session.scalars(
+            select(Obligation).where(
+                Obligation.ledger_id == ledger_id,
+                Obligation.period_year == period.year,
+                Obligation.period_month == period.month,
+                Obligation.lifecycle.not_in(
+                    (ObligationLifecycle.PAID, ObligationLifecycle.CANCELED)
+                ),
+            )
+        )
+    )
+    as_of_date = date.today()
+    unknown_amount_count = sum(item.current_amount is None for item in obligations)
+    without_due_date_count = sum(item.due_date is None for item in obligations)
+    amounts_by_currency: defaultdict[str | None, _CashflowAccumulator] = defaultdict(
+        _CashflowAccumulator
+    )
+
+    for obligation in obligations:
+        if obligation.current_amount is None:
+            continue
+        summary = amounts_by_currency[obligation.currency]
+        summary.total += obligation.current_amount
+        if obligation.due_date is None:
+            summary.unscheduled += obligation.current_amount
+            continue
+        summary.scheduled += obligation.current_amount
+        if obligation.due_date < as_of_date:
+            summary.overdue += obligation.current_amount
+        summary.by_date[obligation.due_date] += obligation.current_amount
+
+    return PeriodCashflow(
+        as_of_date=as_of_date,
+        unknown_amount_count=unknown_amount_count,
+        without_due_date_count=without_due_date_count,
+        is_complete=unknown_amount_count == 0 and without_due_date_count == 0,
+        currency_summaries=[
+            _to_currency_cashflow(
+                currency=currency, summary=summary, as_of_date=as_of_date
+            )
+            for currency, summary in sorted(
+                amounts_by_currency.items(), key=lambda item: item[0] or ""
+            )
+        ],
+    )
+
+
+def _to_currency_cashflow(
+    *, currency: str | None, summary: _CashflowAccumulator, as_of_date: date
+) -> CurrencyCashflow:
+    cumulative_amount = Decimal("0.00")
+    daily: list[DailyCashflow] = []
+    for due_date, amount in sorted(summary.by_date.items()):
+        cumulative_amount += amount
+        daily.append(
+            DailyCashflow(
+                due_date=due_date,
+                amount=amount,
+                cumulative_amount=cumulative_amount,
+                is_overdue=due_date < as_of_date,
+            )
+        )
+    return CurrencyCashflow(
+        currency=currency,
+        total_known_amount=summary.total,
+        scheduled_known_amount=summary.scheduled,
+        unscheduled_known_amount=summary.unscheduled,
+        overdue_known_amount=summary.overdue,
+        daily=daily,
+    )

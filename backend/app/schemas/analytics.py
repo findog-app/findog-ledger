@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from decimal import Decimal
 from typing import Literal
 
@@ -38,3 +39,31 @@ class CategoryAmountHistoryPointPublic(BaseModel):
 class CategoryAmountHistoryPublic(BaseModel):
     category_id: uuid.UUID
     points: list[CategoryAmountHistoryPointPublic]
+
+
+class DailyCashflowPublic(BaseModel):
+    due_date: date
+    amount: Decimal
+    cumulative_amount: Decimal
+    is_overdue: bool
+
+
+class CurrencyCashflowPublic(BaseModel):
+    """Amounts are grouped by currency and are never converted or combined."""
+
+    currency: str | None
+    total_known_amount: Decimal
+    scheduled_known_amount: Decimal
+    unscheduled_known_amount: Decimal
+    overdue_known_amount: Decimal
+    daily: list[DailyCashflowPublic]
+
+
+class PeriodCashflowPublic(BaseModel):
+    period: ObligationPeriodPublic
+    as_of_date: date
+    unknown_amount_count: int
+    without_due_date_count: int
+    is_complete: bool
+    currency_summaries: list[CurrencyCashflowPublic]
+
