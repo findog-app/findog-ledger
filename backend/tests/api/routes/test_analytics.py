@@ -313,6 +313,60 @@ def test_category_history_is_continuous_and_distinguishes_missing_and_unknown(
     ]
 
 
+def test_category_history_preserves_each_obligations_currency(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    category = _create_category(db, ledger_id=ledger.id, currency=Currency.PLN)
+    _create_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=category.code,
+        period=BillingPeriod(2025, 12),
+        amount=Decimal("10.00"),
+    )
+    category_use_cases.update_category(
+        session=db,
+        ledger_id=ledger.id,
+        category_id=category.id,
+        name=category.name,
+        currency=Currency.EUR,
+    )
+    _create_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=category.code,
+        period=BillingPeriod(2026, 1),
+        amount=Decimal("20.00"),
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/analytics/categories/"
+        f"{category.id}/history?from=2025-12&to=2026-01",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["points"] == [
+        {
+            "period": {"year": 2025, "month": 12},
+            "state": "known",
+            "current_amount": "10.00",
+            "currency": "PLN",
+        },
+        {
+            "period": {"year": 2026, "month": 1},
+            "state": "known",
+            "current_amount": "20.00",
+            "currency": "EUR",
+        },
+    ]
+
+
 def test_category_history_is_scoped_to_its_ledger_and_validates_ranges(
     client: TestClient, db: Session
 ) -> None:
