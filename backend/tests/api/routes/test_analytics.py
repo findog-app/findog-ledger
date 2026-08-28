@@ -266,9 +266,7 @@ def test_category_history_is_continuous_and_distinguishes_missing_and_unknown(
     ledger = ledger_use_cases.create_ledger(
         session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
     )
-    category = _create_history_category(
-        db, ledger_id=ledger.id, currency=Currency.EUR
-    )
+    category = _create_history_category(db, ledger_id=ledger.id, currency=Currency.EUR)
     _create_history_obligation(
         db,
         ledger_id=ledger.id,
@@ -321,8 +319,8 @@ def test_category_history_preserves_each_obligations_currency(
     ledger = ledger_use_cases.create_ledger(
         session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
     )
-    category = _create_category(db, ledger_id=ledger.id, currency=Currency.PLN)
-    _create_obligation(
+    category = _create_history_category(db, ledger_id=ledger.id, currency=Currency.PLN)
+    _create_history_obligation(
         db,
         ledger_id=ledger.id,
         category_code=category.code,
@@ -336,7 +334,7 @@ def test_category_history_preserves_each_obligations_currency(
         name=category.name,
         currency=Currency.EUR,
     )
-    _create_obligation(
+    _create_history_obligation(
         db,
         ledger_id=ledger.id,
         category_code=category.code,

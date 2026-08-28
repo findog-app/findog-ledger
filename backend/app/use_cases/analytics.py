@@ -96,6 +96,8 @@ def _percentage(numerator: Decimal | int, denominator: Decimal | int) -> Decimal
     if numerator == 0:
         return Decimal("0")
     return Decimal(numerator) * Decimal("100") / Decimal(denominator)
+
+
 HistoryPointState = Literal["missing", "unknown", "known"]
 
 
