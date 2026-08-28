@@ -163,6 +163,16 @@ export type CategoryUpdate = {
 
 export type Currency = 'PLN' | 'EUR' | 'USD' | 'GBP' | 'CHF';
 
+/**
+ * Amounts are grouped by currency and are never converted or combined.
+ */
+export type CurrencyPaymentSummaryPublic = {
+    currency: (string | null);
+    total_known_amount: string;
+    paid_known_amount: string;
+    paid_percentage: (string | null);
+};
+
 export type CurrentValueSource = 'unknown' | 'automatic' | 'manual' | 'integration' | 'legacy';
 
 export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
@@ -376,6 +386,16 @@ export type ObligationUpdate = {
     notes?: (string | null);
 };
 
+export type PeriodPaymentSummaryPublic = {
+    period: ObligationPeriodPublic;
+    total_obligation_count: number;
+    paid_obligation_count: number;
+    paid_percentage: (string | null);
+    unknown_amount_count: number;
+    is_complete: boolean;
+    amount_summaries: Array<CurrencyPaymentSummaryPublic>;
+};
+
 export type RecurrenceUnit = 'month' | 'year';
 
 export type Token = {
@@ -430,6 +450,14 @@ export type ValidationError = {
 };
 
 export type ValueState = 'unknown' | 'estimated' | 'confirmed' | 'overridden';
+
+export type AnalyticsReadPeriodPaymentSummaryData = {
+    ledgerId: string;
+    month: number;
+    year: number;
+};
+
+export type AnalyticsReadPeriodPaymentSummaryResponse = (PeriodPaymentSummaryPublic);
 
 export type CategoriesReadCategoriesData = {
     categoryGroupId?: (string | null);

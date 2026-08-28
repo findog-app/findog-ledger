@@ -1,3 +1,7 @@
+from app.schemas.analytics import (
+    CurrencyPaymentSummaryPublic,
+    PeriodPaymentSummaryPublic,
+)
 from app.schemas.api_keys import (
     ApiKeyCreate,
     ApiKeyCreated,
@@ -67,6 +71,7 @@ __all__ = [
     "ApiKeyCreated",
     "ApiKeyPublic",
     "ApiKeysPublic",
+    "CurrencyPaymentSummaryPublic",
     "CategoryCreate",
     "CategoryDataRecordCreate",
     "CategoryDataRecordPublic",
@@ -103,6 +108,7 @@ __all__ = [
     "ObligationPublic",
     "ObligationUpdate",
     "ObligationsPublic",
+    "PeriodPaymentSummaryPublic",
     "UpdatePassword",
     "UserCreate",
     "UserPublic",
