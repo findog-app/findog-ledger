@@ -387,26 +387,28 @@ function PeriodTotalsCard({
               return (
                 <div className="min-w-150" key={currency}>
                   <h3 className="mb-3 text-sm font-medium">{currency}</h3>
-                  <div className="flex h-48 items-end gap-3 border-b border-l px-3 pt-4">
+                  <div className="flex h-56 items-end gap-3 border-b border-l px-3 pt-4">
                     {data.points.map((point, index) => (
                       <a
                         key={periodValue(point.period)}
                         href={obligationsHref(ledgerId, point.period)}
-                        className="group flex min-w-16 flex-1 flex-col justify-end"
+                        className="group flex h-full min-w-16 flex-1 flex-col"
                         aria-label={`View obligations for ${periodLabel(point.period)}`}
                       >
-                        <span className="mb-2 text-center text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
-                          {formatAmount(
-                            String(amounts[index]),
-                            currency === "No currency" ? null : currency,
-                          )}
-                        </span>
-                        <span
-                          className="min-h-1 rounded-t bg-primary/80 transition-colors group-hover:bg-primary"
-                          style={{
-                            height: `${Math.max((amounts[index] / maximum) * 100, 1)}%`,
-                          }}
-                        />
+                        <div className="relative flex min-h-0 flex-1 flex-col justify-end">
+                          <span className="absolute -top-5 inset-x-0 text-center text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+                            {formatAmount(
+                              String(amounts[index]),
+                              currency === "No currency" ? null : currency,
+                            )}
+                          </span>
+                          <span
+                            className="min-h-1 rounded-t bg-primary/80 transition-colors group-hover:bg-primary"
+                            style={{
+                              height: `${Math.max((amounts[index] / maximum) * 100, 1)}%`,
+                            }}
+                          />
+                        </div>
                         <span className="mt-2 text-center text-xs text-muted-foreground">
                           {periodLabel(point.period)}
                         </span>
