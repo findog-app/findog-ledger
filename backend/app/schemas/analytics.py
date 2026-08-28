@@ -41,6 +41,27 @@ class CategoryAmountHistoryPublic(BaseModel):
     points: list[CategoryAmountHistoryPointPublic]
 
 
+class CurrencyPeriodTotalPublic(BaseModel):
+    """Known amounts are grouped by currency and are never converted or combined."""
+
+    currency: str | None
+    total_known_amount: Decimal
+
+
+class ObligationPeriodTotalPublic(BaseModel):
+    """One continuous chart point; unknown amounts are not represented as zero."""
+
+    period: ObligationPeriodPublic
+    total_obligation_count: int
+    unknown_amount_count: int
+    is_complete: bool
+    currency_summaries: list[CurrencyPeriodTotalPublic]
+
+
+class ObligationPeriodTotalsPublic(BaseModel):
+    points: list[ObligationPeriodTotalPublic]
+
+
 class DailyCashflowPublic(BaseModel):
     due_date: date
     amount: Decimal
@@ -66,4 +87,3 @@ class PeriodCashflowPublic(BaseModel):
     without_due_date_count: int
     is_complete: bool
     currency_summaries: list[CurrencyCashflowPublic]
-
