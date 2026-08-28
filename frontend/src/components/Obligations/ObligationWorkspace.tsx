@@ -19,7 +19,6 @@ import {
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -309,11 +308,11 @@ export function ObligationWorkspace({
   })
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-4">
+    <section>
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <CardTitle>Obligations</CardTitle>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="text-xl font-semibold md:text-2xl">Obligations</h1>
+          <p className="mt-1 hidden text-sm text-muted-foreground md:block">
             Review and add manual obligations for this ledger.
           </p>
         </div>
@@ -327,8 +326,8 @@ export function ObligationWorkspace({
           onError={showErrorToast}
           onSuccess={showSuccessToast}
         />
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="mt-4 space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <Input
             aria-label="Billing period"
@@ -577,8 +576,8 @@ export function ObligationWorkspace({
             onSuccess={showSuccessToast}
           />
         ) : null}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   )
 }
 
