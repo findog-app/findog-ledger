@@ -55,6 +55,23 @@ export type CategoriesPublic = {
     count: number;
 };
 
+/**
+ * A period's amount, keeping missing and unknown values distinct.
+ */
+export type CategoryAmountHistoryPointPublic = {
+    period: ObligationPeriodPublic;
+    state: 'missing' | 'unknown' | 'known';
+    current_amount: (string | null);
+    currency: (string | null);
+};
+
+export type state = 'missing' | 'unknown' | 'known';
+
+export type CategoryAmountHistoryPublic = {
+    category_id: string;
+    points: Array<CategoryAmountHistoryPointPublic>;
+};
+
 export type CategoryCreate = {
     category_group_id: string;
     name: string;
@@ -458,6 +475,15 @@ export type AnalyticsReadPeriodPaymentSummaryData = {
 };
 
 export type AnalyticsReadPeriodPaymentSummaryResponse = (PeriodPaymentSummaryPublic);
+
+export type AnalyticsReadCategoryAmountHistoryData = {
+    _from: string;
+    categoryId: string;
+    ledgerId: string;
+    to: string;
+};
+
+export type AnalyticsReadCategoryAmountHistoryResponse = (CategoryAmountHistoryPublic);
 
 export type CategoriesReadCategoriesData = {
     categoryGroupId?: (string | null);

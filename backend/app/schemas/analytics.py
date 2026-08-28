@@ -1,4 +1,6 @@
+import uuid
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -22,3 +24,17 @@ class PeriodPaymentSummaryPublic(BaseModel):
     unknown_amount_count: int
     is_complete: bool
     amount_summaries: list[CurrencyPaymentSummaryPublic]
+
+
+class CategoryAmountHistoryPointPublic(BaseModel):
+    """A period's amount, keeping missing and unknown values distinct."""
+
+    period: ObligationPeriodPublic
+    state: Literal["missing", "unknown", "known"]
+    current_amount: Decimal | None
+    currency: str | None
+
+
+class CategoryAmountHistoryPublic(BaseModel):
+    category_id: uuid.UUID
+    points: list[CategoryAmountHistoryPointPublic]

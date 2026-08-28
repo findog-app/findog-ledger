@@ -4,12 +4,14 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import select, tuple_
 from sqlalchemy.orm import Session
 
 from app.domain import BillingPeriod, ObligationLifecycle
-from app.models import Obligation
+from app.models import Category, Obligation
+from app.use_cases.exceptions import CategoryNotFoundError
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,3 +96,92 @@ def _percentage(numerator: Decimal | int, denominator: Decimal | int) -> Decimal
     if numerator == 0:
         return Decimal("0")
     return Decimal(numerator) * Decimal("100") / Decimal(denominator)
+
+
+HistoryPointState = Literal["missing", "unknown", "known"]
+
+
+@dataclass(frozen=True, slots=True)
+class CategoryAmountHistoryPoint:
+    period: BillingPeriod
+    state: HistoryPointState
+    current_amount: Decimal | None
+    currency: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class CategoryAmountHistory:
+    category_id: uuid.UUID
+    points: list[CategoryAmountHistoryPoint]
+
+
+def get_category_amount_history(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    category_id: uuid.UUID,
+    from_period: BillingPeriod,
+    to_period: BillingPeriod,
+) -> CategoryAmountHistory:
+    """Return a continuous, currency-preserving amount history for a category."""
+
+    if (from_period.year, from_period.month) > (to_period.year, to_period.month):
+        raise ValueError("from period must not be after to period")
+
+    category = session.scalar(
+        select(Category).where(
+            Category.id == category_id, Category.ledger_id == ledger_id
+        )
+    )
+    if category is None:
+        raise CategoryNotFoundError
+
+    obligations = session.scalars(
+        select(Obligation).where(
+            Obligation.ledger_id == ledger_id,
+            Obligation.category_id == category_id,
+            tuple_(Obligation.period_year, Obligation.period_month).between(
+                (from_period.year, from_period.month),
+                (to_period.year, to_period.month),
+            ),
+        )
+    )
+    obligations_by_period = {
+        (obligation.period_year, obligation.period_month): obligation
+        for obligation in obligations
+    }
+
+    points: list[CategoryAmountHistoryPoint] = []
+    period = from_period
+    while period != to_period.next():
+        obligation = obligations_by_period.get((period.year, period.month))
+        if obligation is None:
+            points.append(
+                CategoryAmountHistoryPoint(
+                    period=period,
+                    state="missing",
+                    current_amount=None,
+                    currency=category.currency,
+                )
+            )
+        elif obligation.current_amount is None:
+            points.append(
+                CategoryAmountHistoryPoint(
+                    period=period,
+                    state="unknown",
+                    current_amount=None,
+                    currency=obligation.currency,
+                )
+            )
+        else:
+            points.append(
+                CategoryAmountHistoryPoint(
+                    period=period,
+                    state="known",
+                    current_amount=obligation.current_amount,
+                    currency=obligation.currency,
+                )
+            )
+        period = period.next()
+
+    return CategoryAmountHistory(category_id=category.id, points=points)
