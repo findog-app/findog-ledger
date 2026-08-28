@@ -183,6 +183,18 @@ export type Currency = 'PLN' | 'EUR' | 'USD' | 'GBP' | 'CHF';
 /**
  * Amounts are grouped by currency and are never converted or combined.
  */
+export type CurrencyCashflowPublic = {
+    currency: (string | null);
+    total_known_amount: string;
+    scheduled_known_amount: string;
+    unscheduled_known_amount: string;
+    overdue_known_amount: string;
+    daily: Array<DailyCashflowPublic>;
+};
+
+/**
+ * Amounts are grouped by currency and are never converted or combined.
+ */
 export type CurrencyPaymentSummaryPublic = {
     currency: (string | null);
     total_known_amount: string;
@@ -191,6 +203,13 @@ export type CurrencyPaymentSummaryPublic = {
 };
 
 export type CurrentValueSource = 'unknown' | 'automatic' | 'manual' | 'integration' | 'legacy';
+
+export type DailyCashflowPublic = {
+    due_date: string;
+    amount: string;
+    cumulative_amount: string;
+    is_overdue: boolean;
+};
 
 export type DataSourcePolicy = 'manual' | 'automatic' | 'hybrid';
 
@@ -403,6 +422,15 @@ export type ObligationUpdate = {
     notes?: (string | null);
 };
 
+export type PeriodCashflowPublic = {
+    period: ObligationPeriodPublic;
+    as_of_date: string;
+    unknown_amount_count: number;
+    without_due_date_count: number;
+    is_complete: boolean;
+    currency_summaries: Array<CurrencyCashflowPublic>;
+};
+
 export type PeriodPaymentSummaryPublic = {
     period: ObligationPeriodPublic;
     total_obligation_count: number;
@@ -484,6 +512,14 @@ export type AnalyticsReadCategoryAmountHistoryData = {
 };
 
 export type AnalyticsReadCategoryAmountHistoryResponse = (CategoryAmountHistoryPublic);
+
+export type AnalyticsReadRemainingPeriodCashflowData = {
+    ledgerId: string;
+    month: number;
+    year: number;
+};
+
+export type AnalyticsReadRemainingPeriodCashflowResponse = (PeriodCashflowPublic);
 
 export type CategoriesReadCategoriesData = {
     categoryGroupId?: (string | null);

@@ -912,6 +912,53 @@ export const CurrencySchema = {
     title: 'Currency'
 } as const;
 
+export const CurrencyCashflowPublicSchema = {
+    properties: {
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        total_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Total Known Amount'
+        },
+        scheduled_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Scheduled Known Amount'
+        },
+        unscheduled_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Unscheduled Known Amount'
+        },
+        overdue_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Overdue Known Amount'
+        },
+        daily: {
+            items: {
+                '$ref': '#/components/schemas/DailyCashflowPublic'
+            },
+            type: 'array',
+            title: 'Daily'
+        }
+    },
+    type: 'object',
+    required: ['currency', 'total_known_amount', 'scheduled_known_amount', 'unscheduled_known_amount', 'overdue_known_amount', 'daily'],
+    title: 'CurrencyCashflowPublic',
+    description: 'Amounts are grouped by currency and are never converted or combined.'
+} as const;
+
 export const CurrencyPaymentSummaryPublicSchema = {
     properties: {
         currency: {
@@ -958,6 +1005,33 @@ export const CurrentValueSourceSchema = {
     type: 'string',
     enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy'],
     title: 'CurrentValueSource'
+} as const;
+
+export const DailyCashflowPublicSchema = {
+    properties: {
+        due_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Due Date'
+        },
+        amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Amount'
+        },
+        cumulative_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Cumulative Amount'
+        },
+        is_overdue: {
+            type: 'boolean',
+            title: 'Is Overdue'
+        }
+    },
+    type: 'object',
+    required: ['due_date', 'amount', 'cumulative_amount', 'is_overdue'],
+    title: 'DailyCashflowPublic'
 } as const;
 
 export const DataSourcePolicySchema = {
@@ -2094,6 +2168,41 @@ export const ObligationsPublicSchema = {
     type: 'object',
     required: ['data', 'count'],
     title: 'ObligationsPublic'
+} as const;
+
+export const PeriodCashflowPublicSchema = {
+    properties: {
+        period: {
+            '$ref': '#/components/schemas/ObligationPeriodPublic'
+        },
+        as_of_date: {
+            type: 'string',
+            format: 'date',
+            title: 'As Of Date'
+        },
+        unknown_amount_count: {
+            type: 'integer',
+            title: 'Unknown Amount Count'
+        },
+        without_due_date_count: {
+            type: 'integer',
+            title: 'Without Due Date Count'
+        },
+        is_complete: {
+            type: 'boolean',
+            title: 'Is Complete'
+        },
+        currency_summaries: {
+            items: {
+                '$ref': '#/components/schemas/CurrencyCashflowPublic'
+            },
+            type: 'array',
+            title: 'Currency Summaries'
+        }
+    },
+    type: 'object',
+    required: ['period', 'as_of_date', 'unknown_amount_count', 'without_due_date_count', 'is_complete', 'currency_summaries'],
+    title: 'PeriodCashflowPublic'
 } as const;
 
 export const PeriodPaymentSummaryPublicSchema = {

@@ -8,6 +8,9 @@ from app.domain import BillingPeriod
 from app.models import Ledger
 from app.schemas import (
     CategoryAmountHistoryPointPublic,
+    CurrencyCashflowPublic,
+    DailyCashflowPublic,
+    PeriodCashflowPublic,
     CategoryAmountHistoryPublic,
     CurrencyPaymentSummaryPublic,
     ObligationPeriodPublic,
@@ -100,3 +103,47 @@ def read_category_amount_history(
 def _parse_period(value: str) -> BillingPeriod:
     year, month = value.split("-")
     return BillingPeriod(year=int(year), month=int(month))
+
+
+@router.get(
+    "/ledgers/{ledger_id}/analytics/cashflow", response_model=PeriodCashflowPublic
+)
+def read_remaining_period_cashflow(
+    *,
+    session: SessionDep,
+    year: int = Query(ge=1, le=9999),
+    month: int = Query(ge=1, le=12),
+    ledger: Ledger = Depends(require_ledger_view_access),
+) -> Any:
+    cashflow = analytics_use_cases.get_remaining_period_cashflow(
+        session=session,
+        ledger_id=ledger.id,
+        period=BillingPeriod(year=year, month=month),
+    )
+    return PeriodCashflowPublic(
+        period=ObligationPeriodPublic(year=year, month=month),
+        as_of_date=cashflow.as_of_date,
+        unknown_amount_count=cashflow.unknown_amount_count,
+        without_due_date_count=cashflow.without_due_date_count,
+        is_complete=cashflow.is_complete,
+        currency_summaries=[
+            CurrencyCashflowPublic(
+                currency=summary.currency,
+                total_known_amount=summary.total_known_amount,
+                scheduled_known_amount=summary.scheduled_known_amount,
+                unscheduled_known_amount=summary.unscheduled_known_amount,
+                overdue_known_amount=summary.overdue_known_amount,
+                daily=[
+                    DailyCashflowPublic(
+                        due_date=item.due_date,
+                        amount=item.amount,
+                        cumulative_amount=item.cumulative_amount,
+                        is_overdue=item.is_overdue,
+                    )
+                    for item in summary.daily
+                ],
+            )
+            for summary in cashflow.currency_summaries
+        ],
+    )
+
