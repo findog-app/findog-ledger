@@ -1,4 +1,6 @@
 from app.schemas.analytics import (
+    CategoryAmountHistoryPointPublic,
+    CategoryAmountHistoryPublic,
     CurrencyPaymentSummaryPublic,
     PeriodPaymentSummaryPublic,
 )
@@ -71,6 +73,8 @@ __all__ = [
     "ApiKeyCreated",
     "ApiKeyPublic",
     "ApiKeysPublic",
+    "CategoryAmountHistoryPointPublic",
+    "CategoryAmountHistoryPublic",
     "CurrencyPaymentSummaryPublic",
     "CategoryCreate",
     "CategoryDataRecordCreate",

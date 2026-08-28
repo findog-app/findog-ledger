@@ -305,6 +305,66 @@ export const CategoriesPublicSchema = {
     title: 'CategoriesPublic'
 } as const;
 
+export const CategoryAmountHistoryPointPublicSchema = {
+    properties: {
+        period: {
+            '$ref': '#/components/schemas/ObligationPeriodPublic'
+        },
+        state: {
+            type: 'string',
+            enum: ['missing', 'unknown', 'known'],
+            title: 'State'
+        },
+        current_amount: {
+            anyOf: [
+                {
+                    type: 'string',
+                    pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Current Amount'
+        },
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        }
+    },
+    type: 'object',
+    required: ['period', 'state', 'current_amount', 'currency'],
+    title: 'CategoryAmountHistoryPointPublic',
+    description: "A period's amount, keeping missing and unknown values distinct."
+} as const;
+
+export const CategoryAmountHistoryPublicSchema = {
+    properties: {
+        category_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Category Id'
+        },
+        points: {
+            items: {
+                '$ref': '#/components/schemas/CategoryAmountHistoryPointPublic'
+            },
+            type: 'array',
+            title: 'Points'
+        }
+    },
+    type: 'object',
+    required: ['category_id', 'points'],
+    title: 'CategoryAmountHistoryPublic'
+} as const;
+
 export const CategoryCreateSchema = {
     properties: {
         category_group_id: {
