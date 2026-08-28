@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.domain import BillingPeriod, Currency, ObligationKey
+from app.domain import BillingPeriod, Currency, ObligationKey, ObligationLifecycle
 from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases import obligations as obligation_use_cases
@@ -157,6 +157,46 @@ def test_period_summary_keeps_unknown_amounts_and_currencies_separate(
             "paid_known_amount": "50.00",
             "paid_percentage": "50",
         },
+    ]
+
+
+def test_period_summary_excludes_canceled_obligations(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name=f"ledger-{random_lower_string()}"
+    )
+    paid = _create_obligation(
+        db, ledger_id=ledger.id, code="PAID", amount=Decimal("50.00")
+    )
+    canceled = _create_obligation(
+        db, ledger_id=ledger.id, code="CNCL", amount=Decimal("50.00")
+    )
+    obligation_use_cases.mark_obligation_paid(
+        session=db,
+        ledger_id=ledger.id,
+        key=ObligationKey.parse(paid.business_key),
+    )
+    canceled.lifecycle = ObligationLifecycle.CANCELED
+    db.commit()
+
+    response = client.get(_summary_url(ledger.id), headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["total_obligation_count"] == 1
+    assert response.json()["paid_obligation_count"] == 1
+    assert response.json()["paid_percentage"] == "100"
+    assert response.json()["unknown_amount_count"] == 0
+    assert response.json()["is_complete"] is True
+    assert response.json()["amount_summaries"] == [
+        {
+            "currency": "PLN",
+            "total_known_amount": "50.00",
+            "paid_known_amount": "50.00",
+            "paid_percentage": "100",
+        }
     ]
 
 

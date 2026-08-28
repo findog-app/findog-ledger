@@ -49,6 +49,7 @@ def summarize_period_payment_progress(
                 Obligation.ledger_id == ledger_id,
                 Obligation.period_year == period.year,
                 Obligation.period_month == period.month,
+                Obligation.lifecycle != ObligationLifecycle.CANCELED,
             )
         )
     )
