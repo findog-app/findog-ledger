@@ -60,6 +60,13 @@ function formatAmount(amount: string, currency: string | null) {
   })}${currency ? ` ${currency}` : ""}`
 }
 
+function formatPercentage(value: string | null) {
+  if (value === null) return "—"
+  return Number(value).toLocaleString(undefined, {
+    maximumFractionDigits: 0,
+  })
+}
+
 function obligationsHref(ledgerId: string, period: Period) {
   return `/ledgers/${ledgerId}?year=${period.year}&month=${period.month}`
 }
@@ -231,7 +238,29 @@ function PaymentProgressCard({
           <QueryState message="Payment progress could not be loaded." />
         ) : (
           <>
-            <p className="text-3xl font-bold">{data.paid_percentage ?? "—"}%</p>
+            <p className="text-3xl font-bold">
+              {formatPercentage(data.paid_percentage)}
+              {data.paid_percentage !== null && "%"}
+            </p>
+            <div
+              aria-label="Payment progress"
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={
+                data.paid_percentage === null
+                  ? undefined
+                  : Number(data.paid_percentage)
+              }
+              className="h-2 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+            >
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{
+                  width: `${Math.min(Math.max(Number(data.paid_percentage ?? 0), 0), 100)}%`,
+                }}
+              />
+            </div>
             <p className="text-sm text-muted-foreground">
               {data.paid_obligation_count} of {data.total_obligation_count}{" "}
               obligations paid
