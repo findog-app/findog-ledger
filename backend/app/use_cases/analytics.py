@@ -4,7 +4,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
 from sqlalchemy import select, tuple_
@@ -96,7 +96,14 @@ def _percentage(numerator: Decimal | int, denominator: Decimal | int) -> Decimal
         return None
     if numerator == 0:
         return Decimal("0")
-    return Decimal(numerator) * Decimal("100") / Decimal(denominator)
+    percentage = (Decimal(numerator) * Decimal("100") / Decimal(denominator)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    return (
+        percentage.quantize(Decimal("1"))
+        if percentage == percentage.to_integral()
+        else percentage
+    )
 
 
 HistoryPointState = Literal["missing", "unknown", "known"]
@@ -186,6 +193,99 @@ def get_category_amount_history(
         period = period.next()
 
     return CategoryAmountHistory(category_id=category.id, points=points)
+
+
+@dataclass(frozen=True, slots=True)
+class CurrencyPeriodTotal:
+    """Known obligation amount for one currency in a ledger period."""
+
+    currency: str | None
+    total_known_amount: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class ObligationPeriodTotal:
+    """A chart point which keeps unknown values and currencies explicit."""
+
+    period: BillingPeriod
+    total_obligation_count: int
+    unknown_amount_count: int
+    is_complete: bool
+    currency_summaries: list[CurrencyPeriodTotal]
+
+
+@dataclass(frozen=True, slots=True)
+class ObligationPeriodTotals:
+    """Continuous, currency-preserving totals for a ledger period range."""
+
+    points: list[ObligationPeriodTotal]
+
+
+def get_obligation_period_totals(
+    *,
+    session: Session,
+    ledger_id: uuid.UUID,
+    from_period: BillingPeriod,
+    to_period: BillingPeriod,
+) -> ObligationPeriodTotals:
+    """Return continuous totals without converting or combining currencies."""
+
+    if (from_period.year, from_period.month) > (to_period.year, to_period.month):
+        raise ValueError("from period must not be after to period")
+
+    obligations = list(
+        session.scalars(
+            select(Obligation).where(
+                Obligation.ledger_id == ledger_id,
+                Obligation.lifecycle != ObligationLifecycle.CANCELED,
+                tuple_(Obligation.period_year, Obligation.period_month).between(
+                    (from_period.year, from_period.month),
+                    (to_period.year, to_period.month),
+                ),
+            )
+        )
+    )
+    currencies = {item.currency for item in obligations}
+    obligations_by_period: defaultdict[tuple[int, int], list[Obligation]] = defaultdict(
+        list
+    )
+    for obligation in obligations:
+        obligations_by_period[(obligation.period_year, obligation.period_month)].append(
+            obligation
+        )
+
+    points: list[ObligationPeriodTotal] = []
+    period = from_period
+    while period != to_period.next():
+        period_obligations = obligations_by_period[(period.year, period.month)]
+        amounts_by_currency: defaultdict[str | None, Decimal] = defaultdict(
+            lambda: Decimal("0.00")
+        )
+        for obligation in period_obligations:
+            if obligation.current_amount is not None:
+                amounts_by_currency[obligation.currency] += obligation.current_amount
+        points.append(
+            ObligationPeriodTotal(
+                period=period,
+                total_obligation_count=len(period_obligations),
+                unknown_amount_count=sum(
+                    item.current_amount is None for item in period_obligations
+                ),
+                is_complete=all(
+                    item.current_amount is not None for item in period_obligations
+                ),
+                currency_summaries=[
+                    CurrencyPeriodTotal(
+                        currency=currency,
+                        total_known_amount=amounts_by_currency[currency],
+                    )
+                    for currency in sorted(currencies, key=lambda item: item or "")
+                ],
+            )
+        )
+        period = period.next()
+
+    return ObligationPeriodTotals(points=points)
 
 
 @dataclass(frozen=True, slots=True)

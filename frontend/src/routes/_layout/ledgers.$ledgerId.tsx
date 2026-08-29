@@ -67,6 +67,9 @@ function LedgerDetails() {
               </Button>
             )}
             <Button variant="outline" asChild>
+              <Link to="/">Dashboard</Link>
+            </Button>
+            <Button variant="outline" asChild>
               <Link to="/ledgers/$ledgerId/categories" params={{ ledgerId }}>
                 <Tags />
                 Categories

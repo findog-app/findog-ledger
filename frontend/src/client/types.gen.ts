@@ -202,6 +202,14 @@ export type CurrencyPaymentSummaryPublic = {
     paid_percentage: (string | null);
 };
 
+/**
+ * Known amounts are grouped by currency and are never converted or combined.
+ */
+export type CurrencyPeriodTotalPublic = {
+    currency: (string | null);
+    total_known_amount: string;
+};
+
 export type CurrentValueSource = 'unknown' | 'automatic' | 'manual' | 'integration' | 'legacy';
 
 export type DailyCashflowPublic = {
@@ -384,6 +392,21 @@ export type ObligationPeriodPublic = {
     month: number;
 };
 
+/**
+ * One continuous chart point; unknown amounts are not represented as zero.
+ */
+export type ObligationPeriodTotalPublic = {
+    period: ObligationPeriodPublic;
+    total_obligation_count: number;
+    unknown_amount_count: number;
+    is_complete: boolean;
+    currency_summaries: Array<CurrencyPeriodTotalPublic>;
+};
+
+export type ObligationPeriodTotalsPublic = {
+    points: Array<ObligationPeriodTotalPublic>;
+};
+
 export type ObligationPublic = {
     id: string;
     ledger_id: string;
@@ -512,6 +535,14 @@ export type AnalyticsReadCategoryAmountHistoryData = {
 };
 
 export type AnalyticsReadCategoryAmountHistoryResponse = (CategoryAmountHistoryPublic);
+
+export type AnalyticsReadObligationPeriodTotalsData = {
+    _from: string;
+    ledgerId: string;
+    to: string;
+};
+
+export type AnalyticsReadObligationPeriodTotalsResponse = (ObligationPeriodTotalsPublic);
 
 export type AnalyticsReadRemainingPeriodCashflowData = {
     ledgerId: string;

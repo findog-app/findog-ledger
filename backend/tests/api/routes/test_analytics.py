@@ -199,6 +199,32 @@ def test_period_summary_keeps_unknown_amounts_and_currencies_separate(
     ]
 
 
+def test_period_summary_rounds_percentages_to_two_decimal_places(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="rounded-percentages"
+    )
+    obligations = [
+        _create_obligation(db, ledger_id=ledger.id, code=code, amount=Decimal("10"))
+        for code in ("ONEE", "TWOO", "THRE")
+    ]
+    for obligation in obligations[:2]:
+        obligation_use_cases.mark_obligation_paid(
+            session=db,
+            ledger_id=ledger.id,
+            key=ObligationKey.parse(obligation.business_key),
+        )
+
+    response = client.get(_summary_url(ledger.id), headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["paid_percentage"] == "66.67"
+    assert response.json()["amount_summaries"][0]["paid_percentage"] == "66.67"
+
+
 def test_period_summary_excludes_canceled_obligations(
     client: TestClient, db: Session
 ) -> None:
@@ -391,6 +417,131 @@ def test_category_history_is_scoped_to_its_ledger_and_validates_ranges(
 
     assert wrong_ledger.status_code == 404
     assert invalid_range.status_code == 422
+
+
+def test_period_totals_are_continuous_currency_preserving_and_ledger_scoped(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="period-totals"
+    )
+    other_ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="other-period-totals"
+    )
+    pln = _create_history_category(
+        db, ledger_id=ledger.id, currency=Currency.PLN, code="PTPL"
+    )
+    eur = _create_history_category(
+        db, ledger_id=ledger.id, currency=Currency.EUR, code="PTEU"
+    )
+    _create_history_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=pln.code,
+        period=BillingPeriod(2025, 12),
+        amount=Decimal("10.00"),
+    )
+    _create_history_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=pln.code,
+        period=BillingPeriod(2026, 1),
+        amount=None,
+    )
+    _create_history_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=pln.code,
+        period=BillingPeriod(2026, 2),
+        amount=Decimal("15.00"),
+    )
+    _create_history_obligation(
+        db,
+        ledger_id=ledger.id,
+        category_code=eur.code,
+        period=BillingPeriod(2026, 2),
+        amount=Decimal("20.00"),
+    )
+    other_category = _create_history_category(
+        db, ledger_id=other_ledger.id, code="OTHR"
+    )
+    _create_history_obligation(
+        db,
+        ledger_id=other_ledger.id,
+        category_code=other_category.code,
+        period=BillingPeriod(2026, 2),
+        amount=Decimal("999.00"),
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/analytics/period-totals"
+        "?from=2025-12&to=2026-03",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["points"] == [
+        {
+            "period": {"year": 2025, "month": 12},
+            "total_obligation_count": 1,
+            "unknown_amount_count": 0,
+            "is_complete": True,
+            "currency_summaries": [
+                {"currency": "EUR", "total_known_amount": "0.00"},
+                {"currency": "PLN", "total_known_amount": "10.00"},
+            ],
+        },
+        {
+            "period": {"year": 2026, "month": 1},
+            "total_obligation_count": 1,
+            "unknown_amount_count": 1,
+            "is_complete": False,
+            "currency_summaries": [
+                {"currency": "EUR", "total_known_amount": "0.00"},
+                {"currency": "PLN", "total_known_amount": "0.00"},
+            ],
+        },
+        {
+            "period": {"year": 2026, "month": 2},
+            "total_obligation_count": 2,
+            "unknown_amount_count": 0,
+            "is_complete": True,
+            "currency_summaries": [
+                {"currency": "EUR", "total_known_amount": "20.00"},
+                {"currency": "PLN", "total_known_amount": "15.00"},
+            ],
+        },
+        {
+            "period": {"year": 2026, "month": 3},
+            "total_obligation_count": 0,
+            "unknown_amount_count": 0,
+            "is_complete": True,
+            "currency_summaries": [
+                {"currency": "EUR", "total_known_amount": "0.00"},
+                {"currency": "PLN", "total_known_amount": "0.00"},
+            ],
+        },
+    ]
+
+
+def test_period_totals_reject_an_inverted_range(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="period-totals-range"
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/analytics/period-totals"
+        "?from=2026-02&to=2026-01",
+        headers=headers,
+    )
+
+    assert response.status_code == 422
 
 
 def test_cashflow_separates_currencies_and_exposes_incomplete_unpaid_data(

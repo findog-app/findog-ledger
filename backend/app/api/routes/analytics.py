@@ -8,12 +8,15 @@ from app.domain import BillingPeriod
 from app.models import Ledger
 from app.schemas import (
     CategoryAmountHistoryPointPublic,
-    CurrencyCashflowPublic,
-    DailyCashflowPublic,
-    PeriodCashflowPublic,
     CategoryAmountHistoryPublic,
+    CurrencyCashflowPublic,
     CurrencyPaymentSummaryPublic,
+    CurrencyPeriodTotalPublic,
+    DailyCashflowPublic,
     ObligationPeriodPublic,
+    ObligationPeriodTotalPublic,
+    ObligationPeriodTotalsPublic,
+    PeriodCashflowPublic,
     PeriodPaymentSummaryPublic,
 )
 from app.use_cases import analytics as analytics_use_cases
@@ -100,6 +103,49 @@ def read_category_amount_history(
     )
 
 
+@router.get(
+    "/ledgers/{ledger_id}/analytics/period-totals",
+    response_model=ObligationPeriodTotalsPublic,
+)
+def read_obligation_period_totals(
+    *,
+    session: SessionDep,
+    from_: str = Query(alias="from", pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
+    to: str = Query(pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
+    ledger: Ledger = Depends(require_ledger_view_access),
+) -> Any:
+    try:
+        totals = analytics_use_cases.get_obligation_period_totals(
+            session=session,
+            ledger_id=ledger.id,
+            from_period=_parse_period(from_),
+            to_period=_parse_period(to),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return ObligationPeriodTotalsPublic(
+        points=[
+            ObligationPeriodTotalPublic(
+                period=ObligationPeriodPublic(
+                    year=point.period.year, month=point.period.month
+                ),
+                total_obligation_count=point.total_obligation_count,
+                unknown_amount_count=point.unknown_amount_count,
+                is_complete=point.is_complete,
+                currency_summaries=[
+                    CurrencyPeriodTotalPublic(
+                        currency=summary.currency,
+                        total_known_amount=summary.total_known_amount,
+                    )
+                    for summary in point.currency_summaries
+                ],
+            )
+            for point in totals.points
+        ]
+    )
+
+
 def _parse_period(value: str) -> BillingPeriod:
     year, month = value.split("-")
     return BillingPeriod(year=int(year), month=int(month))
@@ -146,4 +192,3 @@ def read_remaining_period_cashflow(
             for summary in cashflow.currency_summaries
         ],
     )
-

@@ -98,6 +98,14 @@ function currentPeriod() {
   return { year: now.getFullYear(), month: now.getMonth() + 1 }
 }
 
+function periodFromSearch() {
+  if (typeof window === "undefined") return currentPeriod()
+  const params = new URLSearchParams(window.location.search)
+  const year = Number(params.get("year"))
+  const month = Number(params.get("month"))
+  return isValidPeriod(year, month) ? { year, month } : currentPeriod()
+}
+
 function dueDateRange(year: number, month: number) {
   const minimum = new Date(Date.UTC(year, month - 1, 1))
   const maximum = new Date(Date.UTC(year, month, 0))
@@ -181,7 +189,7 @@ export function ObligationWorkspace({
   ledgerId: string
   canManageComponents: boolean
 }) {
-  const period = currentPeriod()
+  const period = periodFromSearch()
   const [year, setYear] = useState(String(period.year))
   const [month, setMonth] = useState(String(period.month))
   const [filterByPeriod, setFilterByPeriod] = useState(true)

@@ -1001,6 +1001,31 @@ export const CurrencyPaymentSummaryPublicSchema = {
     description: 'Amounts are grouped by currency and are never converted or combined.'
 } as const;
 
+export const CurrencyPeriodTotalPublicSchema = {
+    properties: {
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        total_known_amount: {
+            type: 'string',
+            pattern: '^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$',
+            title: 'Total Known Amount'
+        }
+    },
+    type: 'object',
+    required: ['currency', 'total_known_amount'],
+    title: 'CurrencyPeriodTotalPublic',
+    description: 'Known amounts are grouped by currency and are never converted or combined.'
+} as const;
+
 export const CurrentValueSourceSchema = {
     type: 'string',
     enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy'],
@@ -1948,6 +1973,52 @@ export const ObligationPeriodPublicSchema = {
     type: 'object',
     required: ['year', 'month'],
     title: 'ObligationPeriodPublic'
+} as const;
+
+export const ObligationPeriodTotalPublicSchema = {
+    properties: {
+        period: {
+            '$ref': '#/components/schemas/ObligationPeriodPublic'
+        },
+        total_obligation_count: {
+            type: 'integer',
+            title: 'Total Obligation Count'
+        },
+        unknown_amount_count: {
+            type: 'integer',
+            title: 'Unknown Amount Count'
+        },
+        is_complete: {
+            type: 'boolean',
+            title: 'Is Complete'
+        },
+        currency_summaries: {
+            items: {
+                '$ref': '#/components/schemas/CurrencyPeriodTotalPublic'
+            },
+            type: 'array',
+            title: 'Currency Summaries'
+        }
+    },
+    type: 'object',
+    required: ['period', 'total_obligation_count', 'unknown_amount_count', 'is_complete', 'currency_summaries'],
+    title: 'ObligationPeriodTotalPublic',
+    description: 'One continuous chart point; unknown amounts are not represented as zero.'
+} as const;
+
+export const ObligationPeriodTotalsPublicSchema = {
+    properties: {
+        points: {
+            items: {
+                '$ref': '#/components/schemas/ObligationPeriodTotalPublic'
+            },
+            type: 'array',
+            title: 'Points'
+        }
+    },
+    type: 'object',
+    required: ['points'],
+    title: 'ObligationPeriodTotalsPublic'
 } as const;
 
 export const ObligationPublicSchema = {
