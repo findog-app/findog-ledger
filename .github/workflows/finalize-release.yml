@@ -92,6 +92,10 @@ jobs:
           assert not unexpected, f"Unexpected non-integration paths: {unexpected}"
           PY
 
+      - name: Validate integration OpenAPI client generation
+        run: uv run bash scripts/validate_integration_openapi_client.sh
+        working-directory: backend
+
       - name: Create and push release tag
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}

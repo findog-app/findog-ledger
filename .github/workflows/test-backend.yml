@@ -69,6 +69,9 @@ jobs:
           unexpected = [path for path in paths if not path.startswith("/api/v1/integration")]
           assert not unexpected, f"Unexpected non-integration paths: {unexpected}"
           PY
+      - name: Validate integration OpenAPI client generation
+        run: uv run bash scripts/validate_integration_openapi_client.sh
+        working-directory: backend
       - run: docker compose down -v --remove-orphans
       - name: Store coverage files
         uses: actions/upload-artifact@v7
