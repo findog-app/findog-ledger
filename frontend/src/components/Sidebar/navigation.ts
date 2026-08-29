@@ -1,4 +1,4 @@
-import { BarChart3, Home, ListChecks, Tags } from "lucide-react"
+import { Home, ListChecks, Tags } from "lucide-react"
 
 import type { Item } from "./Main"
 
@@ -16,11 +16,6 @@ export function primaryNavigation(ledgerId: string | null): Item[] {
             icon: Tags,
             title: "Categories",
             path: `/ledgers/${ledgerId}/categories`,
-          },
-          {
-            icon: BarChart3,
-            title: "Analytics",
-            path: `/ledgers/${ledgerId}/analytics`,
           },
         ]
       : []),

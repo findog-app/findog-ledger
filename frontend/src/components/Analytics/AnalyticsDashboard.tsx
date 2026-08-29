@@ -132,9 +132,9 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <BarChart3 className="size-5 text-primary" />
-            <Badge variant="outline">Analytics</Badge>
+            <Badge variant="outline">Dashboard</Badge>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-muted-foreground">
             Review payment progress, upcoming cashflow, and period totals.
           </p>
@@ -167,18 +167,11 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
         </Alert>
       )}
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2">
         <PaymentProgressCard
           data={summary.data}
           isError={summary.isError}
           isLoading={summary.isLoading}
-          ledgerId={ledgerId}
-          period={selectedPeriod}
-        />
-        <CashflowCard
-          data={cashflow.data}
-          isError={cashflow.isError}
-          isLoading={cashflow.isLoading}
           ledgerId={ledgerId}
           period={selectedPeriod}
         />
@@ -199,6 +192,14 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
           </CardContent>
         </Card>
       </section>
+
+      <CashflowChart
+        data={cashflow.data}
+        isError={cashflow.isError}
+        isLoading={cashflow.isLoading}
+        ledgerId={ledgerId}
+        period={selectedPeriod}
+      />
 
       <PeriodTotalsCard
         data={totals.data}
@@ -284,7 +285,7 @@ function PaymentProgressCard({
   )
 }
 
-function CashflowCard({
+function CashflowChart({
   data,
   isError,
   isLoading,
@@ -304,12 +305,13 @@ function CashflowCard({
       <CardHeader>
         <CardTitle>Remaining cashflow</CardTitle>
         <CardDescription>
-          Unpaid obligations in {periodLabel(period)}
+          Cumulative scheduled unpaid amounts in {periodLabel(period)}. Each
+          currency is shown separately.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? (
-          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-72 w-full" />
         ) : isError || !data ? (
           <QueryState message="Cashflow could not be loaded." />
         ) : data.currency_summaries.length === 0 ? (
@@ -325,36 +327,156 @@ function CashflowCard({
             )}
           </>
         ) : (
-          <>
+          <div className="grid gap-6 lg:grid-cols-2">
             {data.currency_summaries.map((summary) => (
-              <div
-                className="flex items-baseline justify-between gap-3"
+              <CashflowCurrencyChart
                 key={summary.currency}
-              >
-                <span className="text-sm text-muted-foreground">
-                  {summary.currency ?? "No currency"}
-                </span>
-                <strong>
-                  {formatAmount(summary.total_known_amount, summary.currency)}
-                </strong>
-              </div>
+                ledgerId={ledgerId}
+                period={period}
+                summary={summary}
+              />
             ))}
             {!data.is_complete && (
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+              <p className="text-sm text-amber-700 dark:text-amber-300 lg:col-span-2">
                 {data.unknown_amount_count} unknown and{" "}
                 {data.without_due_date_count} unscheduled
               </p>
             )}
-            <Button className="w-full" variant="outline" size="sm" asChild>
+            <Button
+              className="w-full lg:col-span-2"
+              variant="outline"
+              size="sm"
+              asChild
+            >
               <a href={obligationsHref(ledgerId, period)}>
                 Review unpaid obligations
                 <ArrowRight />
               </a>
             </Button>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+function CashflowCurrencyChart({
+  ledgerId,
+  period,
+  summary,
+}: {
+  ledgerId: string
+  period: Period
+  summary: Awaited<
+    ReturnType<typeof AnalyticsService.readRemainingPeriodCashflow>
+  >["currency_summaries"][number]
+}) {
+  const maximum = Math.max(
+    ...summary.daily.map((point) => Number(point.cumulative_amount)),
+    1,
+  )
+  const points = summary.daily
+    .map((point, index) => {
+      const x =
+        summary.daily.length === 1
+          ? 50
+          : (index / (summary.daily.length - 1)) * 100
+      const y = 100 - (Number(point.cumulative_amount) / maximum) * 100
+      return `${x},${y}`
+    })
+    .join(" ")
+
+  return (
+    <section className="rounded-lg border p-4">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <h3 className="font-semibold">{summary.currency ?? "No currency"}</h3>
+        <strong>
+          {formatAmount(summary.total_known_amount, summary.currency)}
+        </strong>
+      </div>
+      <div className="grid grid-cols-3 gap-3 text-sm">
+        <div>
+          <p className="text-muted-foreground">Scheduled</p>
+          <p className="font-medium">
+            {formatAmount(summary.scheduled_known_amount, summary.currency)}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Unscheduled</p>
+          <p className="font-medium">
+            {formatAmount(summary.unscheduled_known_amount, summary.currency)}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Overdue</p>
+          <p className="font-medium text-destructive">
+            {formatAmount(summary.overdue_known_amount, summary.currency)}
+          </p>
+        </div>
+      </div>
+      {summary.daily.length === 0 ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          No scheduled payments in this period.
+        </p>
+      ) : (
+        <div className="mt-6">
+          <svg
+            aria-label={`Cumulative cashflow for ${summary.currency ?? "no currency"}`}
+            className="h-52 w-full overflow-visible"
+            preserveAspectRatio="none"
+            role="img"
+            viewBox="0 0 100 100"
+          >
+            <line
+              className="stroke-border"
+              strokeWidth="0.5"
+              x1="0"
+              x2="100"
+              y1="100"
+              y2="100"
+            />
+            <polyline
+              className="fill-none stroke-primary"
+              points={points}
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
+            {summary.daily.map((point, index) => {
+              const x =
+                summary.daily.length === 1
+                  ? 50
+                  : (index / (summary.daily.length - 1)) * 100
+              const y = 100 - (Number(point.cumulative_amount) / maximum) * 100
+              return (
+                <circle
+                  className={
+                    point.is_overdue ? "fill-destructive" : "fill-primary"
+                  }
+                  cx={x}
+                  cy={y}
+                  key={point.due_date}
+                  r="2.5"
+                >
+                  <title>
+                    {point.due_date}:{" "}
+                    {formatAmount(point.cumulative_amount, summary.currency)}
+                  </title>
+                </circle>
+              )
+            })}
+          </svg>
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+            <span>{summary.daily[0]?.due_date}</span>
+            <span>{summary.daily[summary.daily.length - 1]?.due_date}</span>
+          </div>
+        </div>
+      )}
+      <Button className="mt-4 w-full" size="sm" variant="ghost" asChild>
+        <a href={obligationsHref(ledgerId, period)}>
+          View contributing obligations
+        </a>
+      </Button>
+    </section>
   )
 }
 
