@@ -19,6 +19,7 @@ from app.domain.system_run import (
     SystemRunSkipReason,
     SystemRunStatus,
     SystemRunStepStatus,
+    SystemRunTrigger,
     TaskRunMode,
 )
 
@@ -43,6 +44,7 @@ __all__ = [
     "SystemRunSkipReason",
     "SystemRunStatus",
     "SystemRunStepStatus",
+    "SystemRunTrigger",
     "TaskRunMode",
     "ValueState",
 ]

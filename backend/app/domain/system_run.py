@@ -7,6 +7,11 @@ class TaskRunMode(StrEnum):
     SCHEDULED = "scheduled"
 
 
+class SystemRunTrigger(StrEnum):
+    SCHEDULED = "scheduled"
+    MANUAL = "manual"
+
+
 class SystemRunStatus(StrEnum):
     RUNNING = "running"
     SUCCESS = "success"
