@@ -9,6 +9,7 @@ from app.models.category import (
 from app.models.ledger import Ledger, LedgerMembership
 from app.models.legacy_import_job import LegacyImportJob
 from app.models.obligation import Obligation, ObligationComponent
+from app.models.system_run import SystemRun, SystemRunStep
 from app.models.user import User
 
 __all__ = [
@@ -23,5 +24,7 @@ __all__ = [
     "LegacyImportJob",
     "Obligation",
     "ObligationComponent",
+    "SystemRun",
+    "SystemRunStep",
     "User",
 ]

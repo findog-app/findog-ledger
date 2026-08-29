@@ -14,6 +14,8 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.domain.system_run import TaskRunMode
+
 
 def parse_cors(v: Any) -> list[str] | str:
     if isinstance(v, str) and not v.startswith("["):
@@ -98,6 +100,7 @@ class Settings(BaseSettings):
 
     DROPBOX_API_KEY: str | None = None
     LEGACY_IMPORT_CONFIG_PATH: Path = Path("config/legacy-import.yaml")
+    LEGACY_IMPORT_MODE: TaskRunMode = TaskRunMode.DISABLED
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
