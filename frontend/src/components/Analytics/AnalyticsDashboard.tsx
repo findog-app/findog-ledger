@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { AlertCircle, ArrowRight, BarChart3, CircleAlert } from "lucide-react"
-import { useMemo, useState } from "react"
+import { AlertCircle, ArrowRight, BarChart3 } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 
-import { AnalyticsService } from "@/client"
+import { AnalyticsService, CategoriesService } from "@/client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type Period = { year: number; month: number }
@@ -28,33 +34,20 @@ function periodValue({ year, month }: Period) {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`
 }
 
-function parsePeriod(value: string): Period | null {
-  const [year, month] = value.split("-").map(Number)
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    month < 1 ||
-    month > 12
-  ) {
-    return null
-  }
-  return { year, month }
-}
-
 function addMonths(period: Period, offset: number): Period {
   const monthIndex = period.year * 12 + period.month - 1 + offset
   return { year: Math.floor(monthIndex / 12), month: (monthIndex % 12) + 1 }
 }
 
 function periodLabel(period: Period) {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("en-GB", {
     month: "short",
     year: "numeric",
   }).format(new Date(period.year, period.month - 1, 1))
 }
 
 function formatAmount(amount: string, currency: string | null) {
-  return `${Number(amount).toLocaleString(undefined, {
+  return `${Number(amount).toLocaleString("en-GB", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}${currency ? ` ${currency}` : ""}`
@@ -62,7 +55,7 @@ function formatAmount(amount: string, currency: string | null) {
 
 function formatPercentage(value: string | null) {
   if (value === null) return "—"
-  return Number(value).toLocaleString(undefined, {
+  return Number(value).toLocaleString("en-GB", {
     maximumFractionDigits: 0,
   })
 }
@@ -83,6 +76,14 @@ function QueryState({ message }: { message: string }) {
 
 export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>()
+  const selectablePeriods = useMemo(
+    () =>
+      Array.from({ length: 25 }, (_, index) =>
+        addMonths(currentPeriod(), index - 12),
+      ),
+    [],
+  )
   const rangeStart = useMemo(
     () => addMonths(selectedPeriod, -5),
     [selectedPeriod],
@@ -120,11 +121,41 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
       }),
     queryKey: ["analytics", "cashflow", ledgerId, selectedPeriod],
   })
+  const categories = useQuery({
+    queryFn: () => CategoriesService.readCategories({ ledgerId }),
+    queryKey: ["categories", ledgerId],
+  })
 
-  const incomplete =
-    (summary.data !== undefined && !summary.data.is_complete) ||
-    (cashflow.data !== undefined && !cashflow.data.is_complete) ||
-    totals.data?.points.some((point) => !point.is_complete) === true
+  useEffect(() => {
+    const availableCategories = categories.data?.data
+    if (!availableCategories?.length) return
+    if (
+      !availableCategories.some(
+        (category) => category.id === selectedCategoryId,
+      )
+    ) {
+      setSelectedCategoryId(availableCategories[0].id)
+    }
+  }, [categories.data, selectedCategoryId])
+
+  const categoryHistory = useQuery({
+    queryFn: () =>
+      AnalyticsService.readCategoryAmountHistory({
+        ledgerId,
+        categoryId: selectedCategoryId!,
+        _from: periodValue(rangeStart),
+        to: periodValue(selectedPeriod),
+      }),
+    queryKey: [
+      "analytics",
+      "category-history",
+      ledgerId,
+      selectedCategoryId,
+      rangeStart,
+      selectedPeriod,
+    ],
+    enabled: Boolean(selectedCategoryId),
+  })
 
   return (
     <div className="space-y-6">
@@ -136,38 +167,45 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-muted-foreground">
-            Review payment progress, upcoming cashflow, and period totals.
+            Review payment progress, the payment schedule, and period totals.
           </p>
+          <Link
+            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            to="/ledgers/$ledgerId/categories"
+            params={{ ledgerId }}
+          >
+            Explore category history <ArrowRight className="size-4" />
+          </Link>
         </div>
-        <label
-          htmlFor="analytics-period"
-          className="grid gap-1 text-sm font-medium"
-        >
+        <div className="grid gap-1 text-sm font-medium">
           Selected period
-          <Input
-            id="analytics-period"
-            type="month"
+          <Select
             value={periodValue(selectedPeriod)}
-            onChange={(event) => {
-              const period = parsePeriod(event.target.value)
+            onValueChange={(value) => {
+              const period = selectablePeriods.find(
+                (item) => periodValue(item) === value,
+              )
               if (period) setSelectedPeriod(period)
             }}
-          />
-        </label>
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {selectablePeriods.map((period) => (
+                <SelectItem
+                  key={periodValue(period)}
+                  value={periodValue(period)}
+                >
+                  {periodLabel(period)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {incomplete && (
-        <Alert>
-          <CircleAlert />
-          <AlertTitle>Some amounts are still unknown</AlertTitle>
-          <AlertDescription>
-            Totals only include confirmed known amounts. Check the incomplete
-            indicators before treating a value as final.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <PaymentProgressCard
           data={summary.data}
           isError={summary.isError}
@@ -175,22 +213,11 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
           ledgerId={ledgerId}
           period={selectedPeriod}
         />
-        <Card>
-          <CardHeader>
-            <CardTitle>Explore categories</CardTitle>
-            <CardDescription>
-              Open a category to view its historical amount trend.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full" variant="outline" asChild>
-              <Link to="/ledgers/$ledgerId/categories" params={{ ledgerId }}>
-                View category history
-                <ArrowRight />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <CashflowOverviewCards
+          data={cashflow.data}
+          isError={cashflow.isError}
+          isLoading={cashflow.isLoading}
+        />
       </section>
 
       <CashflowChart
@@ -206,6 +233,17 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
         isError={totals.isError}
         isLoading={totals.isLoading}
         ledgerId={ledgerId}
+      />
+
+      <CategoryHistoryCard
+        categories={categories.data}
+        categoriesError={categories.isError}
+        categoriesLoading={categories.isLoading}
+        data={categoryHistory.data}
+        isError={categoryHistory.isError}
+        isLoading={categoryHistory.isLoading}
+        selectedCategoryId={selectedCategoryId}
+        setSelectedCategoryId={setSelectedCategoryId}
       />
     </div>
   )
@@ -227,19 +265,19 @@ function PaymentProgressCard({
   period: Period
 }) {
   return (
-    <Card>
-      <CardHeader>
+    <Card className="gap-3 py-4">
+      <CardHeader className="gap-1">
         <CardTitle>Payment progress</CardTitle>
         <CardDescription>{periodLabel(period)}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2">
         {isLoading ? (
           <Skeleton className="h-16 w-full" />
         ) : isError || !data ? (
           <QueryState message="Payment progress could not be loaded." />
         ) : (
           <>
-            <p className="text-3xl font-bold">
+            <p className="text-[28px] font-bold">
               {formatPercentage(data.paid_percentage)}
               {data.paid_percentage !== null && "%"}
             </p>
@@ -272,7 +310,7 @@ function PaymentProgressCard({
                 {data.unknown_amount_count === 1 ? "" : "s"} unknown
               </p>
             )}
-            <Button className="w-full" variant="outline" size="sm" asChild>
+            <Button className="mt-2 px-0" variant="link" size="sm" asChild>
               <a href={obligationsHref(ledgerId, period)}>
                 View obligations
                 <ArrowRight />
@@ -280,6 +318,135 @@ function PaymentProgressCard({
             </Button>
           </>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function CashflowOverviewCards({
+  data,
+  isError,
+  isLoading,
+}: {
+  data:
+    | Awaited<ReturnType<typeof AnalyticsService.readRemainingPeriodCashflow>>
+    | undefined
+  isError: boolean
+  isLoading: boolean
+}) {
+  if (isLoading) {
+    return Array.from({ length: 3 }, (_, index) => (
+      <Card className="gap-3 py-4" key={index}>
+        <CardHeader className="gap-1">
+          <Skeleton className="h-5 w-28" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-8 w-full" />
+        </CardContent>
+      </Card>
+    ))
+  }
+
+  if (isError || !data) {
+    return (
+      <Card className="gap-3 py-4 sm:col-span-2 xl:col-span-3">
+        <CardContent className="pt-6">
+          <QueryState message="Payment schedule could not be loaded." />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const nextDueDate = data.currency_summaries
+    .flatMap((summary) => summary.daily)
+    .filter((point) => !point.is_overdue)
+    .sort((a, b) => a.due_date.localeCompare(b.due_date))[0]?.due_date
+
+  return (
+    <>
+      <CashflowMetricCard
+        label="Remaining to pay"
+        values={data.currency_summaries.map((summary) => ({
+          amount: summary.total_known_amount,
+          currency: summary.currency,
+        }))}
+        emptyLabel="0"
+        emptyDescription="No known unpaid amounts"
+      />
+      <CashflowMetricCard
+        label="Overdue"
+        values={data.currency_summaries
+          .filter((summary) => Number(summary.overdue_known_amount) > 0)
+          .map((summary) => ({
+            amount: summary.overdue_known_amount,
+            currency: summary.currency,
+          }))}
+        emptyLabel="0"
+        emptyDescription="No overdue obligations"
+        tone={
+          data.currency_summaries.some(
+            (summary) => Number(summary.overdue_known_amount) > 0,
+          )
+            ? "destructive"
+            : undefined
+        }
+      />
+      <Card className="gap-3 py-4">
+        <CardHeader className="gap-1">
+          <CardDescription>Next payment due</CardDescription>
+          <CardTitle className="text-[28px] font-bold">
+            {nextDueDate ? formatDueDate(nextDueDate) : "0"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            {nextDueDate
+              ? "Earliest upcoming unpaid obligation."
+              : "No scheduled payment"}
+          </p>
+        </CardContent>
+      </Card>
+    </>
+  )
+}
+
+function CashflowMetricCard({
+  label,
+  values,
+  emptyLabel,
+  emptyDescription,
+  tone,
+}: {
+  label: string
+  values: { amount: string; currency: string | null }[]
+  emptyLabel: string
+  emptyDescription?: string
+  tone?: "destructive"
+}) {
+  return (
+    <Card className="gap-3 py-4">
+      <CardHeader className="gap-1">
+        <CardDescription>{label}</CardDescription>
+        <CardTitle
+          className={`text-[28px] font-bold ${tone === "destructive" && values.length > 0 ? "text-destructive" : ""}`}
+        >
+          {values.length === 0
+            ? emptyLabel
+            : values.map((value) => (
+                <span className="block" key={value.currency ?? "none"}>
+                  {formatAmount(value.amount, value.currency)}
+                </span>
+              ))}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {values.length > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {values.length} currenc{values.length === 1 ? "y" : "ies"}
+          </p>
+        ) : emptyDescription ? (
+          <p className="text-sm text-muted-foreground">{emptyDescription}</p>
+        ) : null}
       </CardContent>
     </Card>
   )
@@ -301,53 +468,44 @@ function CashflowChart({
   period: Period
 }) {
   return (
-    <Card>
+    <Card className="gap-4 py-5">
       <CardHeader>
-        <CardTitle>Remaining cashflow</CardTitle>
+        <CardTitle>Payment schedule</CardTitle>
         <CardDescription>
-          Cumulative scheduled unpaid amounts in {periodLabel(period)}. Each
+          Unpaid amounts grouped by due date in {periodLabel(period)}. Each
           currency is shown separately.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {isLoading ? (
           <Skeleton className="h-72 w-full" />
         ) : isError || !data ? (
           <QueryState message="Cashflow could not be loaded." />
         ) : data.currency_summaries.length === 0 ? (
-          <>
+          <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               No unpaid known amounts.
             </p>
-            {!data.is_complete && (
-              <p className="text-sm text-amber-700 dark:text-amber-300">
-                {data.unknown_amount_count} amount
-                {data.unknown_amount_count === 1 ? " is" : "s are"} unknown.
-              </p>
-            )}
-          </>
+            <ScheduleCompletenessStatus data={data} />
+          </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-2">
-            {data.currency_summaries.map((summary) => (
-              <CashflowCurrencyChart
-                key={summary.currency}
-                ledgerId={ledgerId}
-                period={period}
-                summary={summary}
-              />
-            ))}
-            {!data.is_complete && (
-              <p className="text-sm text-amber-700 dark:text-amber-300 lg:col-span-2">
-                {data.unknown_amount_count} unknown and{" "}
-                {data.without_due_date_count} unscheduled
-              </p>
-            )}
-            <Button
-              className="w-full lg:col-span-2"
-              variant="outline"
-              size="sm"
-              asChild
-            >
+          <div className="space-y-6">
+            <ScheduleCompletenessStatus data={data} />
+            <div className="grid gap-8 xl:grid-cols-2">
+              {data.currency_summaries.map((summary) => (
+                <div
+                  className={
+                    data.currency_summaries.length === 1
+                      ? "xl:col-span-2"
+                      : undefined
+                  }
+                  key={summary.currency}
+                >
+                  <CashflowCurrencyChart summary={summary} />
+                </div>
+              ))}
+            </div>
+            <Button className="px-0" variant="link" size="sm" asChild>
               <a href={obligationsHref(ledgerId, period)}>
                 Review unpaid obligations
                 <ArrowRight />
@@ -360,34 +518,56 @@ function CashflowChart({
   )
 }
 
+function ScheduleCompletenessStatus({
+  data,
+}: {
+  data: Awaited<ReturnType<typeof AnalyticsService.readRemainingPeriodCashflow>>
+}) {
+  if (data.is_complete) return null
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {data.unknown_amount_count > 0 && (
+        <Badge
+          variant="outline"
+          className="border-amber-500 text-amber-700 dark:text-amber-300"
+        >
+          {data.unknown_amount_count} amount
+          {data.unknown_amount_count === 1 ? "" : "s"} unknown
+        </Badge>
+      )}
+      {data.without_due_date_count > 0 && (
+        <Badge
+          variant="outline"
+          className="border-amber-500 text-amber-700 dark:text-amber-300"
+        >
+          {data.without_due_date_count} obligation
+          {data.without_due_date_count === 1 ? "" : "s"} without a due date
+        </Badge>
+      )}
+    </div>
+  )
+}
+
 function CashflowCurrencyChart({
-  ledgerId,
-  period,
   summary,
 }: {
-  ledgerId: string
-  period: Period
   summary: Awaited<
     ReturnType<typeof AnalyticsService.readRemainingPeriodCashflow>
   >["currency_summaries"][number]
 }) {
-  const maximum = Math.max(
-    ...summary.daily.map((point) => Number(point.cumulative_amount)),
-    1,
+  const maximum = chartMaximum(
+    summary.daily.map((point) => Number(point.amount)),
   )
-  const points = summary.daily
-    .map((point, index) => {
-      const x =
-        summary.daily.length === 1
-          ? 50
-          : (index / (summary.daily.length - 1)) * 100
-      const y = 100 - (Number(point.cumulative_amount) / maximum) * 100
-      return `${x},${y}`
-    })
-    .join(" ")
+  const chartHeight = 72
+  const chartBottom = 84
+  const chartLeft = 90
+  const chartWidth = 380
+  const tickValues = [maximum, maximum / 2, 0]
+  const labelEvery = Math.max(1, Math.ceil(summary.daily.length / 5))
 
   return (
-    <section className="rounded-lg border p-4">
+    <section>
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <h3 className="font-semibold">{summary.currency ?? "No currency"}</h3>
         <strong>
@@ -409,8 +589,16 @@ function CashflowCurrencyChart({
         </div>
         <div>
           <p className="text-muted-foreground">Overdue</p>
-          <p className="font-medium text-destructive">
-            {formatAmount(summary.overdue_known_amount, summary.currency)}
+          <p className="font-medium">
+            <span
+              className={
+                Number(summary.overdue_known_amount) > 0
+                  ? "text-destructive"
+                  : "text-muted-foreground"
+              }
+            >
+              {formatAmount(summary.overdue_known_amount, summary.currency)}
+            </span>
           </p>
         </div>
       </div>
@@ -419,65 +607,260 @@ function CashflowCurrencyChart({
           No scheduled payments in this period.
         </p>
       ) : (
-        <div className="mt-6">
+        <div className="mt-4 overflow-x-auto">
           <svg
-            aria-label={`Cumulative cashflow for ${summary.currency ?? "no currency"}`}
-            className="h-52 w-full overflow-visible"
-            preserveAspectRatio="none"
+            aria-label={`Scheduled payments for ${summary.currency ?? "no currency"}`}
+            className="h-56 min-w-150 w-full"
+            preserveAspectRatio="xMidYMid meet"
             role="img"
-            viewBox="0 0 100 100"
+            viewBox="0 0 500 100"
           >
-            <line
-              className="stroke-border"
-              strokeWidth="0.5"
-              x1="0"
-              x2="100"
-              y1="100"
-              y2="100"
-            />
-            <polyline
-              className="fill-none stroke-primary"
-              points={points}
-              strokeWidth="2"
-              vectorEffect="non-scaling-stroke"
-            />
-            {summary.daily.map((point, index) => {
-              const x =
-                summary.daily.length === 1
-                  ? 50
-                  : (index / (summary.daily.length - 1)) * 100
-              const y = 100 - (Number(point.cumulative_amount) / maximum) * 100
+            <title>Scheduled unpaid amounts by due date</title>
+            <desc>
+              Bars show the amount due on each date. Hover a bar for its daily
+              and cumulative amounts.
+            </desc>
+            {tickValues.map((value, index) => {
+              const y = 12 + (index * chartHeight) / (tickValues.length - 1)
               return (
-                <circle
-                  className={
-                    point.is_overdue ? "fill-destructive" : "fill-primary"
-                  }
-                  cx={x}
-                  cy={y}
-                  key={point.due_date}
-                  r="2.5"
-                >
-                  <title>
-                    {point.due_date}:{" "}
-                    {formatAmount(point.cumulative_amount, summary.currency)}
-                  </title>
-                </circle>
+                <g key={value}>
+                  <line
+                    className="stroke-border"
+                    strokeDasharray={
+                      index === tickValues.length - 1 ? undefined : "2 2"
+                    }
+                    strokeWidth="0.5"
+                    x1={chartLeft}
+                    x2={chartLeft + chartWidth}
+                    y1={y}
+                    y2={y}
+                  />
+                  <text
+                    className="fill-muted-foreground"
+                    fontSize="6"
+                    textAnchor="end"
+                    x={chartLeft - 2}
+                    y={y + 1.5}
+                  >
+                    {formatCompactAmount(value, summary.currency)}
+                  </text>
+                </g>
+              )
+            })}
+            {summary.daily.map((point, index) => {
+              const slotWidth = chartWidth / summary.daily.length
+              const barWidth = Math.min(slotWidth * 0.62, 8)
+              const x =
+                chartLeft + slotWidth * index + (slotWidth - barWidth) / 2
+              const height = (Number(point.amount) / maximum) * chartHeight
+              const y = chartBottom - height
+              const showLabel =
+                index % labelEvery === 0 || index === summary.daily.length - 1
+              return (
+                <g key={point.due_date}>
+                  <rect
+                    className={
+                      point.is_overdue ? "fill-destructive" : "fill-primary"
+                    }
+                    height={height}
+                    rx="1"
+                    width={barWidth}
+                    x={x}
+                    y={y}
+                  >
+                    <title>
+                      {formatDueDate(point.due_date)}:{" "}
+                      {formatAmount(point.amount, summary.currency)} due;{" "}
+                      {formatAmount(point.cumulative_amount, summary.currency)}{" "}
+                      cumulative
+                    </title>
+                  </rect>
+                  {showLabel && (
+                    <text
+                      className="fill-muted-foreground"
+                      fontSize="6"
+                      textAnchor="middle"
+                      x={x + barWidth / 2}
+                      y="94"
+                    >
+                      {formatShortDueDate(point.due_date)}
+                    </text>
+                  )}
+                </g>
               )
             })}
           </svg>
-          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-            <span>{summary.daily[0]?.due_date}</span>
-            <span>{summary.daily[summary.daily.length - 1]?.due_date}</span>
-          </div>
         </div>
       )}
-      <Button className="mt-4 w-full" size="sm" variant="ghost" asChild>
-        <a href={obligationsHref(ledgerId, period)}>
-          View contributing obligations
-        </a>
-      </Button>
     </section>
   )
+}
+
+function formatDueDate(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`))
+}
+
+function formatShortDueDate(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${value}T00:00:00`))
+}
+
+function formatCompactAmount(amount: number, currency: string | null) {
+  return `${amount.toLocaleString("en-GB", {
+    maximumFractionDigits: 0,
+    notation: "compact",
+  })}${currency ? ` ${currency}` : ""}`
+}
+
+function CategoryHistoryCard({
+  categories,
+  categoriesError,
+  categoriesLoading,
+  data,
+  isError,
+  isLoading,
+  selectedCategoryId,
+  setSelectedCategoryId,
+}: {
+  categories:
+    | Awaited<ReturnType<typeof CategoriesService.readCategories>>
+    | undefined
+  categoriesError: boolean
+  categoriesLoading: boolean
+  data:
+    | Awaited<ReturnType<typeof AnalyticsService.readCategoryAmountHistory>>
+    | undefined
+  isError: boolean
+  isLoading: boolean
+  selectedCategoryId: string | undefined
+  setSelectedCategoryId: (categoryId: string) => void
+}) {
+  const knownPoints =
+    data?.points.filter((point) => point.state === "known") ?? []
+  const amounts =
+    data?.points.map((point) =>
+      point.state === "known" ? Number(point.current_amount) : 0,
+    ) ?? []
+  const maximum = Math.max(...amounts, 1)
+  const currency = knownPoints[0]?.currency ?? null
+
+  return (
+    <Card>
+      <CardHeader className="gap-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Category amount history</CardTitle>
+          <CardDescription>
+            Last six periods. Missing and unknown amounts remain explicit.
+          </CardDescription>
+        </div>
+        {categoriesLoading ? (
+          <Skeleton className="h-9 w-48" />
+        ) : categoriesError || !categories ? null : categories.data.length ===
+          0 ? null : (
+          <Select
+            value={selectedCategoryId}
+            onValueChange={setSelectedCategoryId}
+          >
+            <SelectTrigger aria-label="Select category" className="w-56">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.data.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </CardHeader>
+      <CardContent>
+        {categoriesLoading || (selectedCategoryId && isLoading) ? (
+          <Skeleton className="h-56 w-full" />
+        ) : categoriesError || !categories ? (
+          <QueryState message="Categories could not be loaded." />
+        ) : categories.data.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Create a category to view its amount history.
+          </p>
+        ) : isError || !data ? (
+          <QueryState message="Category history could not be loaded." />
+        ) : (
+          <div className="min-w-150 overflow-x-auto pb-2">
+            <div className="flex h-56 items-end gap-3 border-b border-l px-3 pt-4">
+              {data.points.map((point, index) => {
+                const amount = amounts[index]
+                const value = amount ?? 0
+                const stateLabel =
+                  point.state === "unknown"
+                    ? "Amount unknown"
+                    : point.state === "missing"
+                      ? "No obligation"
+                      : formatAmount(String(value), point.currency)
+                return (
+                  <div
+                    className="group flex h-full min-w-16 flex-1 flex-col"
+                    key={periodValue(point.period)}
+                    title={stateLabel}
+                  >
+                    <div className="relative flex min-h-0 flex-1 flex-col justify-end">
+                      {point.state === "known" ? (
+                        <span
+                          className="min-h-1 rounded-t bg-chart-3/80 transition-colors group-hover:bg-chart-3"
+                          style={{
+                            height: `${Math.max((value / maximum) * 100, 1)}%`,
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className={
+                            point.state === "unknown"
+                              ? "min-h-1 rounded-t bg-amber-500/70"
+                              : "min-h-1 rounded-t bg-muted"
+                          }
+                        />
+                      )}
+                    </div>
+                    <div className="mt-2 h-9 text-center text-xs">
+                      <span className="block text-muted-foreground">
+                        {periodLabel(point.period)}
+                      </span>
+                      {point.state !== "known" && (
+                        <span className="block text-amber-700 dark:text-amber-300">
+                          {point.state === "unknown" ? "unknown" : "missing"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {currency ? `Amounts shown in ${currency}. ` : ""}Hover a bar for
+              the exact amount.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function chartMaximum(values: number[]) {
+  const maximum = Math.max(...values, 1)
+  const desiredStep = maximum / 2
+  const magnitude = 10 ** Math.floor(Math.log10(desiredStep))
+  const normalized = desiredStep / magnitude
+  const step =
+    (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) *
+    magnitude
+  return step * 2
 }
 
 function PeriodTotalsCard({
@@ -545,6 +928,10 @@ function PeriodTotalsCard({
                         href={obligationsHref(ledgerId, point.period)}
                         className="group flex h-full min-w-16 flex-1 flex-col"
                         aria-label={`View obligations for ${periodLabel(point.period)}`}
+                        title={formatAmount(
+                          String(amounts[index]),
+                          currency === "No currency" ? null : currency,
+                        )}
                       >
                         <div className="relative flex min-h-0 flex-1 flex-col justify-end">
                           <span className="absolute -top-5 inset-x-0 text-center text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
@@ -560,14 +947,16 @@ function PeriodTotalsCard({
                             }}
                           />
                         </div>
-                        <span className="mt-2 text-center text-xs text-muted-foreground">
-                          {periodLabel(point.period)}
-                        </span>
-                        {!point.is_complete && (
-                          <span className="text-center text-xs text-amber-700 dark:text-amber-300">
-                            incomplete
+                        <div className="mt-2 h-9 text-center text-xs">
+                          <span className="block text-muted-foreground">
+                            {periodLabel(point.period)}
                           </span>
-                        )}
+                          {!point.is_complete && (
+                            <span className="block text-amber-700 dark:text-amber-300">
+                              incomplete
+                            </span>
+                          )}
+                        </div>
                       </a>
                     ))}
                   </div>
