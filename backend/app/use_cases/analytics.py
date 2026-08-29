@@ -4,7 +4,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
 from sqlalchemy import select, tuple_
@@ -96,7 +96,14 @@ def _percentage(numerator: Decimal | int, denominator: Decimal | int) -> Decimal
         return None
     if numerator == 0:
         return Decimal("0")
-    return Decimal(numerator) * Decimal("100") / Decimal(denominator)
+    percentage = (Decimal(numerator) * Decimal("100") / Decimal(denominator)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    return (
+        percentage.quantize(Decimal("1"))
+        if percentage == percentage.to_integral()
+        else percentage
+    )
 
 
 HistoryPointState = Literal["missing", "unknown", "known"]

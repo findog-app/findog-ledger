@@ -199,6 +199,32 @@ def test_period_summary_keeps_unknown_amounts_and_currencies_separate(
     ]
 
 
+def test_period_summary_rounds_percentages_to_two_decimal_places(
+    client: TestClient, db: Session
+) -> None:
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="rounded-percentages"
+    )
+    obligations = [
+        _create_obligation(db, ledger_id=ledger.id, code=code, amount=Decimal("10"))
+        for code in ("ONEE", "TWOO", "THRE")
+    ]
+    for obligation in obligations[:2]:
+        obligation_use_cases.mark_obligation_paid(
+            session=db,
+            ledger_id=ledger.id,
+            key=ObligationKey.parse(obligation.business_key),
+        )
+
+    response = client.get(_summary_url(ledger.id), headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["paid_percentage"] == "66.67"
+    assert response.json()["amount_summaries"][0]["paid_percentage"] == "66.67"
+
+
 def test_period_summary_excludes_canceled_obligations(
     client: TestClient, db: Session
 ) -> None:
