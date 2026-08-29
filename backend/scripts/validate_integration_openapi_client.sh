@@ -15,5 +15,5 @@ client_dir="$output_dir/client/findog_integration_api_client"
 
 test -f "$client_dir/models/category_data_record_public.py"
 test -f "$client_dir/models/category_data_records_public.py"
-test "$(rg -l 'CategoryDataRecordPublic' "$client_dir/api" | wc -l)" -ge 2
-test "$(rg -l 'CategoryDataRecordsPublic' "$client_dir/api" | wc -l)" -ge 1
+test "$(grep -rl 'CategoryDataRecordPublic' "$client_dir/api" | wc -l)" -ge 2
+test "$(grep -rl 'CategoryDataRecordsPublic' "$client_dir/api" | wc -l)" -ge 1
