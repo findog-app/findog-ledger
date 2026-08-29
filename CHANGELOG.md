@@ -1,3 +1,14 @@
+## v0.5.0 (2026-08-29)
+
+### Feat
+
+- **analytics**: add ledger dashboard (#135)
+- **analytics**: add period totals endpoint (#134)
+
+### Fix
+
+- validate integration OpenAPI client generation (#143)
+
 ## v0.4.0 (2026-08-28)
 
 ### Feat
