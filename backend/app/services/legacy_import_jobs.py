@@ -8,7 +8,7 @@ from findog_legacy_adapter import load_payment_book_from_dropbox
 
 from app.core.config import settings
 from app.core.db import SessionLocal
-from app.domain import BillingPeriod, LegacyImportJobStatus
+from app.domain import BillingPeriod, LegacyImportJobStatus, TaskRunMode
 from app.models import LegacyImportJob
 from app.services.legacy_import import load_legacy_import_config
 from app.use_cases import legacy_import as legacy_import_use_cases
@@ -29,6 +29,8 @@ def _update_progress(job_id: uuid.UUID, processed: int, total: int) -> None:
 
 def run_legacy_import_job(job_id: uuid.UUID) -> None:
     try:
+        if settings.LEGACY_IMPORT_MODE is TaskRunMode.DISABLED:
+            raise RuntimeError("Legacy import is disabled")
         with SessionLocal() as session:
             job = session.get(LegacyImportJob, job_id)
             if job is None:

@@ -22,6 +22,8 @@ from app.models import (
     LedgerMembership,
     LegacyImportJob,
     Obligation,
+    SystemRun,
+    SystemRunStep,
     User,
 )
 from tests.utils.user import authentication_token_from_email
@@ -67,6 +69,8 @@ def db() -> Generator[Session, None, None]:
     run_test_migrations()
     with TestingSessionLocal() as session:
         session.execute(delete(ApiKey))
+        session.execute(delete(SystemRunStep))
+        session.execute(delete(SystemRun))
         session.execute(delete(LegacyImportJob))
         session.execute(delete(Obligation))
         session.execute(delete(CategoryDataRecord))
@@ -80,6 +84,8 @@ def db() -> Generator[Session, None, None]:
         init_db(session)
         yield session
         session.execute(delete(ApiKey))
+        session.execute(delete(SystemRunStep))
+        session.execute(delete(SystemRun))
         session.execute(delete(LegacyImportJob))
         session.execute(delete(Obligation))
         session.execute(delete(CategoryDataRecord))
