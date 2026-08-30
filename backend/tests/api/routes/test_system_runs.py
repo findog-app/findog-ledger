@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.domain import TaskRunMode
+from app.models import Ledger
 from app.services.system_run_runner import SYSTEM_RUN_ADVISORY_LOCK_KEY
 from tests.conftest import TestingSessionLocal
 from tests.utils.user import authentication_token_from_email, create_random_user
@@ -21,6 +22,7 @@ def test_system_runs_require_a_superuser(client: TestClient, db: Session) -> Non
 
 def test_administrator_can_start_manual_run_and_inspect_history(
     client: TestClient,
+    db: Session,
     superuser_token_headers: dict[str, str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -35,7 +37,9 @@ def test_administrator_can_start_manual_run_and_inspect_history(
     assert run["trigger"] == "manual"
     assert run["status"] == "success"
     assert run["timezone"] == "Europe/Warsaw"
-    assert [step["task_name"] for step in run["steps"]] == ["ensure_obligations"]
+    assert [step["task_name"] for step in run["steps"]] == [
+        "ensure_obligations"
+    ] * db.scalar(select(func.count()).select_from(Ledger).where(Ledger.is_active))
 
     history = client.get(
         f"{settings.API_V1_STR}/system-runs/", headers=superuser_token_headers
@@ -53,6 +57,7 @@ def test_administrator_can_start_manual_run_and_inspect_history(
 
 def test_manual_only_task_requires_explicit_selection(
     client: TestClient,
+    db: Session,
     superuser_token_headers: dict[str, str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -67,7 +72,8 @@ def test_manual_only_task_requires_explicit_selection(
     assert response.status_code == 200
     assert [step["task_name"] for step in response.json()["steps"]] == [
         "legacy_import",
-        "ensure_obligations",
+        *["ensure_obligations"]
+        * db.scalar(select(func.count()).select_from(Ledger).where(Ledger.is_active)),
     ]
     assert response.json()["steps"][0]["skip_reason"] == "not_configured"
 
