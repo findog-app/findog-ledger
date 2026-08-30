@@ -7,8 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.api.deps import SessionDep, get_current_active_superuser
+from app.core.config import settings
 from app.domain import TaskRunMode
-from app.domain.system_run import SystemRunStatus, SystemRunTrigger
+from app.domain.system_run import SystemRunTrigger
 from app.models import SystemRun, SystemRunStep
 from app.schemas import (
     SystemRunPublic,
@@ -17,6 +18,7 @@ from app.schemas import (
     SystemRunStepPublic,
     SystemRunTaskPublic,
 )
+from app.services.system_run_runner import run_system_run
 from app.use_cases.system_runs import (
     SYSTEM_RUN_TASK_REGISTRY,
     SystemRunContext,
@@ -65,42 +67,50 @@ def read_system_run_tasks() -> Any:
 def start_system_run(
     *, session: SessionDep, run_in: SystemRunStart = SystemRunStart()
 ) -> Any:
-    active_run = session.scalar(
-        select(SystemRun).where(SystemRun.status == SystemRunStatus.RUNNING)
-    )
-    if active_run is not None:
+    manual_tasks = set(run_in.manual_task_names)
+    known_tasks = {task.name: task for task in SYSTEM_RUN_TASK_REGISTRY}
+    if unknown := manual_tasks - known_tasks.keys():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown system-run tasks: {', '.join(sorted(unknown))}",
+        )
+    if disabled := [
+        name for name in manual_tasks if known_tasks[name].mode is TaskRunMode.DISABLED
+    ]:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"System run {active_run.id} is already running",
+            detail=f"Disabled tasks cannot be started: {', '.join(sorted(disabled))}",
+        )
+    if non_manual := [
+        name
+        for name in manual_tasks
+        if known_tasks[name].mode is not TaskRunMode.MANUAL_ONLY
+    ]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Only manual-only tasks may be selected: {', '.join(sorted(non_manual))}",
         )
 
-    requested = set(run_in.task_names) if run_in.task_names is not None else None
-    known_tasks = {task.name: task for task in SYSTEM_RUN_TASK_REGISTRY}
-    if requested is not None:
-        unknown = requested - known_tasks.keys()
-        if unknown:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Unknown system-run tasks: {', '.join(sorted(unknown))}",
-            )
-        disabled = [
-            name for name in requested if known_tasks[name].mode is TaskRunMode.DISABLED
-        ]
-        if disabled:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Disabled tasks cannot be started: {', '.join(sorted(disabled))}",
-            )
-
-    run = SystemRunOrchestrator().run(
+    requested = tuple(
+        task.name
+        for task in SYSTEM_RUN_TASK_REGISTRY
+        if task.mode is TaskRunMode.SCHEDULED or task.name in manual_tasks
+    )
+    run = run_system_run(
         session=session,
         context=SystemRunContext.create(
             effective_at=datetime.now(UTC),
-            timezone=ZoneInfo("UTC"),
+            timezone=ZoneInfo(settings.SYSTEM_RUN_TIMEZONE),
             trigger=SystemRunTrigger.MANUAL,
         ),
         task_names=requested,
+        orchestrator=SystemRunOrchestrator(),
     )
+    if run is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A System Run is already running",
+        )
     return _to_public(session, run)
 
 

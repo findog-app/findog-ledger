@@ -13,7 +13,7 @@ from app.domain.system_run import (
 
 
 class SystemRunStart(BaseModel):
-    task_names: list[str] | None = Field(default=None, max_length=100)
+    manual_task_names: list[str] = Field(default_factory=list, max_length=100)
 
 
 class SystemRunTaskPublic(BaseModel):

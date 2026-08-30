@@ -490,7 +490,7 @@ export type SystemRunsPublic = {
 };
 
 export type SystemRunStart = {
-    task_names?: (Array<(string)> | null);
+    manual_task_names?: Array<(string)>;
 };
 
 export type SystemRunStatus = 'running' | 'success' | 'partial_failure' | 'failure';

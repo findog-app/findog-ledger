@@ -71,7 +71,7 @@ function SystemRun() {
       SystemRunsService.startSystemRun({
         requestBody:
           manualTaskNames.length > 0
-            ? { task_names: manualTaskNames }
+            ? { manual_task_names: manualTaskNames }
             : undefined,
       }),
     onError: handleError.bind(showErrorToast),

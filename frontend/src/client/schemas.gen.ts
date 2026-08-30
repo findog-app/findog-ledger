@@ -2416,20 +2416,13 @@ export const SystemRunSkipReasonSchema = {
 
 export const SystemRunStartSchema = {
     properties: {
-        task_names: {
-            anyOf: [
-                {
-                    items: {
-                        type: 'string'
-                    },
-                    type: 'array',
-                    maxItems: 100
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Task Names'
+        manual_task_names: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            maxItems: 100,
+            title: 'Manual Task Names'
         }
     },
     type: 'object',

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from typing import cast
 from zoneinfo import ZoneInfo
@@ -34,12 +35,34 @@ def run_scheduled_system_run(
     PostgreSQL releases session advisory locks when a process crashes or loses its
     connection, so a crashed scheduler cannot leave a permanent lock behind.
     """
+    now = effective_at or datetime.now(UTC)
+    execution_timezone = timezone or ZoneInfo(settings.SYSTEM_RUN_TIMEZONE)
+    return run_system_run(
+        session=session,
+        context=SystemRunContext.create(
+            effective_at=now,
+            timezone=execution_timezone,
+            trigger=SystemRunTrigger.SCHEDULED,
+        ),
+        orchestrator=orchestrator,
+    )
+
+
+def run_system_run(
+    *,
+    session: Session,
+    context: SystemRunContext,
+    task_names: Iterable[str] | None = None,
+    orchestrator: SystemRunOrchestrator | None = None,
+) -> SystemRun | None:
+    """Run one shared orchestrator execution while holding the database lock."""
+    requested_tasks = tuple(task_names) if task_names is not None else None
     bind = session.get_bind()
     if isinstance(bind, Connection):
         return _run_with_lock(
             session=session,
-            effective_at=effective_at,
-            timezone=timezone,
+            context=context,
+            task_names=requested_tasks,
             orchestrator=orchestrator,
         )
 
@@ -50,8 +73,8 @@ def run_scheduled_system_run(
         with Session(bind=connection, expire_on_commit=False) as locked_session:
             return _run_with_lock(
                 session=locked_session,
-                effective_at=effective_at,
-                timezone=timezone,
+                context=context,
+                task_names=requested_tasks,
                 orchestrator=orchestrator,
             )
 
@@ -59,8 +82,8 @@ def run_scheduled_system_run(
 def _run_with_lock(
     *,
     session: Session,
-    effective_at: datetime | None,
-    timezone: ZoneInfo | None,
+    context: SystemRunContext,
+    task_names: tuple[str, ...] | None,
     orchestrator: SystemRunOrchestrator | None,
 ) -> SystemRun | None:
     acquired = session.scalar(
@@ -71,16 +94,9 @@ def _run_with_lock(
         return None
 
     try:
-        now = effective_at or datetime.now(UTC)
-        execution_timezone = timezone or ZoneInfo(settings.SYSTEM_RUN_TIMEZONE)
-        recover_stale_system_runs(session=session, now=now)
-        context = SystemRunContext.create(
-            effective_at=now,
-            timezone=execution_timezone,
-            trigger=SystemRunTrigger.SCHEDULED,
-        )
+        recover_stale_system_runs(session=session, now=context.effective_at)
         run = (orchestrator or SystemRunOrchestrator()).run(
-            session=session, context=context
+            session=session, context=context, task_names=task_names
         )
         _log_run(run=run, session=session)
         return run

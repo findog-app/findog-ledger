@@ -69,6 +69,6 @@ test("confirms a manual-only System Run before sending its selected tasks", asyn
   await page.getByRole("button", { name: "Start run" }).click()
   await expect(page.getByText("Run history")).toBeVisible()
   expect((await request).postDataJSON()).toEqual({
-    task_names: ["legacy_import"],
+    manual_task_names: ["legacy_import"],
   })
 })
