@@ -3,6 +3,7 @@ set -eu
 
 . /run/system-run.env
 : "${SYSTEM_RUN_TIMEOUT_SECONDS:=3600}"
+cd /app/backend
 
 if timeout --signal=TERM --kill-after=30s "${SYSTEM_RUN_TIMEOUT_SECONDS}s" \
   /app/.venv/bin/python -m app.jobs.system_run; then

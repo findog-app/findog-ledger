@@ -268,6 +268,7 @@ def test_scheduler_one_shot_enforces_the_configured_timeout() -> None:
     ).read_text()
 
     assert "SYSTEM_RUN_TIMEOUT_SECONDS" in script
+    assert "cd /app/backend" in script
     assert "timeout --signal=TERM --kill-after=30s" in script
 
 
