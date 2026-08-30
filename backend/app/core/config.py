@@ -103,6 +103,9 @@ class Settings(BaseSettings):
     LEGACY_IMPORT_CONFIG_PATH: Path = Path("config/legacy-import.yaml")
     LEGACY_IMPORT_MODE: TaskRunMode = TaskRunMode.DISABLED
     LEGACY_IMPORT_LEDGER_ID: uuid.UUID | None = None
+    SYSTEM_RUN_SCHEDULE: str = "5 0 * * *"
+    SYSTEM_RUN_TIMEZONE: str = "Europe/Warsaw"
+    SYSTEM_RUN_STALE_AFTER_MINUTES: int = 120
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
