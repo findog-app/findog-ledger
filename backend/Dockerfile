@@ -32,7 +32,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-workspace --package app
 
 COPY ./backend/scripts /app/backend/scripts
-RUN chmod +x /app/backend/scripts/system-run-scheduler.sh
+RUN chmod +x /app/backend/scripts/system-run-*.sh
 
 COPY ./backend/pyproject.toml ./backend/alembic.ini /app/backend/
 

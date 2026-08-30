@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
@@ -219,11 +220,55 @@ def test_scheduled_runner_rejects_an_overlapping_database_lock(db: Session) -> N
         )
         try:
             assert run_scheduled_system_run(session=db) is None
+            assert exit_code(None) == 2
         finally:
             locked_session.execute(
                 select(func.pg_advisory_unlock(SYSTEM_RUN_ADVISORY_LOCK_KEY))
             )
             locked_session.commit()
+
+
+def test_stale_run_recovers_after_the_lock_owner_connection_is_terminated(
+    db: Session,
+) -> None:
+    now = datetime(2026, 9, 2, tzinfo=UTC)
+    stale = SystemRun(
+        status=SystemRunStatus.RUNNING,
+        trigger=SystemRunTrigger.SCHEDULED,
+        effective_at=now - timedelta(hours=3),
+        timezone="UTC",
+        business_date=(now - timedelta(hours=3)).date(),
+        started_at=now - timedelta(hours=3),
+    )
+    db.add(stale)
+    db.commit()
+
+    with TestingSessionLocal() as locked_session:
+        assert locked_session.scalar(
+            select(func.pg_try_advisory_lock(SYSTEM_RUN_ADVISORY_LOCK_KEY))
+        )
+        assert run_scheduled_system_run(session=db) is None
+        locked_session.invalidate()
+
+    resumed = run_scheduled_system_run(
+        session=db,
+        effective_at=now,
+        orchestrator=SystemRunOrchestrator((FakeTask("resume", 100, []),)),
+    )
+    db.refresh(stale)
+
+    assert resumed is not None
+    assert stale.status is SystemRunStatus.FAILURE
+    assert stale.error == "System run exceeded the stale-run timeout"
+
+
+def test_scheduler_one_shot_enforces_the_configured_timeout() -> None:
+    script = (
+        Path(__file__).resolve().parents[2] / "scripts" / "system-run-once.sh"
+    ).read_text()
+
+    assert "SYSTEM_RUN_TIMEOUT_SECONDS" in script
+    assert "timeout --signal=TERM --kill-after=30s" in script
 
 
 def test_scheduled_runner_recovers_stale_runs_and_returns_failure_exit_code(

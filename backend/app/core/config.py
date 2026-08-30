@@ -106,6 +106,7 @@ class Settings(BaseSettings):
     SYSTEM_RUN_SCHEDULE: str = "5 0 * * *"
     SYSTEM_RUN_TIMEZONE: str = "Europe/Warsaw"
     SYSTEM_RUN_STALE_AFTER_MINUTES: int = 120
+    SYSTEM_RUN_TIMEOUT_SECONDS: int = 3600
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

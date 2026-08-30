@@ -116,7 +116,9 @@ def recover_stale_system_runs(*, session: Session, now: datetime) -> int:
 
 def exit_code(run: SystemRun | None) -> int:
     """Map a completed run to the one-shot process contract."""
-    return 0 if run is None or run.status is SystemRunStatus.SUCCESS else 1
+    if run is None:
+        return 2
+    return 0 if run.status is SystemRunStatus.SUCCESS else 1
 
 
 def _log_run(*, run: SystemRun, session: Session) -> None:
