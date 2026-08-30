@@ -780,7 +780,7 @@ function CategoryHistoryCard({
           </Select>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0">
         {categoriesLoading || (selectedCategoryId && isLoading) ? (
           <Skeleton className="h-56 w-full" />
         ) : categoriesError || !categories ? (
@@ -792,59 +792,64 @@ function CategoryHistoryCard({
         ) : isError || !data ? (
           <QueryState message="Category history could not be loaded." />
         ) : (
-          <div className="min-w-150 overflow-x-auto pb-2">
-            <div className="flex h-56 items-end gap-3 border-b border-l px-3 pt-4">
-              {data.points.map((point, index) => {
-                const amount = amounts[index]
-                const value = amount ?? 0
-                const stateLabel =
-                  point.state === "unknown"
-                    ? "Amount unknown"
-                    : point.state === "missing"
-                      ? "No obligation"
-                      : formatAmount(String(value), point.currency)
-                return (
-                  <div
-                    className="group flex h-full min-w-16 flex-1 flex-col"
-                    key={periodValue(point.period)}
-                    title={stateLabel}
-                  >
-                    <div className="relative flex min-h-0 flex-1 flex-col justify-end">
-                      {point.state === "known" ? (
-                        <span
-                          className="min-h-1 rounded-t bg-chart-3/80 transition-colors group-hover:bg-chart-3"
-                          style={{
-                            height: `${Math.max((value / maximum) * 100, 1)}%`,
-                          }}
-                        />
-                      ) : (
-                        <span
-                          className={
-                            point.state === "unknown"
-                              ? "min-h-1 rounded-t bg-amber-500/70"
-                              : "min-h-1 rounded-t bg-muted"
-                          }
-                        />
-                      )}
-                    </div>
-                    <div className="mt-2 h-9 text-center text-xs">
-                      <span className="block text-muted-foreground">
-                        {periodLabel(point.period)}
-                      </span>
-                      {point.state !== "known" && (
-                        <span className="block text-amber-700 dark:text-amber-300">
-                          {point.state === "unknown" ? "unknown" : "missing"}
+          <div
+            className="w-full min-w-0 max-w-full overflow-x-auto pb-2"
+            data-testid="category-history-chart"
+          >
+            <div className="min-w-150">
+              <div className="flex h-56 items-end gap-3 border-b border-l px-3 pt-4">
+                {data.points.map((point, index) => {
+                  const amount = amounts[index]
+                  const value = amount ?? 0
+                  const stateLabel =
+                    point.state === "unknown"
+                      ? "Amount unknown"
+                      : point.state === "missing"
+                        ? "No obligation"
+                        : formatAmount(String(value), point.currency)
+                  return (
+                    <div
+                      className="group flex h-full min-w-16 flex-1 flex-col"
+                      key={periodValue(point.period)}
+                      title={stateLabel}
+                    >
+                      <div className="relative flex min-h-0 flex-1 flex-col justify-end">
+                        {point.state === "known" ? (
+                          <span
+                            className="min-h-1 rounded-t bg-chart-3/80 transition-colors group-hover:bg-chart-3"
+                            style={{
+                              height: `${Math.max((value / maximum) * 100, 1)}%`,
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className={
+                              point.state === "unknown"
+                                ? "min-h-1 rounded-t bg-amber-500/70"
+                                : "min-h-1 rounded-t bg-muted"
+                            }
+                          />
+                        )}
+                      </div>
+                      <div className="mt-2 h-9 text-center text-xs">
+                        <span className="block text-muted-foreground">
+                          {periodLabel(point.period)}
                         </span>
-                      )}
+                        {point.state !== "known" && (
+                          <span className="block text-amber-700 dark:text-amber-300">
+                            {point.state === "unknown" ? "unknown" : "missing"}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {currency ? `Amounts shown in ${currency}. ` : ""}Hover a bar
+                for the exact amount.
+              </p>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              {currency ? `Amounts shown in ${currency}. ` : ""}Hover a bar for
-              the exact amount.
-            </p>
           </div>
         )}
       </CardContent>
