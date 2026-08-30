@@ -2,6 +2,10 @@ FROM python:3.14
 
 ENV PYTHONUNBUFFERED=1
 
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends cron \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install uv
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
 COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
@@ -28,6 +32,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-workspace --package app
 
 COPY ./backend/scripts /app/backend/scripts
+RUN chmod +x /app/backend/scripts/system-run-*.sh
 
 COPY ./backend/pyproject.toml ./backend/alembic.ini /app/backend/
 

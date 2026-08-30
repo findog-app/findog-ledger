@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain import TaskRunMode
@@ -13,7 +14,12 @@ from app.domain.system_run import (
     SystemRunStepStatus,
     SystemRunTrigger,
 )
-from app.models import Ledger, Obligation, SystemRunStep
+from app.models import Ledger, Obligation, SystemRun, SystemRunStep
+from app.services.system_run_runner import (
+    SYSTEM_RUN_ADVISORY_LOCK_KEY,
+    exit_code,
+    run_scheduled_system_run,
+)
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases.system_runs import (
     EnsureObligationsTask,
@@ -21,6 +27,7 @@ from app.use_cases.system_runs import (
     SystemRunOrchestrator,
     TaskResult,
 )
+from tests.conftest import TestingSessionLocal
 from tests.utils.ledger_domain import create_category_with_recurrence
 from tests.utils.user import create_random_user
 
@@ -182,3 +189,116 @@ def test_manual_only_task_requires_explicit_selection(db: Session) -> None:
     assert _steps(db, implicit.id)[0].skip_reason is SystemRunSkipReason.MANUAL_ONLY
     assert task.calls == [ledger.id]
     assert _steps(db, explicit.id)[0].status is SystemRunStepStatus.SUCCEEDED
+
+
+def test_scheduled_runner_uses_explicit_context_and_returns_success(
+    db: Session,
+) -> None:
+    ledger = _ledger(db, "Runner")
+    task = FakeTask("runner", 100, [ledger])
+    effective_at = datetime(2026, 9, 1, 22, 30, tzinfo=UTC)
+
+    run = run_scheduled_system_run(
+        session=db,
+        effective_at=effective_at,
+        timezone=ZoneInfo("Europe/Warsaw"),
+        orchestrator=SystemRunOrchestrator((task,)),
+    )
+
+    assert run is not None
+    assert run.trigger is SystemRunTrigger.SCHEDULED
+    assert run.effective_at == effective_at
+    assert run.business_date.isoformat() == "2026-09-02"
+    assert run.timezone == "Europe/Warsaw"
+    assert exit_code(run) == 0
+
+
+def test_scheduled_runner_rejects_an_overlapping_database_lock(db: Session) -> None:
+    with TestingSessionLocal() as locked_session:
+        assert locked_session.scalar(
+            select(func.pg_try_advisory_lock(SYSTEM_RUN_ADVISORY_LOCK_KEY))
+        )
+        try:
+            assert run_scheduled_system_run(session=db) is None
+            assert exit_code(None) == 2
+        finally:
+            locked_session.execute(
+                select(func.pg_advisory_unlock(SYSTEM_RUN_ADVISORY_LOCK_KEY))
+            )
+            locked_session.commit()
+
+
+def test_stale_run_recovers_after_the_lock_owner_connection_is_terminated(
+    db: Session,
+) -> None:
+    now = datetime(2026, 9, 2, tzinfo=UTC)
+    stale = SystemRun(
+        status=SystemRunStatus.RUNNING,
+        trigger=SystemRunTrigger.SCHEDULED,
+        effective_at=now - timedelta(hours=3),
+        timezone="UTC",
+        business_date=(now - timedelta(hours=3)).date(),
+        started_at=now - timedelta(hours=3),
+    )
+    db.add(stale)
+    db.commit()
+
+    with TestingSessionLocal() as locked_session:
+        assert locked_session.scalar(
+            select(func.pg_try_advisory_lock(SYSTEM_RUN_ADVISORY_LOCK_KEY))
+        )
+        assert run_scheduled_system_run(session=db) is None
+        locked_session.invalidate()
+
+    resumed = run_scheduled_system_run(
+        session=db,
+        effective_at=now,
+        orchestrator=SystemRunOrchestrator((FakeTask("resume", 100, []),)),
+    )
+    db.refresh(stale)
+
+    assert resumed is not None
+    assert stale.status is SystemRunStatus.FAILURE
+    assert stale.error == "System run exceeded the stale-run timeout"
+
+
+def test_scheduler_one_shot_enforces_the_configured_timeout() -> None:
+    script = (
+        Path(__file__).resolve().parents[2] / "scripts" / "system-run-once.sh"
+    ).read_text()
+
+    assert "SYSTEM_RUN_TIMEOUT_SECONDS" in script
+    assert "timeout --signal=TERM --kill-after=30s" in script
+
+
+def test_scheduled_runner_recovers_stale_runs_and_returns_failure_exit_code(
+    db: Session,
+) -> None:
+    now = datetime(2026, 9, 2, tzinfo=UTC)
+    stale = SystemRun(
+        status=SystemRunStatus.RUNNING,
+        trigger=SystemRunTrigger.SCHEDULED,
+        effective_at=now - timedelta(hours=3),
+        timezone="UTC",
+        business_date=(now - timedelta(hours=3)).date(),
+        started_at=now - timedelta(hours=3),
+    )
+    db.add(stale)
+    db.commit()
+
+    failed_task = FakeTask("failed", 100, [_ledger(db, "Failure")])
+    failed_task.failing_ledger_ids = {failed_task.ledgers[0].id}
+    run = run_scheduled_system_run(
+        session=db,
+        effective_at=now,
+        orchestrator=SystemRunOrchestrator((failed_task,)),
+    )
+    db.refresh(stale)
+
+    assert stale.status is SystemRunStatus.FAILURE
+    assert stale.error == "System run exceeded the stale-run timeout"
+    assert run is not None
+    assert run.status is SystemRunStatus.FAILURE
+    assert exit_code(run) == 1
+    run.status = SystemRunStatus.PARTIAL_FAILURE
+    assert exit_code(run) == 1
