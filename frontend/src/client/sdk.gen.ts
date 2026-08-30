@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AnalyticsReadPeriodPaymentSummaryData, AnalyticsReadPeriodPaymentSummaryResponse, AnalyticsReadCategoryAmountHistoryData, AnalyticsReadCategoryAmountHistoryResponse, AnalyticsReadObligationPeriodTotalsData, AnalyticsReadObligationPeriodTotalsResponse, AnalyticsReadRemainingPeriodCashflowData, AnalyticsReadRemainingPeriodCashflowResponse, CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesUpdateCategoryData, CategoriesUpdateCategoryResponse, CategoriesReadCategoryDataRecordsData, CategoriesReadCategoryDataRecordsResponse, CategoriesReadLatestCategoryDataRecordData, CategoriesReadLatestCategoryDataRecordResponse, CategoriesReadCategoryDataSchemaData, CategoriesReadCategoryDataSchemaResponse, CategoriesCreateCategoryDataSchemaData, CategoriesCreateCategoryDataSchemaResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, CategoriesRestoreCategoryData, CategoriesRestoreCategoryResponse, IntegrationReadLatestIntegrationCategoryDataRecordData, IntegrationReadLatestIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataRecordsData, IntegrationReadIntegrationCategoryDataRecordsResponse, IntegrationCreateIntegrationCategoryDataRecordData, IntegrationCreateIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataSchemaData, IntegrationReadIntegrationCategoryDataSchemaResponse, IntegrationReadIntegrationLedgerResponse, IntegrationUpdateIntegrationLedgerData, IntegrationUpdateIntegrationLedgerResponse, IntegrationReadIntegrationObligationsData, IntegrationReadIntegrationObligationsResponse, IntegrationReadIntegrationObligationData, IntegrationReadIntegrationObligationResponse, IntegrationUpdateIntegrationObligationData, IntegrationUpdateIntegrationObligationResponse, IntegrationReadIntegrationObligationComponentsData, IntegrationReadIntegrationObligationComponentsResponse, IntegrationUpsertIntegrationObligationComponentData, IntegrationUpsertIntegrationObligationComponentResponse, IntegrationMarkIntegrationObligationReadyData, IntegrationMarkIntegrationObligationReadyResponse, IntegrationMarkIntegrationObligationPaidData, IntegrationMarkIntegrationObligationPaidResponse, IntegrationCancelIntegrationObligationData, IntegrationCancelIntegrationObligationResponse, IntegrationReopenIntegrationObligationData, IntegrationReopenIntegrationObligationResponse, IntegrationMarkIntegrationObligationErrorData, IntegrationMarkIntegrationObligationErrorResponse, IntegrationAppendIntegrationObligationNoteData, IntegrationAppendIntegrationObligationNoteResponse, LedgersCreateApiKeyData, LedgersCreateApiKeyResponse, LedgersReadApiKeysData, LedgersReadApiKeysResponse, LedgersRevokeApiKeyData, LedgersRevokeApiKeyResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersUpdateLedgerData, LedgersUpdateLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LedgersDeleteAllCategoriesData, LedgersDeleteAllCategoriesResponse, LedgersDeleteAllObligationsData, LedgersDeleteAllObligationsResponse, LedgersUpdateLedgerMemberData, LedgersUpdateLedgerMemberResponse, LedgersRemoveLedgerMemberData, LedgersRemoveLedgerMemberResponse, LegacyImportStartLegacyImportData, LegacyImportStartLegacyImportResponse, LegacyImportReadLegacyImportJobData, LegacyImportReadLegacyImportJobResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ObligationsReadObligationsData, ObligationsReadObligationsResponse, ObligationsCreateObligationData, ObligationsCreateObligationResponse, ObligationsEnsureObligationsData, ObligationsEnsureObligationsResponse, ObligationsReadObligationComponentsData, ObligationsReadObligationComponentsResponse, ObligationsAddObligationComponentData, ObligationsAddObligationComponentResponse, ObligationsUpsertObligationComponentData, ObligationsUpsertObligationComponentResponse, ObligationsUpdateObligationComponentData, ObligationsUpdateObligationComponentResponse, ObligationsRemoveObligationComponentData, ObligationsRemoveObligationComponentResponse, ObligationsUpdateObligationData, ObligationsUpdateObligationResponse, ObligationsReadObligationData, ObligationsReadObligationResponse, ObligationsMarkObligationReadyData, ObligationsMarkObligationReadyResponse, ObligationsMarkObligationPaidData, ObligationsMarkObligationPaidResponse, ObligationsCancelObligationData, ObligationsCancelObligationResponse, ObligationsReopenObligationData, ObligationsReopenObligationResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AnalyticsReadPeriodPaymentSummaryData, AnalyticsReadPeriodPaymentSummaryResponse, AnalyticsReadCategoryAmountHistoryData, AnalyticsReadCategoryAmountHistoryResponse, AnalyticsReadObligationPeriodTotalsData, AnalyticsReadObligationPeriodTotalsResponse, AnalyticsReadRemainingPeriodCashflowData, AnalyticsReadRemainingPeriodCashflowResponse, CategoriesReadCategoriesData, CategoriesReadCategoriesResponse, CategoriesCreateCategoryData, CategoriesCreateCategoryResponse, CategoriesReadCategoryGroupsData, CategoriesReadCategoryGroupsResponse, CategoriesCreateCategoryGroupData, CategoriesCreateCategoryGroupResponse, CategoriesUpdateCategoryGroupData, CategoriesUpdateCategoryGroupResponse, CategoriesArchiveCategoryGroupData, CategoriesArchiveCategoryGroupResponse, CategoriesUpdateCategoryData, CategoriesUpdateCategoryResponse, CategoriesReadCategoryDataRecordsData, CategoriesReadCategoryDataRecordsResponse, CategoriesReadLatestCategoryDataRecordData, CategoriesReadLatestCategoryDataRecordResponse, CategoriesReadCategoryDataSchemaData, CategoriesReadCategoryDataSchemaResponse, CategoriesCreateCategoryDataSchemaData, CategoriesCreateCategoryDataSchemaResponse, CategoriesArchiveCategoryData, CategoriesArchiveCategoryResponse, CategoriesRestoreCategoryData, CategoriesRestoreCategoryResponse, IntegrationReadLatestIntegrationCategoryDataRecordData, IntegrationReadLatestIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataRecordsData, IntegrationReadIntegrationCategoryDataRecordsResponse, IntegrationCreateIntegrationCategoryDataRecordData, IntegrationCreateIntegrationCategoryDataRecordResponse, IntegrationReadIntegrationCategoryDataSchemaData, IntegrationReadIntegrationCategoryDataSchemaResponse, IntegrationReadIntegrationLedgerResponse, IntegrationUpdateIntegrationLedgerData, IntegrationUpdateIntegrationLedgerResponse, IntegrationReadIntegrationObligationsData, IntegrationReadIntegrationObligationsResponse, IntegrationReadIntegrationObligationData, IntegrationReadIntegrationObligationResponse, IntegrationUpdateIntegrationObligationData, IntegrationUpdateIntegrationObligationResponse, IntegrationReadIntegrationObligationComponentsData, IntegrationReadIntegrationObligationComponentsResponse, IntegrationUpsertIntegrationObligationComponentData, IntegrationUpsertIntegrationObligationComponentResponse, IntegrationMarkIntegrationObligationReadyData, IntegrationMarkIntegrationObligationReadyResponse, IntegrationMarkIntegrationObligationPaidData, IntegrationMarkIntegrationObligationPaidResponse, IntegrationCancelIntegrationObligationData, IntegrationCancelIntegrationObligationResponse, IntegrationReopenIntegrationObligationData, IntegrationReopenIntegrationObligationResponse, IntegrationMarkIntegrationObligationErrorData, IntegrationMarkIntegrationObligationErrorResponse, IntegrationAppendIntegrationObligationNoteData, IntegrationAppendIntegrationObligationNoteResponse, LedgersCreateApiKeyData, LedgersCreateApiKeyResponse, LedgersReadApiKeysData, LedgersReadApiKeysResponse, LedgersRevokeApiKeyData, LedgersRevokeApiKeyResponse, LedgersReadLedgersResponse, LedgersCreateLedgerData, LedgersCreateLedgerResponse, LedgersReadLedgerData, LedgersReadLedgerResponse, LedgersUpdateLedgerData, LedgersUpdateLedgerResponse, LedgersReadLedgerMembersData, LedgersReadLedgerMembersResponse, LedgersShareLedgerData, LedgersShareLedgerResponse, LedgersDeleteAllCategoriesData, LedgersDeleteAllCategoriesResponse, LedgersDeleteAllObligationsData, LedgersDeleteAllObligationsResponse, LedgersUpdateLedgerMemberData, LedgersUpdateLedgerMemberResponse, LedgersRemoveLedgerMemberData, LedgersRemoveLedgerMemberResponse, LegacyImportStartLegacyImportData, LegacyImportStartLegacyImportResponse, LegacyImportReadLegacyImportJobData, LegacyImportReadLegacyImportJobResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ObligationsReadObligationsData, ObligationsReadObligationsResponse, ObligationsCreateObligationData, ObligationsCreateObligationResponse, ObligationsEnsureObligationsData, ObligationsEnsureObligationsResponse, ObligationsReadObligationComponentsData, ObligationsReadObligationComponentsResponse, ObligationsAddObligationComponentData, ObligationsAddObligationComponentResponse, ObligationsUpsertObligationComponentData, ObligationsUpsertObligationComponentResponse, ObligationsUpdateObligationComponentData, ObligationsUpdateObligationComponentResponse, ObligationsRemoveObligationComponentData, ObligationsRemoveObligationComponentResponse, ObligationsUpdateObligationData, ObligationsUpdateObligationResponse, ObligationsReadObligationData, ObligationsReadObligationResponse, ObligationsMarkObligationReadyData, ObligationsMarkObligationReadyResponse, ObligationsMarkObligationPaidData, ObligationsMarkObligationPaidResponse, ObligationsCancelObligationData, ObligationsCancelObligationResponse, ObligationsReopenObligationData, ObligationsReopenObligationResponse, SystemRunsReadSystemRunTasksResponse, SystemRunsStartSystemRunData, SystemRunsStartSystemRunResponse, SystemRunsReadSystemRunsData, SystemRunsReadSystemRunsResponse, SystemRunsReadSystemRunData, SystemRunsReadSystemRunResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class AnalyticsService {
     /**
@@ -31,7 +31,7 @@ export class AnalyticsService {
             }
         });
     }
-    
+
     /**
      * Read Category Amount History
      * @param data The data for the request.
@@ -59,7 +59,7 @@ export class AnalyticsService {
             }
         });
     }
-    
+
     /**
      * Read Obligation Period Totals
      * @param data The data for the request.
@@ -85,7 +85,7 @@ export class AnalyticsService {
             }
         });
     }
-    
+
     /**
      * Read Remaining Period Cashflow
      * @param data The data for the request.
@@ -139,7 +139,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Create Category
      * @param data The data for the request.
@@ -162,7 +162,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Read Category Groups
      * @param data The data for the request.
@@ -186,7 +186,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Create Category Group
      * @param data The data for the request.
@@ -209,7 +209,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Update Category Group
      * @param data The data for the request.
@@ -234,7 +234,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Archive Category Group
      * @param data The data for the request.
@@ -256,7 +256,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Update Category
      * @param data The data for the request.
@@ -281,7 +281,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Read Category Data Records
      * @param data The data for the request.
@@ -313,7 +313,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Read Latest Category Data Record
      * @param data The data for the request.
@@ -335,7 +335,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Read Category Data Schema
      * @param data The data for the request.
@@ -357,7 +357,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Create Category Data Schema
      * @param data The data for the request.
@@ -382,7 +382,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Archive Category
      * @param data The data for the request.
@@ -404,7 +404,7 @@ export class CategoriesService {
             }
         });
     }
-    
+
     /**
      * Restore Category
      * @param data The data for the request.
@@ -448,7 +448,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Read Integration Category Data Records
      * @param data The data for the request.
@@ -478,7 +478,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Create Integration Category Data Record
      * @param data The data for the request.
@@ -501,7 +501,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Read Integration Category Data Schema
      * @param data The data for the request.
@@ -521,7 +521,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Read Integration Ledger
      * Return only the ledger selected by the authenticated API key.
@@ -534,7 +534,7 @@ export class IntegrationService {
             url: '/api/v1/integration/ledger'
         });
     }
-    
+
     /**
      * Update Integration Ledger
      * Update the key's ledger through the shared ledger use case.
@@ -554,7 +554,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Read Integration Obligations
      * @param data The data for the request.
@@ -580,7 +580,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Read Integration Obligation
      * @param data The data for the request.
@@ -600,7 +600,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Update Integration Obligation
      * @param data The data for the request.
@@ -623,7 +623,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Read Integration Obligation Components
      * @param data The data for the request.
@@ -643,7 +643,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Upsert Integration Obligation Component
      * @param data The data for the request.
@@ -666,7 +666,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Mark Integration Obligation Ready
      * @param data The data for the request.
@@ -686,7 +686,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Mark Integration Obligation Paid
      * @param data The data for the request.
@@ -706,7 +706,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Cancel Integration Obligation
      * @param data The data for the request.
@@ -726,7 +726,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Reopen Integration Obligation
      * @param data The data for the request.
@@ -746,7 +746,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Mark Integration Obligation Error
      * @param data The data for the request.
@@ -766,7 +766,7 @@ export class IntegrationService {
             }
         });
     }
-    
+
     /**
      * Append Integration Obligation Note
      * @param data The data for the request.
@@ -814,7 +814,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Read Api Keys
      * @param data The data for the request.
@@ -834,7 +834,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Revoke Api Key
      * @param data The data for the request.
@@ -856,7 +856,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Read Ledgers
      * @returns LedgersPublic Successful Response
@@ -868,7 +868,7 @@ export class LedgersService {
             url: '/api/v1/ledgers/'
         });
     }
-    
+
     /**
      * Create Ledger
      * @param data The data for the request.
@@ -887,7 +887,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Read Ledger
      * @param data The data for the request.
@@ -907,7 +907,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Update Ledger
      * @param data The data for the request.
@@ -930,7 +930,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Read Ledger Members
      * @param data The data for the request.
@@ -950,7 +950,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Share Ledger
      * @param data The data for the request.
@@ -973,7 +973,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Delete All Categories
      * @param data The data for the request.
@@ -993,7 +993,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Delete All Obligations
      * @param data The data for the request.
@@ -1013,7 +1013,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Update Ledger Member
      * @param data The data for the request.
@@ -1038,7 +1038,7 @@ export class LedgersService {
             }
         });
     }
-    
+
     /**
      * Remove Ledger Member
      * @param data The data for the request.
@@ -1082,7 +1082,7 @@ export class LegacyImportService {
             }
         });
     }
-    
+
     /**
      * Read Legacy Import Job
      * @param data The data for the request.
@@ -1124,7 +1124,7 @@ export class LoginService {
             }
         });
     }
-    
+
     /**
      * Test Token
      * Test access token
@@ -1137,7 +1137,7 @@ export class LoginService {
             url: '/api/v1/login/test-token'
         });
     }
-    
+
     /**
      * Recover Password
      * Password Recovery
@@ -1158,7 +1158,7 @@ export class LoginService {
             }
         });
     }
-    
+
     /**
      * Reset Password
      * Reset password
@@ -1178,7 +1178,7 @@ export class LoginService {
             }
         });
     }
-    
+
     /**
      * Recover Password Html Content
      * HTML Content for Password Recovery
@@ -1231,7 +1231,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Create Obligation
      * @param data The data for the request.
@@ -1254,7 +1254,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Ensure Obligations
      * @param data The data for the request.
@@ -1280,7 +1280,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Read Obligation Components
      * @param data The data for the request.
@@ -1302,7 +1302,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Add Obligation Component
      * @param data The data for the request.
@@ -1327,7 +1327,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Upsert Obligation Component
      * @param data The data for the request.
@@ -1352,7 +1352,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Update Obligation Component
      * @param data The data for the request.
@@ -1379,7 +1379,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Remove Obligation Component
      * @param data The data for the request.
@@ -1403,7 +1403,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Update Obligation
      * @param data The data for the request.
@@ -1428,7 +1428,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Read Obligation
      * @param data The data for the request.
@@ -1450,7 +1450,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Mark Obligation Ready
      * @param data The data for the request.
@@ -1472,7 +1472,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Mark Obligation Paid
      * @param data The data for the request.
@@ -1494,7 +1494,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Cancel Obligation
      * @param data The data for the request.
@@ -1516,7 +1516,7 @@ export class ObligationsService {
             }
         });
     }
-    
+
     /**
      * Reopen Obligation
      * @param data The data for the request.
@@ -1532,6 +1532,79 @@ export class ObligationsService {
             path: {
                 obligation_key: data.obligationKey,
                 ledger_id: data.ledgerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SystemRunsService {
+    /**
+     * Read System Run Tasks
+     * @returns SystemRunTaskPublic Successful Response
+     * @throws ApiError
+     */
+    public static readSystemRunTasks(): CancelablePromise<SystemRunsReadSystemRunTasksResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/system-runs/tasks'
+        });
+    }
+
+    /**
+     * Start System Run
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns SystemRunPublic Successful Response
+     * @throws ApiError
+     */
+    public static startSystemRun(data: SystemRunsStartSystemRunData = {}): CancelablePromise<SystemRunsStartSystemRunResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/system-runs/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Read System Runs
+     * @param data The data for the request.
+     * @param data.limit
+     * @returns SystemRunsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readSystemRuns(data: SystemRunsReadSystemRunsData = {}): CancelablePromise<SystemRunsReadSystemRunsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/system-runs/',
+            query: {
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Read System Run
+     * @param data The data for the request.
+     * @param data.systemRunId
+     * @returns SystemRunPublic Successful Response
+     * @throws ApiError
+     */
+    public static readSystemRun(data: SystemRunsReadSystemRunData): CancelablePromise<SystemRunsReadSystemRunResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/system-runs/{system_run_id}',
+            path: {
+                system_run_id: data.systemRunId
             },
             errors: {
                 422: 'Validation Error'
@@ -1563,7 +1636,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Create User
      * Create new user.
@@ -1583,7 +1656,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Read User Me
      * Get current user.
@@ -1596,7 +1669,7 @@ export class UsersService {
             url: '/api/v1/users/me'
         });
     }
-    
+
     /**
      * Delete User Me
      * Delete own user.
@@ -1609,7 +1682,7 @@ export class UsersService {
             url: '/api/v1/users/me'
         });
     }
-    
+
     /**
      * Update User Me
      * Update own user.
@@ -1629,7 +1702,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Update Password Me
      * Update own password.
@@ -1649,7 +1722,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Read User By Id
      * Get a specific user by id.
@@ -1670,7 +1743,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Update User
      * Update a user.
@@ -1694,7 +1767,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Delete User
      * Delete a user.
@@ -1738,7 +1811,7 @@ export class UtilsService {
             }
         });
     }
-    
+
     /**
      * Health Check
      * @returns boolean Successful Response

@@ -2328,6 +2328,247 @@ export const RecurrenceUnitSchema = {
     title: 'RecurrenceUnit'
 } as const;
 
+export const SystemRunPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        status: {
+            '$ref': '#/components/schemas/SystemRunStatus'
+        },
+        trigger: {
+            '$ref': '#/components/schemas/SystemRunTrigger'
+        },
+        effective_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Effective At'
+        },
+        timezone: {
+            type: 'string',
+            title: 'Timezone'
+        },
+        business_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Business Date'
+        },
+        summary: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Summary'
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        },
+        started_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Started At'
+        },
+        finished_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Finished At'
+        },
+        steps: {
+            items: {
+                '$ref': '#/components/schemas/SystemRunStepPublic'
+            },
+            type: 'array',
+            title: 'Steps'
+        }
+    },
+    type: 'object',
+    required: ['id', 'status', 'trigger', 'effective_at', 'timezone', 'business_date', 'summary', 'error', 'started_at', 'finished_at'],
+    title: 'SystemRunPublic'
+} as const;
+
+export const SystemRunSkipReasonSchema = {
+    type: 'string',
+    enum: ['disabled', 'manual_only', 'not_due', 'not_configured', 'no_eligible_targets', 'prerequisite_failed'],
+    title: 'SystemRunSkipReason'
+} as const;
+
+export const SystemRunStartSchema = {
+    properties: {
+        manual_task_names: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            maxItems: 100,
+            title: 'Manual Task Names'
+        }
+    },
+    type: 'object',
+    title: 'SystemRunStart'
+} as const;
+
+export const SystemRunStatusSchema = {
+    type: 'string',
+    enum: ['running', 'success', 'partial_failure', 'failure'],
+    title: 'SystemRunStatus'
+} as const;
+
+export const SystemRunStepPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        task_name: {
+            type: 'string',
+            title: 'Task Name'
+        },
+        ledger_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Ledger Id'
+        },
+        status: {
+            '$ref': '#/components/schemas/SystemRunStepStatus'
+        },
+        skip_reason: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/SystemRunSkipReason'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        },
+        summary: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Summary'
+        },
+        started_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Started At'
+        },
+        finished_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Finished At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'task_name', 'ledger_id', 'status', 'skip_reason', 'error', 'summary', 'started_at', 'finished_at'],
+    title: 'SystemRunStepPublic'
+} as const;
+
+export const SystemRunStepStatusSchema = {
+    type: 'string',
+    enum: ['succeeded', 'failed', 'skipped'],
+    title: 'SystemRunStepStatus'
+} as const;
+
+export const SystemRunTaskPublicSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        mode: {
+            '$ref': '#/components/schemas/TaskRunMode'
+        }
+    },
+    type: 'object',
+    required: ['name', 'mode'],
+    title: 'SystemRunTaskPublic'
+} as const;
+
+export const SystemRunTriggerSchema = {
+    type: 'string',
+    enum: ['scheduled', 'manual'],
+    title: 'SystemRunTrigger'
+} as const;
+
+export const SystemRunsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/SystemRunPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'SystemRunsPublic'
+} as const;
+
+export const TaskRunModeSchema = {
+    type: 'string',
+    enum: ['disabled', 'manual_only', 'scheduled'],
+    title: 'TaskRunMode'
+} as const;
+
 export const TokenSchema = {
     properties: {
         access_token: {

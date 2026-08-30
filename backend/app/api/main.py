@@ -8,6 +8,7 @@ from app.api.routes import (
     legacy_import,
     login,
     obligations,
+    system_runs,
     users,
     utils,
 )
@@ -20,5 +21,6 @@ api_router.include_router(categories.router)
 api_router.include_router(integration.router)
 api_router.include_router(legacy_import.router)
 api_router.include_router(obligations.router)
+api_router.include_router(system_runs.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)

@@ -466,6 +466,60 @@ export type PeriodPaymentSummaryPublic = {
 
 export type RecurrenceUnit = 'month' | 'year';
 
+export type SystemRunPublic = {
+    id: string;
+    status: SystemRunStatus;
+    trigger: SystemRunTrigger;
+    effective_at: string;
+    timezone: string;
+    business_date: string;
+    summary: ({
+    [key: string]: unknown;
+} | null);
+    error: (string | null);
+    started_at: string;
+    finished_at: (string | null);
+    steps?: Array<SystemRunStepPublic>;
+};
+
+export type SystemRunSkipReason = 'disabled' | 'manual_only' | 'not_due' | 'not_configured' | 'no_eligible_targets' | 'prerequisite_failed';
+
+export type SystemRunsPublic = {
+    data: Array<SystemRunPublic>;
+    count: number;
+};
+
+export type SystemRunStart = {
+    manual_task_names?: Array<(string)>;
+};
+
+export type SystemRunStatus = 'running' | 'success' | 'partial_failure' | 'failure';
+
+export type SystemRunStepPublic = {
+    id: string;
+    task_name: string;
+    ledger_id: (string | null);
+    status: SystemRunStepStatus;
+    skip_reason: (SystemRunSkipReason | null);
+    error: (string | null);
+    summary: ({
+    [key: string]: unknown;
+} | null);
+    started_at: string;
+    finished_at: (string | null);
+};
+
+export type SystemRunStepStatus = 'succeeded' | 'failed' | 'skipped';
+
+export type SystemRunTaskPublic = {
+    name: string;
+    mode: TaskRunMode;
+};
+
+export type SystemRunTrigger = 'scheduled' | 'manual';
+
+export type TaskRunMode = 'disabled' | 'manual_only' | 'scheduled';
+
 export type Token = {
     access_token: string;
     token_type?: string;
@@ -986,6 +1040,26 @@ export type ObligationsReopenObligationData = {
 };
 
 export type ObligationsReopenObligationResponse = (ObligationPublic);
+
+export type SystemRunsReadSystemRunTasksResponse = (Array<SystemRunTaskPublic>);
+
+export type SystemRunsStartSystemRunData = {
+    requestBody?: SystemRunStart;
+};
+
+export type SystemRunsStartSystemRunResponse = (SystemRunPublic);
+
+export type SystemRunsReadSystemRunsData = {
+    limit?: number;
+};
+
+export type SystemRunsReadSystemRunsResponse = (SystemRunsPublic);
+
+export type SystemRunsReadSystemRunData = {
+    systemRunId: string;
+};
+
+export type SystemRunsReadSystemRunResponse = (SystemRunPublic);
 
 export type UsersReadUsersData = {
     limit?: number;
