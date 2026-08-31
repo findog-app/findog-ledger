@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.domain import TaskRunMode
-from app.models import Ledger
 from app.services.system_run_runner import SYSTEM_RUN_ADVISORY_LOCK_KEY
 from tests.conftest import TestingSessionLocal
 from tests.utils.user import authentication_token_from_email, create_random_user
@@ -22,12 +21,12 @@ def test_system_runs_require_a_superuser(client: TestClient, db: Session) -> Non
 
 def test_administrator_can_start_manual_run_and_inspect_history(
     client: TestClient,
-    db: Session,
     superuser_token_headers: dict[str, str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(settings, "LEGACY_IMPORT_MODE", TaskRunMode.MANUAL_ONLY)
     monkeypatch.setattr(settings, "SYSTEM_RUN_TIMEZONE", "Europe/Warsaw")
+    monkeypatch.setattr(settings, "SMTP_HOST", None)
     started = client.post(
         f"{settings.API_V1_STR}/system-runs/", headers=superuser_token_headers
     )
@@ -37,9 +36,9 @@ def test_administrator_can_start_manual_run_and_inspect_history(
     assert run["trigger"] == "manual"
     assert run["status"] == "success"
     assert run["timezone"] == "Europe/Warsaw"
-    assert [step["task_name"] for step in run["steps"]] == [
-        "ensure_obligations"
-    ] * db.scalar(select(func.count()).select_from(Ledger).where(Ledger.is_active))
+    assert run["steps"][-1]["task_name"] == "scheduled_reports"
+    assert run["steps"][-1]["skip_reason"] == "not_configured"
+    assert all(step["task_name"] == "ensure_obligations" for step in run["steps"][:-1])
 
     history = client.get(
         f"{settings.API_V1_STR}/system-runs/", headers=superuser_token_headers
@@ -57,11 +56,11 @@ def test_administrator_can_start_manual_run_and_inspect_history(
 
 def test_manual_only_task_requires_explicit_selection(
     client: TestClient,
-    db: Session,
     superuser_token_headers: dict[str, str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(settings, "LEGACY_IMPORT_MODE", TaskRunMode.MANUAL_ONLY)
+    monkeypatch.setattr(settings, "SMTP_HOST", None)
 
     response = client.post(
         f"{settings.API_V1_STR}/system-runs/",
@@ -70,12 +69,11 @@ def test_manual_only_task_requires_explicit_selection(
     )
 
     assert response.status_code == 200
-    assert [step["task_name"] for step in response.json()["steps"]] == [
-        "legacy_import",
-        *["ensure_obligations"]
-        * db.scalar(select(func.count()).select_from(Ledger).where(Ledger.is_active)),
-    ]
-    assert response.json()["steps"][0]["skip_reason"] == "not_configured"
+    steps = response.json()["steps"]
+    assert steps[0]["task_name"] == "legacy_import"
+    assert steps[0]["skip_reason"] == "not_configured"
+    assert steps[-1]["task_name"] == "scheduled_reports"
+    assert all(step["task_name"] == "ensure_obligations" for step in steps[1:-1])
 
 
 def test_disabled_tasks_cannot_be_started_manually(

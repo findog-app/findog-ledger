@@ -161,7 +161,9 @@ class ScheduledReportsTask:
         self.reports = reports
 
     def should_run(self, context: SystemRunContext) -> SystemRunSkipReason | None:
-        return None if self.reports else SystemRunSkipReason.NOT_CONFIGURED
+        if not self.reports or not settings.emails_enabled:
+            return SystemRunSkipReason.NOT_CONFIGURED
+        return None
 
     def eligible_ledgers(
         self, *, session: Session, context: SystemRunContext
