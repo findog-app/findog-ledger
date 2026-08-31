@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -13,6 +14,8 @@ from sqlalchemy.orm import Session
 from app.domain.report_delivery import ReportDeliveryStatus
 from app.models import ReportDelivery, User
 from app.utils import EmailData, send_email
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from app.use_cases.system_runs import SystemRunContext
@@ -27,7 +30,9 @@ class ScheduledReport(Protocol):
 
     def delivery_key(self, *, user: User, context: SystemRunContext) -> str: ...
 
-    def render(self, *, user: User, context: SystemRunContext) -> EmailData: ...
+    def render(
+        self, *, session: Session, user: User, context: SystemRunContext
+    ) -> EmailData | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,27 +59,44 @@ def deliver_scheduled_report(
         if delivery is not None and delivery.status is ReportDeliveryStatus.SENT:
             skipped += 1
             continue
-        if delivery is None:
-            delivery = ReportDelivery(
-                report_type=report.report_type,
-                user_id=user.id,
-                delivery_key=delivery_key,
-                status=ReportDeliveryStatus.FAILED,
-            )
-            session.add(delivery)
-        else:
-            delivery.report_type = report.report_type
-            delivery.error_message = None
-        session.commit()
         try:
-            email = report.render(user=user, context=context)
+            email = report.render(session=session, user=user, context=context)
+            if email is None:
+                logger.info(
+                    "Scheduled report %s skipped for user %s: no actionable content",
+                    report.report_type,
+                    user.id,
+                )
+                continue
+            if delivery is None:
+                delivery = ReportDelivery(
+                    report_type=report.report_type,
+                    user_id=user.id,
+                    delivery_key=delivery_key,
+                    status=ReportDeliveryStatus.FAILED,
+                )
+                session.add(delivery)
+            else:
+                delivery.report_type = report.report_type
+                delivery.error_message = None
+            session.commit()
             send_email(
                 email_to=user.email,
                 subject=email.subject,
                 html_content=email.html_content,
+                text_content=email.text_content,
             )
         except Exception as exc:
             session.rollback()
+            if delivery is None:
+                delivery = ReportDelivery(
+                    report_type=report.report_type,
+                    user_id=user.id,
+                    delivery_key=delivery_key,
+                    status=ReportDeliveryStatus.FAILED,
+                )
+                session.add(delivery)
+                session.commit()
             delivery = session.get(ReportDelivery, delivery.id)
             if delivery is not None:
                 delivery.status = ReportDeliveryStatus.FAILED
@@ -89,7 +111,15 @@ def deliver_scheduled_report(
                 delivery.error_message = None
                 session.commit()
             sent += 1
-    return DeliverySummary(sent=sent, skipped=skipped, failed=failed)
+    summary = DeliverySummary(sent=sent, skipped=skipped, failed=failed)
+    logger.info(
+        "Scheduled report %s finished: sent=%s skipped=%s failed=%s",
+        report.report_type,
+        summary.sent,
+        summary.skipped,
+        summary.failed,
+    )
+    return summary
 
 
 def _safe_error(exc: Exception) -> str:

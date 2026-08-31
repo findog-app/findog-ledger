@@ -23,7 +23,7 @@ class FakeReport:
     def delivery_key(self, *, user: User, context: SystemRunContext) -> str:
         return f"daily:{user.id}:{context.business_date.isoformat()}"
 
-    def render(self, *, user: User, context: SystemRunContext) -> EmailData:
+    def render(self, *, session, user: User, context: SystemRunContext) -> EmailData:  # type: ignore[no-untyped-def]
         return EmailData(html_content="<p>Report</p>", subject="Daily report")
 
 
