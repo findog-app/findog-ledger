@@ -10,6 +10,12 @@ from app.models.base import Base, get_datetime_utc
 
 
 class ReportDelivery(Base):
+    """Best-effort SMTP delivery record.
+
+    A crash after SMTP accepts a message but before ``sent`` is committed can
+    cause a retry. Plain SMTP cannot provide an atomic exactly-once guarantee.
+    """
+
     __tablename__ = "report_delivery"
     __table_args__ = (UniqueConstraint("user_id", "delivery_key"),)
 

@@ -66,7 +66,7 @@ class SystemRunTask(Protocol):
     ) -> Sequence[Ledger]: ...
 
     def execute(
-        self, *, session: Session, ledger: Ledger, context: SystemRunContext
+        self, *, session: Session, ledger: Ledger | None, context: SystemRunContext
     ) -> TaskResult: ...
 
 
@@ -75,6 +75,7 @@ class EnsureObligationsTask:
     order = 200
     mode = TaskRunMode.SCHEDULED
     dependencies: tuple[str, ...] = ()
+    is_global = False
 
     def should_run(self, context: SystemRunContext) -> SystemRunSkipReason | None:
         return None
@@ -103,6 +104,7 @@ class LegacyImportTask:
     name = "legacy_import"
     order = 100
     dependencies: tuple[str, ...] = ()
+    is_global = False
 
     @property
     def mode(self) -> TaskRunMode:
@@ -152,25 +154,21 @@ class ScheduledReportsTask:
     order = 300
     mode = TaskRunMode.SCHEDULED
     dependencies = ("ensure_obligations",)
+    is_global = True
 
     def __init__(self, reports: Sequence[ScheduledReport] = ()) -> None:
         self.reports = reports
 
     def should_run(self, context: SystemRunContext) -> SystemRunSkipReason | None:
-        return None
+        return None if self.reports else SystemRunSkipReason.NOT_CONFIGURED
 
     def eligible_ledgers(
         self, *, session: Session, context: SystemRunContext
     ) -> Sequence[Ledger]:
-        if not self.reports:
-            return []
-        ledger = session.scalar(
-            select(Ledger).where(Ledger.is_active).order_by(Ledger.id)
-        )
-        return [ledger] if ledger is not None else []
+        return []
 
     def execute(
-        self, *, session: Session, ledger: Ledger, context: SystemRunContext
+        self, *, session: Session, ledger: Ledger | None, context: SystemRunContext
     ) -> TaskResult:
         sent = skipped = failed = 0
         for report in self.reports:
@@ -180,13 +178,14 @@ class ScheduledReportsTask:
             sent += summary.sent
             skipped += summary.skipped
             failed += summary.failed
+        if failed:
+            raise RuntimeError(f"{failed} scheduled report deliveries failed")
         return TaskResult({"sent": sent, "skipped": skipped, "failed": failed})
 
 
 SYSTEM_RUN_TASK_REGISTRY: tuple[SystemRunTask, ...] = (
     cast(SystemRunTask, LegacyImportTask()),
     cast(SystemRunTask, EnsureObligationsTask()),
-    cast(SystemRunTask, ScheduledReportsTask()),
 )
 
 
@@ -256,6 +255,44 @@ class SystemRunOrchestrator:
                 continue
             if reason is not None:
                 self._skip_task(session, system_run, task.name, reason)
+                continue
+            if getattr(task, "is_global", False):
+                if any(name in task.dependencies for name, _ in blocked_targets):
+                    blocked_targets.add((task.name, None))
+                    self._add_step(
+                        session,
+                        system_run,
+                        task.name,
+                        None,
+                        SystemRunStepStatus.SKIPPED,
+                        skip_reason=SystemRunSkipReason.PREREQUISITE_FAILED,
+                    )
+                    continue
+                started_at = datetime.now(UTC)
+                try:
+                    result = task.execute(session=session, ledger=None, context=context)
+                except Exception as exc:
+                    session.rollback()
+                    blocked_targets.add((task.name, None))
+                    self._add_step(
+                        session,
+                        system_run,
+                        task.name,
+                        None,
+                        SystemRunStepStatus.FAILED,
+                        started_at=started_at,
+                        error=_safe_error(exc),
+                    )
+                else:
+                    self._add_step(
+                        session,
+                        system_run,
+                        task.name,
+                        None,
+                        SystemRunStepStatus.SUCCEEDED,
+                        started_at=started_at,
+                        summary=result.summary,
+                    )
                 continue
             try:
                 ledgers = task.eligible_ledgers(session=session, context=context)
