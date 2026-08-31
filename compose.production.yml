@@ -32,6 +32,29 @@ services:
         aliases:
           - findog-ledger-backend
 
+  scheduler:
+    image: ghcr.io/findog-app/findog-ledger-backend:${TAG?Set TAG in .env}
+    restart: always
+    depends_on:
+      prestart:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_SERVER=${POSTGRES_SERVER?Set POSTGRES_SERVER in .env}
+      - POSTGRES_PORT=${POSTGRES_PORT?Set POSTGRES_PORT in .env}
+      - POSTGRES_DB=${POSTGRES_DB?Set POSTGRES_DB in .env}
+      - POSTGRES_USER=${POSTGRES_USER?Set POSTGRES_USER in .env}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Set POSTGRES_PASSWORD in .env}
+      - SYSTEM_RUN_SCHEDULE=${SYSTEM_RUN_SCHEDULE:-5 0 * * *}
+      - SYSTEM_RUN_TIMEZONE=${SYSTEM_RUN_TIMEZONE:-Europe/Warsaw}
+      - SYSTEM_RUN_STALE_AFTER_MINUTES=${SYSTEM_RUN_STALE_AFTER_MINUTES:-120}
+      - SYSTEM_RUN_TIMEOUT_SECONDS=${SYSTEM_RUN_TIMEOUT_SECONDS:-3600}
+      - TZ=${SYSTEM_RUN_TIMEZONE:-Europe/Warsaw}
+    command: ["/app/backend/scripts/system-run-scheduler.sh"]
+    networks:
+      - firefly_net
+
   frontend:
     image: ghcr.io/findog-app/findog-ledger-frontend:${TAG?Set TAG in .env}
     restart: always
