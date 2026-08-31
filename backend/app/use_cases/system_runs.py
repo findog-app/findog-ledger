@@ -20,6 +20,7 @@ from app.domain.system_run import (
     SystemRunTrigger,
 )
 from app.models import Ledger, SystemRun, SystemRunStep
+from app.services.daily_obligation_report import DailyObligationReport
 from app.services.legacy_import import load_legacy_import_config
 from app.services.scheduled_reports import ScheduledReport, deliver_scheduled_report
 from app.use_cases import legacy_import as legacy_import_use_cases
@@ -186,6 +187,7 @@ class ScheduledReportsTask:
 SYSTEM_RUN_TASK_REGISTRY: tuple[SystemRunTask, ...] = (
     cast(SystemRunTask, LegacyImportTask()),
     cast(SystemRunTask, EnsureObligationsTask()),
+    cast(SystemRunTask, ScheduledReportsTask((DailyObligationReport(),))),
 )
 
 

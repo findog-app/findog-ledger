@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class EmailData:
     html_content: str
     subject: str
+    text_content: str = ""
 
 
 def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
@@ -34,15 +35,23 @@ def send_email(
     email_to: str,
     subject: str = "",
     html_content: str = "",
+    text_content: str = "",
 ) -> None:
     assert settings.emails_enabled, "no provided configuration for email variables"
     assert settings.EMAILS_FROM_EMAIL is not None
     message = Message(
         subject=subject,
         html=html_content,
+        text=text_content,
         mail_from=(settings.EMAILS_FROM_NAME, settings.EMAILS_FROM_EMAIL),
     )
-    smtp_options = {"host": settings.SMTP_HOST, "port": settings.SMTP_PORT}
+    smtp_options = {
+        "host": settings.SMTP_HOST,
+        "port": settings.SMTP_PORT,
+        # The ``emails`` package otherwise returns connection failures as a
+        # response object and callers wrongly treat the message as delivered.
+        "fail_silently": False,
+    }
     if settings.SMTP_TLS:
         smtp_options["tls"] = True
     elif settings.SMTP_SSL:

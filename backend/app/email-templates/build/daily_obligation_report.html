@@ -1,0 +1,13 @@
+<h1>{{ project_name }}: daily obligation report</h1>
+<p>Report date: {{ report_date }}</p>
+{% for section, ledgers in sections.items() %}
+<h2>{{ section|replace('_', ' ')|title }}</h2>
+{% for ledger_name, items in ledgers.items() %}
+<h3>{{ ledger_name }}</h3>
+<ul>
+{% for item in items %}
+  <li><a href="{{ item.link }}">{{ item.category_name }}</a> — due: {{ item.due_date or 'unknown' }}{% if item.due_date_state != 'confirmed' %} ({{ item.due_date_state }}){% endif %}; amount: {% if item.amount is none %}unknown{% else %}{{ item.amount }} {{ item.currency or '' }}{% endif %}{% if item.amount_state != 'confirmed' %} ({{ item.amount_state }}){% endif %}</li>
+{% endfor %}
+</ul>
+{% endfor %}
+{% endfor %}
