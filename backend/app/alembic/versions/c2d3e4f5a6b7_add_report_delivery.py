@@ -1,7 +1,7 @@
 """Add scheduled report delivery tracking.
 
 Revision ID: c2d3e4f5a6b7
-Revises: a9b0c1d2e3f4
+Revises: b0c1d2e3f4a5
 """
 
 from alembic import op
@@ -10,7 +10,7 @@ from sqlalchemy.dialects import postgresql
 
 
 revision = "c2d3e4f5a6b7"
-down_revision = "a9b0c1d2e3f4"
+down_revision = "b0c1d2e3f4a5"
 branch_labels = None
 depends_on = None
 
