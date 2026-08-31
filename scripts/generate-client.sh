@@ -12,4 +12,9 @@ trap 'rm -f "$openapi_tmp"' EXIT
 )
 
 OPENAPI_INPUT="$openapi_tmp" bash ./scripts/bun.sh run --filter frontend generate-client
+
+# The generator may leave whitespace on otherwise empty lines. Normalize its
+# output so a no-op regeneration does not make a commit hook fail.
+find frontend/src/client -type f -name '*.ts' -exec perl -pi -e 's/[ \t]+$//' {} +
+
 bash ./scripts/bun.sh run --filter frontend lint

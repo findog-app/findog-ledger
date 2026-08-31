@@ -1,0 +1,12 @@
+{{ project_name }}: daily obligation report
+Report date: {{ report_date }}
+{% for section, ledgers in sections.items() %}
+
+{{ section|replace('_', ' ')|title }}
+{% for ledger_name, items in ledgers.items() %}
+{{ ledger_name }}
+{% for item in items %}
+- {{ item.category_name }} | due: {{ item.due_date or 'unknown' }}{% if item.due_date_state != 'confirmed' %} ({{ item.due_date_state }}){% endif %} | amount: {% if item.amount is none %}unknown{% else %}{{ item.amount }} {{ item.currency or '' }}{% endif %}{% if item.amount_state != 'confirmed' %} ({{ item.amount_state }}){% endif %} | {{ item.link }}
+{% endfor %}
+{% endfor %}
+{% endfor %}

@@ -53,6 +53,13 @@ backend downloads the workbook from Dropbox with `DROPBOX_API_KEY`. Configure
 its path and monitored columns in YAML; start from
 [`config/legacy-import.example.yaml`](config/legacy-import.example.yaml), store
 the real file outside the repository, and set `LEGACY_IMPORT_CONFIG_PATH` to it.
+Legacy import is disabled by default. Set the single authoritative switch
+`LEGACY_IMPORT_MODE=manual_only` to allow the manual endpoint, or
+`LEGACY_IMPORT_MODE=scheduled` when a system runner is configured.
+For System Run, both enabled modes also require `LEGACY_IMPORT_LEDGER_ID` to
+identify the one ledger receiving the configured workbook; runner execution is
+never broadcast to all active ledgers. The existing manual endpoint continues
+to use its ledger URL parameter.
 Each monitored category header must have a unique four-letter category code in
 its comment.
 

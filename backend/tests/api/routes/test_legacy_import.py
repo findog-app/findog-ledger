@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.routes import legacy_import as legacy_import_route
 from app.core.config import settings
-from app.domain import LegacyImportJobStatus
+from app.domain import LegacyImportJobStatus, TaskRunMode
 from app.models import LegacyImportJob
 from app.use_cases import ledgers as ledger_use_cases
 from tests.utils.user import authentication_token_from_email, create_random_user
@@ -15,6 +15,7 @@ from tests.utils.user import authentication_token_from_email, create_random_user
 def test_owner_can_start_legacy_import_job(
     client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(settings, "LEGACY_IMPORT_MODE", TaskRunMode.MANUAL_ONLY)
     owner = create_random_user(db)
     headers = authentication_token_from_email(client=client, email=owner.email, db=db)
     ledger = ledger_use_cases.create_ledger(
@@ -82,6 +83,24 @@ def test_start_legacy_import_rejects_second_active_job(
     )
 
     assert response.status_code == 409
+
+
+def test_start_legacy_import_rejects_disabled_mode(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "LEGACY_IMPORT_MODE", TaskRunMode.DISABLED)
+    owner = create_random_user(db)
+    headers = authentication_token_from_email(client=client, email=owner.email, db=db)
+    ledger = ledger_use_cases.create_ledger(
+        session=db, owner_user_id=owner.id, name="Disabled legacy import"
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/ledgers/{ledger.id}/legacy-import", headers=headers
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Legacy import is disabled"
 
 
 def test_legacy_import_requires_ledger_owner(client: TestClient, db: Session) -> None:

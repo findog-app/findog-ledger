@@ -1,4 +1,5 @@
 import secrets
+import uuid
 import warnings
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
@@ -13,6 +14,8 @@ from pydantic import (
     model_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.domain.system_run import TaskRunMode
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -98,6 +101,12 @@ class Settings(BaseSettings):
 
     DROPBOX_API_KEY: str | None = None
     LEGACY_IMPORT_CONFIG_PATH: Path = Path("config/legacy-import.yaml")
+    LEGACY_IMPORT_MODE: TaskRunMode = TaskRunMode.DISABLED
+    LEGACY_IMPORT_LEDGER_ID: uuid.UUID | None = None
+    SYSTEM_RUN_SCHEDULE: str = "5 0 * * *"
+    SYSTEM_RUN_TIMEZONE: str = "Europe/Warsaw"
+    SYSTEM_RUN_STALE_AFTER_MINUTES: int = 120
+    SYSTEM_RUN_TIMEOUT_SECONDS: int = 3600
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

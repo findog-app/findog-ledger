@@ -5,7 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import SessionDep, require_ledger_owner_access
-from app.domain import LegacyImportJobStatus
+from app.core.config import settings
+from app.domain import LegacyImportJobStatus, TaskRunMode
 from app.models import Ledger, LegacyImportJob
 from app.schemas.legacy_import import LegacyImportJobPublic
 from app.services.legacy_import_jobs import run_legacy_import_job
@@ -24,6 +25,8 @@ def start_legacy_import(
     background_tasks: BackgroundTasks,
     ledger: Ledger = Depends(require_ledger_owner_access),
 ) -> Any:
+    if settings.LEGACY_IMPORT_MODE is TaskRunMode.DISABLED:
+        raise HTTPException(status_code=409, detail="Legacy import is disabled")
     job = LegacyImportJob(
         ledger_id=ledger.id,
         status=LegacyImportJobStatus.PENDING,
