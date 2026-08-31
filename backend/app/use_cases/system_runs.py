@@ -21,6 +21,7 @@ from app.domain.system_run import (
 )
 from app.models import Ledger, SystemRun, SystemRunStep
 from app.services.legacy_import import load_legacy_import_config
+from app.services.scheduled_reports import ScheduledReport, deliver_scheduled_report
 from app.use_cases import legacy_import as legacy_import_use_cases
 from app.use_cases import obligations as obligation_use_cases
 
@@ -146,9 +147,46 @@ class LegacyImportTask:
         return TaskResult(asdict(result))
 
 
+class ScheduledReportsTask:
+    name = "scheduled_reports"
+    order = 300
+    mode = TaskRunMode.SCHEDULED
+    dependencies = ("ensure_obligations",)
+
+    def __init__(self, reports: Sequence[ScheduledReport] = ()) -> None:
+        self.reports = reports
+
+    def should_run(self, context: SystemRunContext) -> SystemRunSkipReason | None:
+        return None
+
+    def eligible_ledgers(
+        self, *, session: Session, context: SystemRunContext
+    ) -> Sequence[Ledger]:
+        if not self.reports:
+            return []
+        ledger = session.scalar(
+            select(Ledger).where(Ledger.is_active).order_by(Ledger.id)
+        )
+        return [ledger] if ledger is not None else []
+
+    def execute(
+        self, *, session: Session, ledger: Ledger, context: SystemRunContext
+    ) -> TaskResult:
+        sent = skipped = failed = 0
+        for report in self.reports:
+            summary = deliver_scheduled_report(
+                session=session, report=report, context=context
+            )
+            sent += summary.sent
+            skipped += summary.skipped
+            failed += summary.failed
+        return TaskResult({"sent": sent, "skipped": skipped, "failed": failed})
+
+
 SYSTEM_RUN_TASK_REGISTRY: tuple[SystemRunTask, ...] = (
     cast(SystemRunTask, LegacyImportTask()),
     cast(SystemRunTask, EnsureObligationsTask()),
+    cast(SystemRunTask, ScheduledReportsTask()),
 )
 
 
