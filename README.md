@@ -129,6 +129,52 @@ Confirm that the services are healthy, then open the frontend URL configured in
 docker compose ps
 ```
 
+### System Run scheduler
+
+The production stack includes a dedicated `scheduler` service. It stays running
+and uses cron to start a separate, one-shot System Run at each scheduled time;
+the one-shot process is limited by its timeout and records the run result in
+the application.
+
+By default, the run starts at 00:05 every day. Its schedule is
+`5 0 * * *` and it is evaluated in the configured `Europe/Warsaw` timezone.
+Configure these values in `.env` before starting or recreating the stack:
+
+```dotenv
+SYSTEM_RUN_SCHEDULE=5 0 * * *
+SYSTEM_RUN_TIMEZONE=Europe/Warsaw
+SYSTEM_RUN_TIMEOUT_SECONDS=3600
+SYSTEM_RUN_STALE_AFTER_MINUTES=120
+```
+
+`SYSTEM_RUN_SCHEDULE` is a standard five-field cron expression (minute, hour,
+day of month, month, day of week). Cron evaluates it in
+`SYSTEM_RUN_TIMEZONE`, including timezone changes such as daylight saving
+time. `SYSTEM_RUN_TIMEOUT_SECONDS` limits each one-shot execution;
+`SYSTEM_RUN_STALE_AFTER_MINUTES` determines when an interrupted run can be
+recovered as stale.
+
+Each System Run task has one of three modes: `disabled` never runs,
+`manual_only` can only be selected for a manual run, and `scheduled` runs on
+the cron schedule. Legacy import is `disabled` by default. To enable it, set
+`LEGACY_IMPORT_MODE` to `manual_only` or `scheduled`; both modes also require
+`LEGACY_IMPORT_LEDGER_ID`, `DROPBOX_API_KEY`, and a protected legacy-import
+configuration file referenced by `LEGACY_IMPORT_CONFIG_PATH`. See
+[`backend/config/legacy-import.example.yaml`](backend/config/legacy-import.example.yaml)
+for the configuration-file format. Mount the real file read-only at that path
+in both the `backend` and `scheduler` services.
+
+For day-two checks, confirm that the scheduler container is running and inspect
+its cron and one-shot output:
+
+```bash
+docker compose ps scheduler
+docker compose logs scheduler
+```
+
+In the application, open a ledger's **System Run** entry from the ledger menu
+to inspect run and per-step history, including skipped and failed tasks.
+
 ### Upgrade
 
 Change `TAG` to the desired immutable release and run:

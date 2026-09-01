@@ -72,3 +72,103 @@ test("confirms a manual-only System Run before sending its selected tasks", asyn
     manual_task_names: ["legacy_import"],
   })
 })
+
+test("shows System Run step summaries and execution details", async ({
+  page,
+}) => {
+  const ledger = await createLedgerFixture()
+  const history = {
+    data: [
+      {
+        id: "d3c6c679-8e8f-4ee8-a36c-04bc8ca03397",
+        status: "partial_failure",
+        trigger: "scheduled",
+        effective_at: "2026-09-01T00:30:00Z",
+        timezone: "UTC",
+        business_date: "2026-09-01",
+        summary: { succeeded_steps: 2, failed_steps: 1, skipped_steps: 1 },
+        error: null,
+        started_at: "2026-09-01T00:30:00Z",
+        finished_at: "2026-09-01T00:30:06Z",
+        steps: [
+          {
+            id: "c3c6c679-8e8f-4ee8-a36c-04bc8ca03391",
+            task_name: "ensure_obligations",
+            ledger_id: ledger.id,
+            status: "succeeded",
+            skip_reason: null,
+            error: null,
+            summary: { created_obligations: 3 },
+            started_at: "2026-09-01T00:30:00Z",
+            finished_at: "2026-09-01T00:30:02Z",
+          },
+          {
+            id: "c3c6c679-8e8f-4ee8-a36c-04bc8ca03392",
+            task_name: "scheduled_reports",
+            ledger_id: null,
+            status: "succeeded",
+            skip_reason: null,
+            error: null,
+            summary: {
+              sent: 2,
+              skipped: 1,
+              failed: 0,
+              future_value: "visible",
+            },
+            started_at: "2026-09-01T00:30:02Z",
+            finished_at: "2026-09-01T00:30:05Z",
+          },
+          {
+            id: "c3c6c679-8e8f-4ee8-a36c-04bc8ca03393",
+            task_name: "legacy_import",
+            ledger_id: ledger.id,
+            status: "skipped",
+            skip_reason: "not_configured",
+            error: null,
+            summary: null,
+            started_at: "2026-09-01T00:30:05Z",
+            finished_at: "2026-09-01T00:30:05Z",
+          },
+          {
+            id: "c3c6c679-8e8f-4ee8-a36c-04bc8ca03394",
+            task_name: "legacy_import",
+            ledger_id: ledger.id,
+            status: "failed",
+            skip_reason: null,
+            error: "Import source is unavailable",
+            summary: null,
+            started_at: "2026-09-01T00:30:05Z",
+            finished_at: "2026-09-01T00:30:06Z",
+          },
+        ],
+      },
+    ],
+    count: 1,
+  }
+  await page.route("**/api/v1/system-runs/tasks", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    }),
+  )
+  await page.route("**/api/v1/system-runs/", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify(history),
+    }),
+  )
+
+  await page.goto(`/ledgers/${ledger.id}/system-run`)
+
+  await expect(page.getByText("Created obligations")).toBeVisible()
+  await expect(page.getByText("3", { exact: true })).toBeVisible()
+  await expect(page.getByText("Reports sent")).toBeVisible()
+  await expect(page.getByText("Reports skipped")).toBeVisible()
+  await expect(page.getByText("Reports failed")).toBeVisible()
+  await expect(page.getByText("succeeded · 2s", { exact: true })).toBeVisible()
+  await expect(page.getByText("Skip reason: not_configured")).toBeVisible()
+  await expect(page.getByText("Import source is unavailable")).toBeVisible()
+  await page.getByText("Additional details").click()
+  await expect(page.getByText("Future value")).toBeVisible()
+  await expect(page.getByText("visible", { exact: true })).toBeVisible()
+})

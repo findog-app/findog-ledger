@@ -3,7 +3,11 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { AlertCircle, ArrowLeft, Play, XCircle } from "lucide-react"
 import { useState } from "react"
 
-import { type SystemRunPublic, SystemRunsService } from "@/client"
+import {
+  type SystemRunPublic,
+  type SystemRunStepPublic,
+  SystemRunsService,
+} from "@/client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -46,6 +50,100 @@ function statusVariant(status: SystemRunPublic["status"]) {
   if (status === "success") return "default"
   if (status === "running") return "secondary"
   return "destructive"
+}
+
+function formatDuration(startedAt: string, finishedAt: string | null) {
+  if (!finishedAt) return null
+
+  const milliseconds =
+    new Date(finishedAt).getTime() - new Date(startedAt).getTime()
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return null
+
+  if (milliseconds < 1_000) return `${milliseconds} ms`
+
+  const seconds = Math.floor(milliseconds / 1_000)
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return minutes > 0
+    ? `${minutes}m ${remainingSeconds}s`
+    : `${remainingSeconds}s`
+}
+
+function formatSummaryKey(key: string) {
+  return key
+    .replace(/_/g, " ")
+    .replace(/^./, (character) => character.toUpperCase())
+}
+
+function formatSummaryValue(value: unknown) {
+  if (typeof value === "string" || typeof value === "number")
+    return String(value)
+  if (typeof value === "boolean") return value ? "Yes" : "No"
+  if (value === null) return "None"
+  return JSON.stringify(value)
+}
+
+const summaryLabels: Record<string, Record<string, string>> = {
+  ensure_obligations: {
+    created_obligations: "Created obligations",
+  },
+  scheduled_reports: {
+    sent: "Reports sent",
+    skipped: "Reports skipped",
+    failed: "Reports failed",
+  },
+  legacy_import: {
+    created_category_groups: "Created category groups",
+    created_categories: "Created categories",
+    replaced_categories: "Replaced categories",
+    imported_obligations: "Imported obligations",
+  },
+}
+
+function StepSummary({ step }: { step: SystemRunStepPublic }) {
+  if (!step.summary || Object.keys(step.summary).length === 0) return null
+
+  const labels = summaryLabels[step.task_name] ?? {}
+  const entries = Object.entries(step.summary)
+  const knownEntries = entries.filter(([key]) => labels[key])
+  const additionalEntries = entries.filter(([key]) => !labels[key])
+
+  return (
+    <div className="space-y-2 text-sm">
+      {knownEntries.length > 0 && (
+        <dl className="space-y-1">
+          {knownEntries.map(([key, value]) => (
+            <div
+              className="flex items-baseline justify-between gap-3"
+              key={key}
+            >
+              <dt className="text-muted-foreground">{labels[key]}</dt>
+              <dd className="font-medium">{formatSummaryValue(value)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {additionalEntries.length > 0 && (
+        <details className="rounded-md border px-3 py-2">
+          <summary className="cursor-pointer font-medium">
+            {knownEntries.length > 0 ? "Additional details" : "Step details"}
+          </summary>
+          <dl className="mt-2 space-y-1">
+            {additionalEntries.map(([key, value]) => (
+              <div className="flex flex-wrap justify-between gap-x-3" key={key}>
+                <dt className="text-muted-foreground">
+                  {formatSummaryKey(key)}
+                </dt>
+                <dd className="break-all text-right">
+                  {formatSummaryValue(value)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </details>
+      )}
+    </div>
+  )
 }
 
 function SystemRun() {
@@ -254,22 +352,43 @@ function SystemRun() {
                   </p>
                 )}
                 <div className="mt-4 space-y-2">
-                  {run.steps?.map((step) => (
-                    <div
-                      className="flex flex-wrap justify-between gap-2 text-sm"
-                      key={step.id}
-                    >
-                      <span>
-                        {step.task_name.replace(/_/g, " ")}
-                        {step.ledger_id ? ` · ${step.ledger_id}` : ""}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {step.status}
-                        {step.skip_reason ? ` · ${step.skip_reason}` : ""}
-                        {step.error ? ` · ${step.error}` : ""}
-                      </span>
-                    </div>
-                  ))}
+                  {run.steps?.map((step) => {
+                    const duration = formatDuration(
+                      step.started_at,
+                      step.finished_at,
+                    )
+                    return (
+                      <div
+                        className="rounded-md border p-3 text-sm"
+                        key={step.id}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <span className="font-medium">
+                            {step.task_name.replace(/_/g, " ")}
+                            {step.ledger_id ? ` · ${step.ledger_id}` : ""}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {step.status}
+                            {duration ? ` · ${duration}` : ""}
+                          </span>
+                        </div>
+                        {step.skip_reason && (
+                          <p className="mt-2 text-muted-foreground">
+                            Skip reason: {step.skip_reason}
+                          </p>
+                        )}
+                        {step.error && (
+                          <p className="mt-2 text-destructive">{step.error}</p>
+                        )}
+                        {step.summary &&
+                          Object.keys(step.summary).length > 0 && (
+                            <div className="mt-2">
+                              <StepSummary step={step} />
+                            </div>
+                          )}
+                      </div>
+                    )
+                  })}
                 </div>
               </section>
             ))
