@@ -1,3 +1,18 @@
+## v0.6.0 (2026-08-31)
+
+### Feat
+
+- **reports**: send daily obligation digest (#160)
+- **notifications**: track scheduled report deliveries (#158)
+- **system-run**: add manual execution history UI (#154)
+- **system-run**: add production scheduler runner (#153)
+- **system-run**: add orchestration core (#150)
+
+### Fix
+
+- **system-run**: deploy production scheduler (#156)
+- **analytics**: contain category history chart on mobile (#152)
+
 ## v0.5.0 (2026-08-29)
 
 ### Feat
