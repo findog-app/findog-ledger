@@ -1,3 +1,10 @@
+## v0.6.1 (2026-09-01)
+
+### Fix
+
+- **system-run**: show step execution details (#168)
+- **ci**: pin uv version in playwright workflow
+
 ## v0.6.0 (2026-08-31)
 
 ### Feat
