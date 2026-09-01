@@ -111,9 +111,12 @@ function StepSummary({ step }: { step: SystemRunStepPublic }) {
   return (
     <div className="space-y-2 text-sm">
       {knownEntries.length > 0 && (
-        <dl className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+        <dl className="space-y-1">
           {knownEntries.map(([key, value]) => (
-            <div className="flex justify-between gap-3" key={key}>
+            <div
+              className="flex items-baseline justify-between gap-3"
+              key={key}
+            >
               <dt className="text-muted-foreground">{labels[key]}</dt>
               <dd className="font-medium">{formatSummaryValue(value)}</dd>
             </div>

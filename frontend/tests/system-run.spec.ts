@@ -165,7 +165,7 @@ test("shows System Run step summaries and execution details", async ({
   await expect(page.getByText("Reports sent")).toBeVisible()
   await expect(page.getByText("Reports skipped")).toBeVisible()
   await expect(page.getByText("Reports failed")).toBeVisible()
-  await expect(page.getByText("2s", { exact: true })).toBeVisible()
+  await expect(page.getByText("succeeded · 2s", { exact: true })).toBeVisible()
   await expect(page.getByText("Skip reason: not_configured")).toBeVisible()
   await expect(page.getByText("Import source is unavailable")).toBeVisible()
   await page.getByText("Additional details").click()
