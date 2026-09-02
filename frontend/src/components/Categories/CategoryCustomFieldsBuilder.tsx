@@ -485,6 +485,10 @@ export function CategoryCustomFieldsBuilder({
       } catch {
         // Keep the text draft for correction; the server schema remains applied.
       }
+      if (jsonDraft !== null && restoredSchema === null) {
+        setJsonDirty(true)
+        setJsonError("Apply valid JSON before saving a new version.")
+      }
       const initialSchema = restoredSchema ?? definition
       const formatted = JSON.stringify(initialSchema, null, 2)
       setAppliedSchema(initialSchema)
@@ -539,6 +543,7 @@ export function CategoryCustomFieldsBuilder({
     setAppliedSchema(schemaQuery.data?.schema ?? toSchema([]))
     setHasDraft(false)
     setHasJsonDraft(false)
+    setJsonDirty(false)
     setJsonError(null)
   }
 
