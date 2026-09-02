@@ -1,3 +1,9 @@
+## v0.6.2 (2026-09-02)
+
+### Fix
+
+- **categories**: move data schema builder to a dedicated page (#173)
+
 ## v0.6.1 (2026-09-01)
 
 ### Fix
