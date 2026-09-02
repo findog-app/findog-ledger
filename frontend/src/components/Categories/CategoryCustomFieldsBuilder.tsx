@@ -92,6 +92,23 @@ const customFieldsSchema = z
     })
   })
 
+const customFieldDraftSchema = z.object({
+  key: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  type: z.enum(fieldTypes),
+  required: z.boolean(),
+  minLength: z.number().optional(),
+  maxLength: z.number().optional(),
+  minimum: z.number().optional(),
+  maximum: z.number().optional(),
+  enumValues: z.string().optional(),
+})
+
+const customFieldsDraftSchema = z.object({
+  fields: z.array(customFieldDraftSchema),
+})
+
 type CustomFieldsForm = z.infer<typeof customFieldsSchema>
 type CustomField = CustomFieldsForm["fields"][number]
 type JsonSchemaProperty = Record<string, unknown>
@@ -105,7 +122,7 @@ function readDraft(key: string): CustomFieldsForm | null {
     const draft: unknown = JSON.parse(
       window.localStorage.getItem(key) ?? "null",
     )
-    const parsed = customFieldsSchema.safeParse(draft)
+    const parsed = customFieldsDraftSchema.safeParse(draft)
     return parsed.success ? parsed.data : null
   } catch {
     return null
@@ -522,6 +539,7 @@ export function CategoryCustomFieldsBuilder({
                             form.setValue(
                               `fields.${index}.type`,
                               value as CustomField["type"],
+                              { shouldDirty: true },
                             )
                           }
                         >
@@ -578,7 +596,13 @@ export function CategoryCustomFieldsBuilder({
                             integer
                             value={field.minLength}
                             onChange={(value) =>
-                              form.setValue(`fields.${index}.minLength`, value)
+                              form.setValue(
+                                `fields.${index}.minLength`,
+                                value,
+                                {
+                                  shouldDirty: true,
+                                },
+                              )
                             }
                             placeholder="None"
                           />
@@ -589,7 +613,13 @@ export function CategoryCustomFieldsBuilder({
                             integer
                             value={field.maxLength}
                             onChange={(value) =>
-                              form.setValue(`fields.${index}.maxLength`, value)
+                              form.setValue(
+                                `fields.${index}.maxLength`,
+                                value,
+                                {
+                                  shouldDirty: true,
+                                },
+                              )
                             }
                             placeholder="None"
                           />
@@ -610,7 +640,9 @@ export function CategoryCustomFieldsBuilder({
                           <NumberInput
                             value={field.minimum}
                             onChange={(value) =>
-                              form.setValue(`fields.${index}.minimum`, value)
+                              form.setValue(`fields.${index}.minimum`, value, {
+                                shouldDirty: true,
+                              })
                             }
                             placeholder="None"
                           />
@@ -620,7 +652,9 @@ export function CategoryCustomFieldsBuilder({
                           <NumberInput
                             value={field.maximum}
                             onChange={(value) =>
-                              form.setValue(`fields.${index}.maximum`, value)
+                              form.setValue(`fields.${index}.maximum`, value, {
+                                shouldDirty: true,
+                              })
                             }
                             placeholder="None"
                           />

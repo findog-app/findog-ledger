@@ -73,6 +73,11 @@ test("manages category custom fields with the builder", async ({ page }) => {
   await page.getByRole("link", { name: "Back to categories" }).click()
   await openCategoryAction(page, categoryName, "Manage custom fields")
   await expect(page.getByLabel("Field name")).toHaveValue("meter_reading_kwh")
+  await page.getByLabel("Type").click()
+  await page.getByRole("option", { name: "Number" }).click()
+  page.once("dialog", (dialog) => dialog.accept())
+  await page.reload()
+  await expect(page.getByLabel("Type")).toHaveText("Number")
   await page.getByLabel("Field name").fill("current_reading_kwh")
   await page.getByRole("link", { name: "Back to categories" }).click()
   await expect(
