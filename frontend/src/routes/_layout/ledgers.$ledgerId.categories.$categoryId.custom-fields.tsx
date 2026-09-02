@@ -3,7 +3,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router"
 import { ArrowLeft, ListPlus } from "lucide-react"
 
 import { CategoriesService } from "@/client"
-import { CategoryCustomFieldsBuilder } from "@/components/Categories/CategoryCustomFieldsDialog"
+import { CategoryCustomFieldsBuilder } from "@/components/Categories/CategoryCustomFieldsBuilder"
 import { Button } from "@/components/ui/button"
 import {
   Card,
