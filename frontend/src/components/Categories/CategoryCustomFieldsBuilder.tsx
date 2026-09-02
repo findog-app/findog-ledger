@@ -431,7 +431,10 @@ export function CategoryCustomFieldsBuilder({
   )
   const [editor, setEditor] = useState<"fields" | "json">("fields")
   const [jsonText, setJsonText] = useState("")
-  const [appliedJsonText, setAppliedJsonText] = useState("")
+  const [_appliedJsonText, setAppliedJsonText] = useState("")
+  const [appliedSchema, setAppliedSchema] = useState<JsonSchemaProperty | null>(
+    null,
+  )
   const [jsonDirty, setJsonDirty] = useState(false)
   const [jsonError, setJsonError] = useState<string | null>(null)
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false)
@@ -456,9 +459,11 @@ export function CategoryCustomFieldsBuilder({
   })
   const fields = useFieldArray({ control: form.control, name: "fields" })
   const unsupportedReason =
-    schemaQuery.data === undefined
+    schemaQuery.data === undefined || appliedSchema === null
       ? null
-      : unsupportedSchemaReason(schemaQuery.data)
+      : unsupportedSchemaReason({
+          schema: appliedSchema,
+        } as CategoryDataSchemaPublic)
 
   useEffect(() => {
     if (!hasInitialized && schemaQuery.data !== undefined) {
@@ -472,10 +477,19 @@ export function CategoryCustomFieldsBuilder({
   useEffect(() => {
     if (!hasJsonInitialized && schemaQuery.data !== undefined) {
       const definition = schemaQuery.data?.schema ?? toSchema([])
-      setJsonText(
-        readJsonDraft(jsonStorageKey) ?? JSON.stringify(definition, null, 2),
-      )
-      setAppliedJsonText(JSON.stringify(definition, null, 2))
+      const jsonDraft = readJsonDraft(jsonStorageKey)
+      let restoredSchema: JsonSchemaProperty | null = null
+      try {
+        const parsed: unknown = JSON.parse(jsonDraft ?? "null")
+        if (isRecord(parsed)) restoredSchema = parsed
+      } catch {
+        // Keep the text draft for correction; the server schema remains applied.
+      }
+      const initialSchema = restoredSchema ?? definition
+      const formatted = JSON.stringify(initialSchema, null, 2)
+      setAppliedSchema(initialSchema)
+      setJsonText(jsonDraft ?? formatted)
+      setAppliedJsonText(formatted)
       setHasJsonInitialized(true)
     }
   }, [hasJsonInitialized, jsonStorageKey, schemaQuery.data])
@@ -494,6 +508,7 @@ export function CategoryCustomFieldsBuilder({
       try {
         window.localStorage.setItem(storageKey, JSON.stringify(draft.data))
         const schema = JSON.stringify(toSchema(draft.data.fields), null, 2)
+        setAppliedSchema(JSON.parse(schema) as JsonSchemaProperty)
         window.localStorage.setItem(jsonStorageKey, schema)
         setJsonText(schema)
         setAppliedJsonText(schema)
@@ -521,6 +536,7 @@ export function CategoryCustomFieldsBuilder({
     setJsonText(
       JSON.stringify(schemaQuery.data?.schema ?? toSchema([]), null, 2),
     )
+    setAppliedSchema(schemaQuery.data?.schema ?? toSchema([]))
     setHasDraft(false)
     setHasJsonDraft(false)
     setJsonError(null)
@@ -551,6 +567,7 @@ export function CategoryCustomFieldsBuilder({
       form.reset({ fields: fieldsFromSchema(schema) })
       setJsonText(JSON.stringify(schema.schema, null, 2))
       setAppliedJsonText(JSON.stringify(schema.schema, null, 2))
+      setAppliedSchema(schema.schema)
       setHasDraft(false)
       setHasJsonDraft(false)
       setJsonError(null)
@@ -594,6 +611,7 @@ export function CategoryCustomFieldsBuilder({
       const formatted = JSON.stringify(schema, null, 2)
       setJsonText(formatted)
       setAppliedJsonText(formatted)
+      setAppliedSchema(schema)
       setJsonDirty(false)
       window.localStorage.setItem(jsonStorageKey, formatted)
       setHasJsonDraft(true)
@@ -626,9 +644,8 @@ export function CategoryCustomFieldsBuilder({
 
   const saveAppliedJsonSchema = () => {
     try {
-      const schema: unknown = JSON.parse(appliedJsonText)
-      if (!isRecord(schema)) throw new Error()
-      saveSchema.mutate({ schema })
+      if (!appliedSchema) throw new Error()
+      saveSchema.mutate({ schema: appliedSchema })
     } catch {
       setJsonError("Apply valid JSON before saving.")
     }
@@ -689,6 +706,11 @@ export function CategoryCustomFieldsBuilder({
             />
           </div>
           {jsonError && <p className="text-sm text-destructive">{jsonError}</p>}
+          {jsonDirty && (
+            <p className="text-sm text-muted-foreground">
+              Apply JSON before saving a new version.
+            </p>
+          )}
           <div className="flex flex-wrap justify-end gap-2">
             <Button type="button" variant="outline" onClick={formatJson}>
               Format JSON
@@ -703,6 +725,7 @@ export function CategoryCustomFieldsBuilder({
               type="button"
               loading={saveSchema.isPending}
               onClick={saveAppliedJsonSchema}
+              disabled={jsonDirty}
             >
               Save as new version
             </LoadingButton>
