@@ -1,3 +1,9 @@
+## v0.7.0 (2026-09-02)
+
+### Feat
+
+- **categories**: add minimal JSON editing for data schemas (#179)
+
 ## v0.6.2 (2026-09-02)
 
 ### Fix
