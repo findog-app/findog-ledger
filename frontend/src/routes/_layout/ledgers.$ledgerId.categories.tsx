@@ -1,5 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useLocation,
+} from "@tanstack/react-router"
 import { ArrowLeft, Tags } from "lucide-react"
 import { Suspense } from "react"
 
@@ -16,10 +21,15 @@ export const Route = createFileRoute("/_layout/ledgers/$ledgerId/categories")({
 
 function LedgerCategories() {
   const { ledgerId } = Route.useParams()
+  const location = useLocation()
   const { data: ledger } = useSuspenseQuery({
     queryFn: () => LedgersService.readLedger({ ledgerId }),
     queryKey: ["ledger", ledgerId],
   })
+
+  if (location.pathname !== `/ledgers/${ledgerId}/categories`) {
+    return <Outlet />
+  }
 
   return (
     <div className="flex flex-col gap-6">

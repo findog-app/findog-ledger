@@ -5,6 +5,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   Archive,
@@ -35,7 +36,6 @@ import {
   type CategoryUpdate,
 } from "@/client"
 import { CategoryCustomDataDialog } from "@/components/Categories/CategoryCustomDataDialog"
-import { CategoryCustomFieldsDialog } from "@/components/Categories/CategoryCustomFieldsDialog"
 import {
   DataTable,
   type DataTableFeatures,
@@ -1152,15 +1152,14 @@ function CategoryActions({
               </DropdownMenuItem>
             }
           />
-          <CategoryCustomFieldsDialog
-            ledgerId={ledgerId}
-            category={category}
-            trigger={
-              <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
-                Manage custom fields
-              </DropdownMenuItem>
-            }
-          />
+          <DropdownMenuItem asChild>
+            <Link
+              to="/ledgers/$ledgerId/categories/$categoryId/custom-fields"
+              params={{ ledgerId, categoryId: category.id }}
+            >
+              Manage custom fields
+            </Link>
+          </DropdownMenuItem>
           <EditCategoryDialog
             ledgerId={ledgerId}
             category={category}

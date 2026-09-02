@@ -53,9 +53,14 @@ test("manages category custom fields with the builder", async ({ page }) => {
   await expect(page.getByText("Category created")).toBeVisible()
 
   await openCategoryAction(page, categoryName, "Manage custom fields")
+  await expect(page).toHaveURL(/\/custom-fields$/)
   await page.getByRole("button", { name: "Add field" }).click()
   await page.getByLabel("Field name").fill("meter_reading_kwh")
   await page.getByLabel("Label").fill("Meter reading")
+  page.once("dialog", (dialog) => dialog.accept())
+  await page.reload()
+  await expect(page.getByLabel("Field name")).toHaveValue("meter_reading_kwh")
+  await expect(page.getByLabel("Label")).toHaveValue("Meter reading")
   const saveCustomFieldsButton = page.getByRole("button", {
     name: "Save custom fields",
   })
@@ -65,7 +70,26 @@ test("manages category custom fields with the builder", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 1"),
   ).toBeVisible()
 
+  await page.getByRole("link", { name: "Back to categories" }).click()
   await openCategoryAction(page, categoryName, "Manage custom fields")
+  await expect(page.getByLabel("Field name")).toHaveValue("meter_reading_kwh")
+  await page.getByLabel("Type").click()
+  await page.getByRole("option", { name: "Number" }).click()
+  page.once("dialog", (dialog) => dialog.accept())
+  await page.reload()
+  await expect(page.getByLabel("Type")).toHaveText("Number")
+  await page.getByLabel("Field name").fill("current_reading_kwh")
+  await page.getByRole("link", { name: "Back to categories" }).click()
+  await expect(
+    page.getByRole("heading", { name: "Leave without saving?" }),
+  ).toBeVisible()
+  await page.getByRole("button", { name: "Stay on this page" }).click()
+  await page.getByRole("button", { name: "Discard changes" }).click()
+  const discardDialog = page.getByRole("dialog")
+  await expect(
+    discardDialog.getByRole("heading", { name: "Discard unsaved changes?" }),
+  ).toBeVisible()
+  await discardDialog.getByRole("button", { name: "Discard changes" }).click()
   await expect(page.getByLabel("Field name")).toHaveValue("meter_reading_kwh")
   await page.getByLabel("Field name").fill("current_reading_kwh")
   await saveCustomFieldsButton.scrollIntoViewIfNeeded()
@@ -74,6 +98,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 2"),
   ).toBeVisible()
 
+  await page.getByRole("link", { name: "Back to categories" }).click()
   await openCategoryAction(page, categoryName, "Manage custom fields")
   await page.getByRole("button", { name: "Remove" }).click()
   await expect(page.getByText("No custom fields configured yet.")).toBeVisible()
@@ -130,6 +155,7 @@ test("shows the empty category custom-data history", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 1"),
   ).toBeVisible()
 
+  await page.getByRole("link", { name: "Back to categories" }).click()
   const customDataButton = page.getByRole("button", {
     name: `View custom data for ${categoryName}`,
   })
