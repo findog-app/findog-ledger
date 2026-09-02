@@ -79,12 +79,36 @@ For each property, the builder supports the following definitions:
 | Integer | `"type": "integer"` | `title`, `description`, `minimum`, `maximum` |
 | Yes / no | `"type": "boolean"` | `title`, `description` |
 | Date | `"type": "string", "format": "date"` | `title`, `description` |
+| Date and time | `"type": "string", "format": "date-time"` | `title`, `description` |
+
+Use **Date and time** for RFC 3339 timestamps, for example
+`2026-09-02T19:30:00+02:00`. Date and Date and time are distinct types, so use
+Date when the time of day is not part of the value.
 
 Use a field key that is meaningful and stable, such as `meter_reading_kwh` or
 `billing_date`. A property that uses another JSON Schema keyword, type, or
 format can still be valid through the API, but the Custom fields page presents
 it as read-only so that it cannot accidentally remove configuration it does not
 understand.
+
+### Edit raw JSON
+
+The schema page has **Edit fields** and **Edit JSON** modes. Edit JSON is useful
+for valid JSON Schema features the visual builder cannot represent, such as
+nested objects or `pattern` constraints.
+
+In JSON mode:
+
+- **Format JSON** prettifies a valid JSON object.
+- **Copy JSON** copies the current text to the clipboard.
+- **Apply JSON** parses the text and updates the local schema draft without
+  creating a schema version or sending a request to the server.
+- **Save as new version** persists the last successfully applied schema.
+
+JSON must have an object as its root. Syntax or root-type errors leave the last
+valid draft unchanged. The backend remains responsible for complete JSON Schema
+validation when a new version is saved. Drafts are kept locally per category,
+survive a reload, and can be discarded from either editing mode.
 
 ## Create an observation through the integration API
 

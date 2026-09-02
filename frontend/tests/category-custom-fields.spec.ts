@@ -107,6 +107,25 @@ test("manages category custom fields with the builder", async ({ page }) => {
   await expect(
     page.getByText("Custom fields saved as schema version 3"),
   ).toBeVisible()
+
+  await page.getByRole("button", { name: "Edit JSON" }).click()
+  await page.getByLabel("JSON schema").fill(`{
+  "type": "object",
+  "properties": {
+    "account_code": {
+      "type": "string",
+      "pattern": "^[A-Z]+$"
+    }
+  },
+  "required": ["account_code"],
+  "additionalProperties": false
+}`)
+  await page.getByRole("button", { name: "Apply JSON" }).click()
+  await page.getByRole("button", { name: "Save as new version" }).click()
+  await expect(
+    page.getByText("Custom fields saved as schema version 4"),
+  ).toBeVisible()
+  await expect(page.getByLabel("JSON schema")).toHaveValue(/"pattern"/)
 })
 
 test("shows the empty category custom-data history", async ({ page }) => {
