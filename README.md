@@ -37,6 +37,9 @@ making external integrations part of the core application.
 For the precise obligation-state rules and available lifecycle actions, see the
 [obligation lifecycle](docs/obligation-lifecycle.md).
 
+For category-specific structured data and the JSON Schema used to validate it,
+see [category data records](docs/category-data-records.md).
+
 ## Core concepts
 
 ### Ledger
