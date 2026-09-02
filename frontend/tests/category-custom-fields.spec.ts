@@ -53,6 +53,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
   await expect(page.getByText("Category created")).toBeVisible()
 
   await openCategoryAction(page, categoryName, "Manage custom fields")
+  await expect(page).toHaveURL(/\/custom-fields$/)
   await page.getByRole("button", { name: "Add field" }).click()
   await page.getByLabel("Field name").fill("meter_reading_kwh")
   await page.getByLabel("Label").fill("Meter reading")
@@ -65,6 +66,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 1"),
   ).toBeVisible()
 
+  await page.getByRole("link", { name: "Back to categories" }).click()
   await openCategoryAction(page, categoryName, "Manage custom fields")
   await expect(page.getByLabel("Field name")).toHaveValue("meter_reading_kwh")
   await page.getByLabel("Field name").fill("current_reading_kwh")
@@ -74,6 +76,7 @@ test("manages category custom fields with the builder", async ({ page }) => {
     page.getByText("Custom fields saved as schema version 2"),
   ).toBeVisible()
 
+  await page.getByRole("link", { name: "Back to categories" }).click()
   await openCategoryAction(page, categoryName, "Manage custom fields")
   await page.getByRole("button", { name: "Remove" }).click()
   await expect(page.getByText("No custom fields configured yet.")).toBeVisible()

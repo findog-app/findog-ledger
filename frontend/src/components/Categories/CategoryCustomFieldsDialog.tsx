@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ListPlus, Plus, Trash2 } from "lucide-react"
-import { type ReactNode, useEffect, useState } from "react"
+import { Plus, Trash2 } from "lucide-react"
+import { useEffect } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -14,15 +14,6 @@ import {
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
@@ -299,16 +290,13 @@ function NumberInput({
   )
 }
 
-export function CategoryCustomFieldsDialog({
+export function CategoryCustomFieldsBuilder({
   ledgerId,
   category,
-  trigger,
 }: {
   ledgerId: string
   category: CategoryPublic
-  trigger?: ReactNode
 }) {
-  const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const schemaQuery = useQuery({
@@ -324,7 +312,6 @@ export function CategoryCustomFieldsDialog({
         throw error
       }
     },
-    enabled: open,
     retry: false,
   })
   const form = useForm<CustomFieldsForm>({
@@ -338,10 +325,10 @@ export function CategoryCustomFieldsDialog({
       : unsupportedSchemaReason(schemaQuery.data)
 
   useEffect(() => {
-    if (open && schemaQuery.data !== undefined) {
+    if (schemaQuery.data !== undefined) {
       form.reset({ fields: fieldsFromSchema(schemaQuery.data) })
     }
-  }, [form, open, schemaQuery.data])
+  }, [form, schemaQuery.data])
 
   const saveSchema = useMutation({
     mutationFn: (requestBody: CategoryDataSchemaCreate) =>
@@ -354,7 +341,6 @@ export function CategoryCustomFieldsDialog({
       showSuccessToast(
         `Custom fields saved as schema version ${schema.version}`,
       )
-      setOpen(false)
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () =>
@@ -366,253 +352,216 @@ export function CategoryCustomFieldsDialog({
       ]),
   })
 
+  if (schemaQuery.isLoading) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        Loading fields…
+      </p>
+    )
+  }
+
+  if (schemaQuery.isError) {
+    return (
+      <p className="rounded-md border border-destructive/50 p-3 text-sm text-destructive">
+        Could not load the current custom-field schema.
+      </p>
+    )
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="ghost" size="sm">
-            <ListPlus />
-            <span className="sr-only">
-              Manage custom fields for {category.name}
-            </span>
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Custom fields for {category.name}</DialogTitle>
-          <DialogDescription>
-            Define the data collected for this category. Saving creates a new
-            schema version.
-          </DialogDescription>
-        </DialogHeader>
-        {schemaQuery.isLoading ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Loading fields…
-          </p>
-        ) : schemaQuery.isError ? (
-          <p className="rounded-md border border-destructive/50 p-3 text-sm text-destructive">
-            Could not load the current custom-field schema.
+    <form
+      className="space-y-4"
+      onSubmit={form.handleSubmit((data) => {
+        if (!unsupportedReason) {
+          saveSchema.mutate({ schema: toSchema(data.fields) })
+        }
+      })}
+    >
+      {unsupportedReason && (
+        <p className="rounded-md border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+          This schema is read-only in the custom-field builder.{" "}
+          {unsupportedReason}
+          Editing it here could remove configuration that the builder cannot
+          represent.
+        </p>
+      )}
+      <fieldset disabled={Boolean(unsupportedReason)} className="space-y-4">
+        {fields.fields.length === 0 ? (
+          <p className="rounded-md border border-dashed p-5 text-center text-sm text-muted-foreground">
+            No custom fields configured yet.
           </p>
         ) : (
-          <form
-            className="space-y-4"
-            onSubmit={form.handleSubmit((data) => {
-              if (!unsupportedReason) {
-                saveSchema.mutate({ schema: toSchema(data.fields) })
-              }
-            })}
-          >
-            {unsupportedReason && (
-              <p className="rounded-md border border-amber-500/50 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-                This schema is read-only in the custom-field builder.{" "}
-                {unsupportedReason}
-                Editing it here could remove configuration that the builder
-                cannot represent.
-              </p>
-            )}
-            <fieldset
-              disabled={Boolean(unsupportedReason)}
-              className="space-y-4"
-            >
-              {fields.fields.length === 0 ? (
-                <p className="rounded-md border border-dashed p-5 text-center text-sm text-muted-foreground">
-                  No custom fields configured yet.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {fields.fields.map((item, index) => {
-                    const field = form.watch(`fields.${index}`)
-                    const isText = field.type === "string"
-                    const isNumeric =
-                      field.type === "number" || field.type === "integer"
-                    return (
-                      <section
-                        key={item.id}
-                        className="space-y-3 rounded-lg border p-4"
+          <div className="space-y-4">
+            {fields.fields.map((item, index) => {
+              const field = form.watch(`fields.${index}`)
+              const isText = field.type === "string"
+              const isNumeric =
+                field.type === "number" || field.type === "integer"
+              return (
+                <section
+                  key={item.id}
+                  className="space-y-3 rounded-lg border p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge variant="secondary">Field {index + 1}</Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fields.remove(index)}
+                    >
+                      <Trash2 /> Remove
+                    </Button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5 text-sm font-medium">
+                      <Label htmlFor={`custom-field-key-${item.id}`}>
+                        Field name
+                      </Label>
+                      <Input
+                        id={`custom-field-key-${item.id}`}
+                        {...form.register(`fields.${index}.key`)}
+                        placeholder="meter_reading_kwh"
+                      />
+                      {form.formState.errors.fields?.[index]?.key && (
+                        <span className="text-xs text-destructive">
+                          {form.formState.errors.fields[index]?.key?.message}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5 text-sm font-medium">
+                      <Label htmlFor={`custom-field-type-${item.id}`}>
+                        Type
+                      </Label>
+                      <Select
+                        value={field.type}
+                        onValueChange={(value) =>
+                          form.setValue(
+                            `fields.${index}.type`,
+                            value as CustomField["type"],
+                          )
+                        }
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <Badge variant="secondary">Field {index + 1}</Badge>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => fields.remove(index)}
-                          >
-                            <Trash2 /> Remove
-                          </Button>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-1.5 text-sm font-medium">
-                            <Label htmlFor={`custom-field-key-${item.id}`}>
-                              Field name
-                            </Label>
-                            <Input
-                              id={`custom-field-key-${item.id}`}
-                              {...form.register(`fields.${index}.key`)}
-                              placeholder="meter_reading_kwh"
-                            />
-                            {form.formState.errors.fields?.[index]?.key && (
-                              <span className="text-xs text-destructive">
-                                {
-                                  form.formState.errors.fields[index]?.key
-                                    ?.message
-                                }
-                              </span>
-                            )}
-                          </div>
-                          <div className="space-y-1.5 text-sm font-medium">
-                            <Label htmlFor={`custom-field-type-${item.id}`}>
-                              Type
-                            </Label>
-                            <Select
-                              value={field.type}
-                              onValueChange={(value) =>
-                                form.setValue(
-                                  `fields.${index}.type`,
-                                  value as CustomField["type"],
-                                )
-                              }
-                            >
-                              <SelectTrigger
-                                id={`custom-field-type-${item.id}`}
-                                className="w-full"
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="string">Text</SelectItem>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="integer">Integer</SelectItem>
-                                <SelectItem value="boolean">
-                                  Yes / no
-                                </SelectItem>
-                                <SelectItem value="date">Date</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-1.5 text-sm font-medium">
-                            <Label htmlFor={`custom-field-title-${item.id}`}>
-                              Label
-                            </Label>
-                            <Input
-                              id={`custom-field-title-${item.id}`}
-                              {...form.register(`fields.${index}.title`)}
-                              placeholder="Meter reading"
-                            />
-                          </div>
-                          <label className="flex items-center gap-2 pt-7 text-sm font-medium">
-                            <input
-                              type="checkbox"
-                              {...form.register(`fields.${index}.required`)}
-                            />{" "}
-                            Required
-                          </label>
-                        </div>
-                        <div className="space-y-1.5 text-sm font-medium">
-                          <Label
-                            htmlFor={`custom-field-description-${item.id}`}
-                          >
-                            Help text
-                          </Label>
-                          <Input
-                            id={`custom-field-description-${item.id}`}
-                            {...form.register(`fields.${index}.description`)}
-                            placeholder="Shown below the field"
-                          />
-                        </div>
-                        {isText && (
-                          <div className="grid gap-3 sm:grid-cols-3">
-                            <Label className="space-y-1.5">
-                              Minimum length
-                              <NumberInput
-                                integer
-                                value={field.minLength}
-                                onChange={(value) =>
-                                  form.setValue(
-                                    `fields.${index}.minLength`,
-                                    value,
-                                  )
-                                }
-                                placeholder="None"
-                              />
-                            </Label>
-                            <Label className="space-y-1.5">
-                              Maximum length
-                              <NumberInput
-                                integer
-                                value={field.maxLength}
-                                onChange={(value) =>
-                                  form.setValue(
-                                    `fields.${index}.maxLength`,
-                                    value,
-                                  )
-                                }
-                                placeholder="None"
-                              />
-                            </Label>
-                            <Label className="space-y-1.5">
-                              Allowed values
-                              <Input
-                                {...form.register(`fields.${index}.enumValues`)}
-                                placeholder="e.g. low, high"
-                              />
-                            </Label>
-                          </div>
-                        )}
-                        {isNumeric && (
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <Label className="space-y-1.5">
-                              Minimum
-                              <NumberInput
-                                value={field.minimum}
-                                onChange={(value) =>
-                                  form.setValue(
-                                    `fields.${index}.minimum`,
-                                    value,
-                                  )
-                                }
-                                placeholder="None"
-                              />
-                            </Label>
-                            <Label className="space-y-1.5">
-                              Maximum
-                              <NumberInput
-                                value={field.maximum}
-                                onChange={(value) =>
-                                  form.setValue(
-                                    `fields.${index}.maximum`,
-                                    value,
-                                  )
-                                }
-                                placeholder="None"
-                              />
-                            </Label>
-                          </div>
-                        )}
-                      </section>
-                    )
-                  })}
-                </div>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fields.append(emptyField())}
-              >
-                <Plus /> Add field
-              </Button>
-              <DialogFooter>
-                <LoadingButton type="submit" loading={saveSchema.isPending}>
-                  Save custom fields
-                </LoadingButton>
-              </DialogFooter>
-            </fieldset>
-          </form>
+                        <SelectTrigger
+                          id={`custom-field-type-${item.id}`}
+                          className="w-full"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="string">Text</SelectItem>
+                          <SelectItem value="number">Number</SelectItem>
+                          <SelectItem value="integer">Integer</SelectItem>
+                          <SelectItem value="boolean">Yes / no</SelectItem>
+                          <SelectItem value="date">Date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5 text-sm font-medium">
+                      <Label htmlFor={`custom-field-title-${item.id}`}>
+                        Label
+                      </Label>
+                      <Input
+                        id={`custom-field-title-${item.id}`}
+                        {...form.register(`fields.${index}.title`)}
+                        placeholder="Meter reading"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 pt-7 text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        {...form.register(`fields.${index}.required`)}
+                      />{" "}
+                      Required
+                    </label>
+                  </div>
+                  <div className="space-y-1.5 text-sm font-medium">
+                    <Label htmlFor={`custom-field-description-${item.id}`}>
+                      Help text
+                    </Label>
+                    <Input
+                      id={`custom-field-description-${item.id}`}
+                      {...form.register(`fields.${index}.description`)}
+                      placeholder="Shown below the field"
+                    />
+                  </div>
+                  {isText && (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Label className="space-y-1.5">
+                        Minimum length
+                        <NumberInput
+                          integer
+                          value={field.minLength}
+                          onChange={(value) =>
+                            form.setValue(`fields.${index}.minLength`, value)
+                          }
+                          placeholder="None"
+                        />
+                      </Label>
+                      <Label className="space-y-1.5">
+                        Maximum length
+                        <NumberInput
+                          integer
+                          value={field.maxLength}
+                          onChange={(value) =>
+                            form.setValue(`fields.${index}.maxLength`, value)
+                          }
+                          placeholder="None"
+                        />
+                      </Label>
+                      <Label className="space-y-1.5">
+                        Allowed values
+                        <Input
+                          {...form.register(`fields.${index}.enumValues`)}
+                          placeholder="e.g. low, high"
+                        />
+                      </Label>
+                    </div>
+                  )}
+                  {isNumeric && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Label className="space-y-1.5">
+                        Minimum
+                        <NumberInput
+                          value={field.minimum}
+                          onChange={(value) =>
+                            form.setValue(`fields.${index}.minimum`, value)
+                          }
+                          placeholder="None"
+                        />
+                      </Label>
+                      <Label className="space-y-1.5">
+                        Maximum
+                        <NumberInput
+                          value={field.maximum}
+                          onChange={(value) =>
+                            form.setValue(`fields.${index}.maximum`, value)
+                          }
+                          placeholder="None"
+                        />
+                      </Label>
+                    </div>
+                  )}
+                </section>
+              )
+            })}
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => fields.append(emptyField())}
+        >
+          <Plus /> Add field
+        </Button>
+        <div className="flex justify-end">
+          <LoadingButton type="submit" loading={saveSchema.isPending}>
+            Save custom fields
+          </LoadingButton>
+        </div>
+      </fieldset>
+    </form>
   )
 }
