@@ -54,6 +54,7 @@ const customFieldSchema = z.object({
   description: z.string().trim().optional(),
   type: z.enum(fieldTypes),
   required: z.boolean(),
+  nullable: z.boolean(),
   minLength: z.number().int().nonnegative().optional(),
   maxLength: z.number().int().positive().optional(),
   minimum: z.number().optional(),
@@ -105,6 +106,7 @@ const customFieldDraftSchema = z.object({
   description: z.string().optional(),
   type: z.enum(fieldTypes),
   required: z.boolean(),
+  nullable: z.boolean(),
   minLength: z.number().optional(),
   maxLength: z.number().optional(),
   minimum: z.number().optional(),
@@ -119,6 +121,21 @@ const customFieldsDraftSchema = z.object({
 type CustomFieldsForm = z.infer<typeof customFieldsSchema>
 type CustomField = CustomFieldsForm["fields"][number]
 type JsonSchemaProperty = Record<string, unknown>
+
+function unwrapNullable(value: JsonSchemaProperty) {
+  if (!Array.isArray(value.anyOf) || value.anyOf.length !== 2) {
+    return { value, nullable: false }
+  }
+  const nullOption = value.anyOf.find(
+    (option) => isRecord(option) && option.type === "null",
+  )
+  const typedOption = value.anyOf.find(
+    (option) => isRecord(option) && option.type !== "null",
+  )
+  return nullOption && typedOption
+    ? { value: typedOption, nullable: true }
+    : { value, nullable: false }
+}
 
 function draftKey(ledgerId: string, categoryId: string) {
   return `category-custom-fields-draft:${ledgerId}:${categoryId}`
@@ -194,12 +211,22 @@ function unsupportedSchemaReason(schema: CategoryDataSchemaPublic | null) {
 
   for (const [key, value] of Object.entries(properties)) {
     if (!isRecord(value)) return `Field “${key}” is not an object definition.`
+    const { value: typedValue, nullable } = unwrapNullable(value)
+    if (nullable) {
+      const unsupportedOuterKeyword = Object.keys(value).find(
+        (propertyKey) =>
+          !new Set(["anyOf", "title", "description"]).has(propertyKey),
+      )
+      if (unsupportedOuterKeyword) {
+        return `Field “${key}” uses the unsupported keyword “${unsupportedOuterKeyword}”.`
+      }
+    }
     const type =
-      value.type === "string" && value.format === "date"
+      typedValue.type === "string" && typedValue.format === "date"
         ? "date"
-        : value.type === "string" && value.format === "date-time"
+        : typedValue.type === "string" && typedValue.format === "date-time"
           ? "date-time"
-          : value.type
+          : typedValue.type
     if (!fieldTypes.includes(type as (typeof fieldTypes)[number])) {
       return `Field “${key}” uses an unsupported type or format.`
     }
@@ -216,16 +243,16 @@ function unsupportedSchemaReason(schema: CategoryDataSchemaPublic | null) {
       supportedPropertyKeywords.add("minimum")
       supportedPropertyKeywords.add("maximum")
     }
-    const unsupportedPropertyKeyword = Object.keys(value).find(
+    const unsupportedPropertyKeyword = Object.keys(typedValue).find(
       (propertyKey) => !supportedPropertyKeywords.has(propertyKey),
     )
     if (unsupportedPropertyKeyword) {
       return `Field “${key}” uses the unsupported keyword “${unsupportedPropertyKeyword}”.`
     }
     if (
-      value.enum !== undefined &&
-      (!Array.isArray(value.enum) ||
-        !value.enum.every((item) => typeof item === "string"))
+      typedValue.enum !== undefined &&
+      (!Array.isArray(typedValue.enum) ||
+        !typedValue.enum.every((item: unknown) => typeof item === "string"))
     ) {
       return `Field “${key}” has unsupported allowed values.`
     }
@@ -240,6 +267,7 @@ function emptyField(): CustomField {
     description: "",
     type: "string",
     required: false,
+    nullable: false,
     minLength: undefined,
     maxLength: undefined,
     minimum: undefined,
@@ -270,12 +298,14 @@ function fieldsFromSchema(
   return Object.entries(properties).flatMap(([key, value]) => {
     if (!value || typeof value !== "object") return []
     const property = value as JsonSchemaProperty
+    const { value: typedProperty, nullable } = unwrapNullable(property)
     const type =
-      property.type === "string" && property.format === "date"
+      typedProperty.type === "string" && typedProperty.format === "date"
         ? "date"
-        : property.type === "string" && property.format === "date-time"
+        : typedProperty.type === "string" &&
+            typedProperty.format === "date-time"
           ? "date-time"
-          : property.type
+          : typedProperty.type
     if (!fieldTypes.includes(type as (typeof fieldTypes)[number])) return []
     return [
       {
@@ -285,13 +315,16 @@ function fieldsFromSchema(
           typeof property.description === "string" ? property.description : "",
         type: type as CustomField["type"],
         required: required.has(key),
-        minLength: asNumber(property.minLength),
-        maxLength: asNumber(property.maxLength),
-        minimum: asNumber(property.minimum),
-        maximum: asNumber(property.maximum),
-        enumValues: Array.isArray(property.enum)
-          ? property.enum
-              .filter((item): item is string => typeof item === "string")
+        nullable,
+        minLength: asNumber(typedProperty.minLength),
+        maxLength: asNumber(typedProperty.maxLength),
+        minimum: asNumber(typedProperty.minimum),
+        maximum: asNumber(typedProperty.maximum),
+        enumValues: Array.isArray(typedProperty.enum)
+          ? typedProperty.enum
+              .filter(
+                (item: unknown): item is string => typeof item === "string",
+              )
               .join(", ")
           : "",
       },
@@ -310,6 +343,14 @@ function toSchema(fields: CustomFieldsForm["fields"]) {
       }
       if (field.type === "date" || field.type === "date-time") {
         property.format = field.type
+      }
+      if (field.nullable) {
+        const nullableProperty: JsonSchemaProperty = {
+          anyOf: [property, { type: "null" }],
+        }
+        if (field.title) nullableProperty.title = field.title
+        if (field.description) nullableProperty.description = field.description
+        return [field.key, nullableProperty]
       }
       if (field.title) property.title = field.title
       if (field.description) property.description = field.description
@@ -712,7 +753,7 @@ export function CategoryCustomFieldsBuilder({
                           <Trash2 /> Remove
                         </Button>
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-3">
                         <div className="space-y-1.5 text-sm font-medium">
                           <Label htmlFor={`custom-field-key-${item.id}`}>
                             Field name
@@ -781,6 +822,13 @@ export function CategoryCustomFieldsBuilder({
                             {...form.register(`fields.${index}.required`)}
                           />{" "}
                           Required
+                        </label>
+                        <label className="flex items-center gap-2 pt-7 text-sm font-medium">
+                          <input
+                            type="checkbox"
+                            {...form.register(`fields.${index}.nullable`)}
+                          />{" "}
+                          Allow null
                         </label>
                       </div>
                       <div className="space-y-1.5 text-sm font-medium">
