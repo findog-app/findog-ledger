@@ -369,7 +369,6 @@ export function CategoryCustomFieldsBuilder({
     defaultValues: { fields: [] },
   })
   const fields = useFieldArray({ control: form.control, name: "fields" })
-  const watchedFields = form.watch("fields")
   const unsupportedReason =
     schemaQuery.data === undefined
       ? null
@@ -385,17 +384,22 @@ export function CategoryCustomFieldsBuilder({
   }, [form, hasInitialized, schemaQuery.data, storageKey])
 
   useEffect(() => {
-    if (!hasInitialized || !form.formState.isDirty) return
-    try {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify({ fields: watchedFields }),
-      )
-      setHasDraft(true)
-    } catch {
-      // Saving the schema still works when browser storage is unavailable.
-    }
-  }, [form.formState.isDirty, hasInitialized, storageKey, watchedFields])
+    if (!hasInitialized) return
+
+    const subscription = form.watch((values, { name }) => {
+      if (!name) return
+      const draft = customFieldsDraftSchema.safeParse(values)
+      if (!draft.success) return
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(draft.data))
+        setHasDraft(true)
+      } catch {
+        // Saving the schema still works when browser storage is unavailable.
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [form, hasInitialized, storageKey])
 
   const hasUnsavedChanges = form.formState.isDirty || hasDraft
   const blocker = useBlocker({
