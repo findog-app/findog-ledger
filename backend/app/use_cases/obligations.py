@@ -67,6 +67,21 @@ def ensure_obligations_for_period(
     return created
 
 
+def estimate_missing_obligation_amounts(
+    *, session: Session, ledger_id: uuid.UUID, period: BillingPeriod
+) -> list[Obligation]:
+    _require_ledger(session=session, ledger_id=ledger_id)
+    updated = obligation_service.estimate_missing_obligation_amounts(
+        session=session, ledger_id=ledger_id, current_period=period
+    )
+    for obligation in updated:
+        _update_effective_value_source(obligation)
+    session.commit()
+    for obligation in updated:
+        session.refresh(obligation)
+    return updated
+
+
 def list_obligations_for_period(
     *,
     session: Session,

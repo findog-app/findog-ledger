@@ -1,8 +1,15 @@
 from datetime import date
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.domain import BillingPeriod, DataSourcePolicy, RecurrenceUnit
+from app.domain import (
+    BillingPeriod,
+    CurrentValueSource,
+    DataSourcePolicy,
+    RecurrenceUnit,
+    ValueState,
+)
 from app.models import Obligation
 from app.services import obligations as obligation_service
 from tests.utils.ledger_domain import create_category_with_recurrence
@@ -51,6 +58,34 @@ def test_ensure_obligations_is_idempotent(db: Session) -> None:
     assert (
         len(db.query(Obligation).filter(Obligation.ledger_id == ledger.id).all()) == 2
     )
+
+
+def test_estimate_missing_amounts_uses_trustworthy_history_median(db: Session) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    for month, amount, state in (
+        (5, "10.00", ValueState.CONFIRMED),
+        (6, "20.00", ValueState.OVERRIDDEN),
+        (7, "999.00", ValueState.ESTIMATED),
+    ):
+        obligation, _ = obligation_service.get_or_create_obligation(
+            session=db, category=category, period=BillingPeriod(2026, month)
+        )
+        obligation.current_amount = Decimal(amount)
+        obligation.amount_state = state
+        obligation.amount_source = CurrentValueSource.MANUAL
+    db.commit()
+
+    obligation_service.ensure_obligations_for_period(
+        session=db, ledger_id=ledger.id, current_period=BillingPeriod(2026, 8)
+    )
+    updated = obligation_service.estimate_missing_obligation_amounts(
+        session=db, ledger_id=ledger.id, current_period=BillingPeriod(2026, 8)
+    )
+
+    assert len(updated) == 2
+    assert all(item.current_amount == Decimal("15.00") for item in updated)
+    assert all(item.amount_state is ValueState.ESTIMATED for item in updated)
+    assert all(item.amount_source is CurrentValueSource.AUTOMATIC for item in updated)
 
 
 def test_ensure_obligations_ignores_categories_without_recurrence(db: Session) -> None:
