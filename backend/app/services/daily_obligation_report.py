@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import settings
-from app.domain import BillingPeriod, ObligationLifecycle, ValueState
+from app.domain import BillingPeriod, BusinessCalendar, ObligationLifecycle, ValueState
 from app.models import Ledger, LedgerMembership, Obligation, User
 from app.utils import EmailData, render_email_template
 
@@ -85,6 +85,7 @@ def _select_sections(
     *, session: Session, user: User, report_date: date
 ) -> dict[str, list[DailyReportItem]]:
     period = BillingPeriod.from_date(report_date)
+    calendar = BusinessCalendar(settings.BUSINESS_CALENDAR_COUNTRY)
     obligations = session.scalars(
         select(Obligation)
         .join(LedgerMembership, LedgerMembership.ledger_id == Obligation.ledger_id)
@@ -94,23 +95,29 @@ def _select_sections(
     ).unique()
     sections: dict[str, list[DailyReportItem]] = defaultdict(list)
     for obligation in obligations:
-        section = _section_for(obligation, report_date, period)
+        section = _section_for(obligation, report_date, period, calendar)
         if section is not None:
             sections[section].append(_item(obligation))
     return sections
 
 
 def _section_for(
-    obligation: Obligation, report_date: date, period: BillingPeriod
+    obligation: Obligation,
+    report_date: date,
+    period: BillingPeriod,
+    calendar: BusinessCalendar,
 ) -> str | None:
     if obligation.lifecycle in {ObligationLifecycle.PAID, ObligationLifecycle.CANCELED}:
         return None
+    if obligation.lifecycle is ObligationLifecycle.ERROR:
+        return "errors"
     if obligation.due_date is not None and obligation.due_date < report_date:
         return "overdue"
     if obligation.lifecycle is ObligationLifecycle.READY:
         if (
             obligation.due_date is not None
-            and (obligation.due_date - report_date).days <= READY_TO_PAY_DAYS
+            and calendar.business_days_until(start=report_date, end=obligation.due_date)
+            <= READY_TO_PAY_DAYS
         ):
             return "ready_to_pay"
         return None
@@ -118,10 +125,15 @@ def _section_for(
         if (obligation.period_year, obligation.period_month) == (
             period.year,
             period.month,
-        ) and report_date.day >= MISSING_DUE_DATE_DAY:
+        ) and report_date >= calendar.nth_business_day_of_month(
+            year=period.year, month=period.month, n=MISSING_DUE_DATE_DAY
+        ):
             return "missing_due_date"
         return None
-    if (obligation.due_date - report_date).days <= PREPARATION_DAYS:
+    if (
+        calendar.business_days_until(start=report_date, end=obligation.due_date)
+        <= PREPARATION_DAYS
+    ):
         return "needs_preparation"
     return None
 
