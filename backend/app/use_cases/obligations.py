@@ -467,12 +467,6 @@ def mark_obligation_error(
     *, session: Session, ledger_id: uuid.UUID, key: ObligationKey
 ) -> Obligation:
     obligation = get_obligation_by_key(session=session, ledger_id=ledger_id, key=key)
-    if obligation.lifecycle not in {
-        ObligationLifecycle.DRAFT,
-        ObligationLifecycle.COLLECTING_DATA,
-    }:
-        raise ObligationInvalidLifecycleError
-
     obligation.lifecycle = ObligationLifecycle.ERROR
     session.commit()
     session.refresh(obligation)

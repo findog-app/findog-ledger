@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 import pytest
@@ -176,6 +177,67 @@ def test_reopen_obligation_moves_reopenable_lifecycles_to_collecting_data(
     )
 
     assert reopened.lifecycle is ObligationLifecycle.COLLECTING_DATA
+
+
+@pytest.mark.parametrize("lifecycle", list(ObligationLifecycle))
+def test_mark_obligation_error_accepts_every_lifecycle_and_preserves_data(
+    db: Session, lifecycle: ObligationLifecycle
+) -> None:
+    ledger, _, category = create_category_with_recurrence(db)
+    period = BillingPeriod(2026, 8)
+    obligation_use_cases.ensure_obligations_for_period(
+        session=db, ledger_id=ledger.id, period=period
+    )
+    obligation = obligation_use_cases.update_manual_obligation(
+        session=db,
+        ledger_id=ledger.id,
+        key=ObligationKey(category_code=category.code, period=period),
+        current_amount=Decimal("123.45"),
+        issue_date=date(2026, 8, 1),
+        due_date=date(2026, 8, 20),
+        notes="Integration source data",
+    )
+    obligation.lifecycle = lifecycle
+    obligation.paid_at = (
+        datetime(2026, 8, 21, tzinfo=UTC)
+        if lifecycle is ObligationLifecycle.PAID
+        else None
+    )
+    db.commit()
+    before = (
+        obligation.paid_at,
+        obligation.current_amount,
+        obligation.issue_date,
+        obligation.due_date,
+        obligation.amount_state,
+        obligation.issue_date_state,
+        obligation.due_date_state,
+        obligation.amount_source,
+        obligation.issue_date_source,
+        obligation.due_date_source,
+        obligation.notes,
+    )
+
+    marked = obligation_use_cases.mark_obligation_error(
+        session=db,
+        ledger_id=ledger.id,
+        key=ObligationKey(category_code=category.code, period=period),
+    )
+
+    assert marked.lifecycle is ObligationLifecycle.ERROR
+    assert (
+        marked.paid_at,
+        marked.current_amount,
+        marked.issue_date,
+        marked.due_date,
+        marked.amount_state,
+        marked.issue_date_state,
+        marked.due_date_state,
+        marked.amount_source,
+        marked.issue_date_source,
+        marked.due_date_source,
+        marked.notes,
+    ) == before
 
 
 def test_obligation_components_support_crud_without_external_identity(

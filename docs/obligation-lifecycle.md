@@ -13,7 +13,7 @@ field.
 | `READY` | Amount and due date are confirmed; the obligation is ready to be paid. | No |
 | `PAID` | The obligation has been marked as paid. | No |
 | `CANCELED` | The obligation was canceled and may be reopened. | No |
-| `ERROR` | An integration or automated process detected a problem. | No |
+| `ERROR` | An integration detected invalid or inconsistent obligation data and raised an alarm. It does not represent integration health. | No |
 
 ## Allowed transitions
 
@@ -31,22 +31,26 @@ stateDiagram-v2
     PAID --> COLLECTING_DATA
     PAID --> ERROR
     CANCELED --> COLLECTING_DATA
+    CANCELED --> ERROR
+    ERROR --> ERROR: idempotent
     ERROR --> COLLECTING_DATA
 ```
 
 | From | To | Mechanism | Status |
 | --- | --- | --- | --- |
 | `DRAFT` | `COLLECTING_DATA` | `update_manual_obligation` after an actual manual change | Implemented |
-| `DRAFT` | `ERROR` | Internal integration use case | Planned |
+| `DRAFT` | `ERROR` | `mark_obligation_error` | Implemented |
 | `COLLECTING_DATA` | `READY` | `mark_obligation_ready` | Implemented |
 | `COLLECTING_DATA` | `CANCELED` | `cancel_obligation` | Implemented |
-| `COLLECTING_DATA` | `ERROR` | Internal integration use case | Planned |
+| `COLLECTING_DATA` | `ERROR` | `mark_obligation_error` | Implemented |
 | `READY` | `PAID` | `mark_obligation_paid` | Implemented |
 | `READY` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
-| `READY` | `ERROR` | Internal integration use case | Planned |
+| `READY` | `ERROR` | `mark_obligation_error` | Implemented |
 | `PAID` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
-| `PAID` | `ERROR` | Internal integration use case | Planned |
+| `PAID` | `ERROR` | `mark_obligation_error` | Implemented |
 | `CANCELED` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
+| `CANCELED` | `ERROR` | `mark_obligation_error` | Implemented |
+| `ERROR` | `ERROR` | `mark_obligation_error` | Implemented (idempotent) |
 | `ERROR` | `COLLECTING_DATA` | `reopen_obligation` | Implemented |
 
 No other transitions are allowed. In particular, `READY`, `PAID`, `CANCELED`,
@@ -63,7 +67,7 @@ and `ERROR` cannot be changed through the ordinary `PATCH` endpoint.
 | `mark_obligation_paid` | `READY`; repeated calls for `PAID` are idempotent | `PAID` | On the first call: `lifecycle`, `paid_at=now(UTC)` |
 | `cancel_obligation` | `COLLECTING_DATA` | `CANCELED` | `lifecycle` |
 | `reopen_obligation` | `READY`, `PAID`, `CANCELED`, `ERROR` | `COLLECTING_DATA` | `lifecycle`, `paid_at=None`; does not change amount, dates, their states, or sources |
-| Integration error use case | `DRAFT`, `COLLECTING_DATA`, `READY`, `PAID` | `ERROR` | Planned; diagnostic fields such as error code, message, and timestamp must be defined first |
+| `mark_obligation_error` | Every lifecycle; repeated calls for `ERROR` are idempotent | `ERROR` | On the first call: `lifecycle`; preserves `paid_at`, values, states, sources, components, and notes |
 
 `*_state` refers to `amount_state`, `issue_date_state`, or `due_date_state`.
 `*_source` refers to the matching value source. Manual changes set the source to
@@ -82,5 +86,8 @@ All current actions require the ledger's `EDITOR` or `OWNER` role.
 | `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/cancel` | `cancel_obligation` | Only `COLLECTING_DATA` |
 | `POST /api/v1/ledgers/{ledger_id}/obligations/{obligation_key}/reopen` | `reopen_obligation` | Reopens `READY`, `PAID`, `CANCELED`, or `ERROR` |
 
-Transitions to `ERROR` should not be exposed as ordinary HTTP actions. They
-will be executed by future integration use cases, independently of a router.
+| `POST /api/v1/integration/obligations/{obligation_key}/error` | `mark_obligation_error` | Requires `ledger:write`; accepts every lifecycle and is idempotent for `ERROR` |
+
+`ERROR` is an alarm about invalid obligation data, not integration health. The
+latter belongs to the separate integration-state model. Integration diagnostics
+may be appended through the integration-only notes endpoint.

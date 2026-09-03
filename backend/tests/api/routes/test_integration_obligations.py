@@ -1,6 +1,8 @@
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime
+from typing import cast
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -11,6 +13,7 @@ from app.domain import (
     ObligationKey,
     ObligationLifecycle,
 )
+from app.models import Ledger, Obligation
 from app.use_cases import categories as category_use_cases
 from app.use_cases import ledgers as ledger_use_cases
 from app.use_cases import obligations as obligation_use_cases
@@ -26,10 +29,12 @@ def _api_key(
         json={"name": "enea-importer", "scopes": scopes},
     )
     assert response.status_code == 200
-    return response.json()
+    return cast(dict[str, object], response.json())
 
 
-def _ledger_with_obligation(db: Session, *, owner_id: uuid.UUID, code: str = "ELEC"):
+def _ledger_with_obligation(
+    db: Session, *, owner_id: uuid.UUID, code: str = "ELEC"
+) -> tuple[Ledger, Obligation]:
     ledger = ledger_use_cases.create_ledger(
         session=db, owner_user_id=owner_id, name=f"Ledger {code}"
     )
@@ -193,6 +198,36 @@ def test_integration_obligation_lifecycle_actions_and_append_only_notes(
 
     response = client.post(f"{url}/mark-paid", headers=headers)
     assert response.status_code == 409
+
+
+@pytest.mark.parametrize("lifecycle", list(ObligationLifecycle))
+def test_integration_mark_error_accepts_every_lifecycle(
+    client: TestClient, db: Session, lifecycle: ObligationLifecycle
+) -> None:
+    owner = create_random_user(db)
+    jwt_headers = authentication_token_from_email(
+        client=client, email=owner.email, db=db
+    )
+    ledger, obligation = _ledger_with_obligation(db, owner_id=owner.id)
+    obligation.lifecycle = lifecycle
+    obligation.paid_at = (
+        datetime(2026, 8, 21, tzinfo=UTC)
+        if lifecycle is ObligationLifecycle.PAID
+        else None
+    )
+    db.commit()
+    api_key = _api_key(client, jwt_headers, str(ledger.id), ["ledger:write"])
+
+    response = client.post(
+        f"{settings.API_V1_STR}/integration/obligations/{obligation.business_key}/error",
+        headers={"Authorization": f"Bearer {api_key['key']}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["lifecycle"] == ObligationLifecycle.ERROR.value
+    assert response.json()["paid_at"] == (
+        "2026-08-21T00:00:00Z" if lifecycle is ObligationLifecycle.PAID else None
+    )
 
 
 def test_integration_and_manual_values_have_mixed_effective_source(
