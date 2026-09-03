@@ -101,6 +101,22 @@ class EnsureObligationsTask:
         return TaskResult({"created_obligations": len(created)})
 
 
+class EstimateObligationAmountsTask(EnsureObligationsTask):
+    name = "estimate_obligation_amounts"
+    order = 250
+    dependencies = ("ensure_obligations",)
+
+    def execute(
+        self, *, session: Session, ledger: Ledger, context: SystemRunContext
+    ) -> TaskResult:
+        updated = obligation_use_cases.estimate_missing_obligation_amounts(
+            session=session,
+            ledger_id=ledger.id,
+            period=BillingPeriod.from_date(context.business_date),
+        )
+        return TaskResult({"estimated_obligations": len(updated)})
+
+
 class LegacyImportTask:
     name = "legacy_import"
     order = 100
@@ -189,6 +205,7 @@ class ScheduledReportsTask:
 SYSTEM_RUN_TASK_REGISTRY: tuple[SystemRunTask, ...] = (
     cast(SystemRunTask, LegacyImportTask()),
     cast(SystemRunTask, EnsureObligationsTask()),
+    cast(SystemRunTask, EstimateObligationAmountsTask()),
     cast(SystemRunTask, ScheduledReportsTask((DailyObligationReport(),))),
 )
 
