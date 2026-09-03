@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from calendar import monthrange
 from datetime import date, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -132,3 +133,70 @@ def ensure_obligations_for_period(
                 created.append(obligation)
 
     return created
+
+
+def estimate_missing_obligation_amounts(
+    *, session: Session, ledger_id: uuid.UUID, current_period: BillingPeriod
+) -> list[Obligation]:
+    next_period = current_period.next()
+    targets = session.scalars(
+        select(Obligation).where(
+            Obligation.ledger_id == ledger_id,
+            (
+                (Obligation.period_year == current_period.year)
+                & (Obligation.period_month == current_period.month)
+            )
+            | (
+                (Obligation.period_year == next_period.year)
+                & (Obligation.period_month == next_period.month)
+            ),
+            (
+                (Obligation.current_amount.is_(None))
+                & (Obligation.amount_state == ValueState.UNKNOWN)
+            )
+            | (
+                (Obligation.amount_state == ValueState.ESTIMATED)
+                & (Obligation.amount_source == CurrentValueSource.AUTOMATIC)
+            ),
+        )
+    ).all()
+    updated: list[Obligation] = []
+    for obligation in targets:
+        values = [
+            value
+            for value in session.scalars(
+                select(Obligation.current_amount)
+                .where(
+                    Obligation.ledger_id == ledger_id,
+                    Obligation.category_id == obligation.category_id,
+                    Obligation.current_amount.is_not(None),
+                    Obligation.amount_state.in_(
+                        (ValueState.CONFIRMED, ValueState.OVERRIDDEN)
+                    ),
+                    (Obligation.period_year < obligation.period_year)
+                    | (
+                        (Obligation.period_year == obligation.period_year)
+                        & (Obligation.period_month < obligation.period_month)
+                    ),
+                )
+                .order_by(Obligation.period_year.desc(), Obligation.period_month.desc())
+                .limit(12)
+            ).all()
+            if value is not None
+        ]
+        if not values:
+            continue
+        values.sort()
+        middle = len(values) // 2
+        median = (
+            values[middle]
+            if len(values) % 2
+            else (values[middle - 1] + values[middle]) / 2
+        )
+        obligation.current_amount = median.quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        obligation.amount_state = ValueState.ESTIMATED
+        obligation.amount_source = CurrentValueSource.AUTOMATIC
+        updated.append(obligation)
+    return updated

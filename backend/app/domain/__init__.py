@@ -1,3 +1,4 @@
+from app.domain.business_calendar import BusinessCalendar
 from app.domain.categories import Category, CategoryGroup
 from app.domain.currencies import Currency
 from app.domain.ledger import Ledger, LedgerAccessRole, LedgerMembership
@@ -25,6 +26,7 @@ from app.domain.system_run import (
 
 __all__ = [
     "BillingPeriod",
+    "BusinessCalendar",
     "Category",
     "CategoryGroup",
     "CurrentValueSource",

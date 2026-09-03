@@ -38,7 +38,10 @@ def test_administrator_can_start_manual_run_and_inspect_history(
     assert run["timezone"] == "Europe/Warsaw"
     assert run["steps"][-1]["task_name"] == "scheduled_reports"
     assert run["steps"][-1]["skip_reason"] == "not_configured"
-    assert all(step["task_name"] == "ensure_obligations" for step in run["steps"][:-1])
+    assert {step["task_name"] for step in run["steps"][:-1]} == {
+        "ensure_obligations",
+        "estimate_obligation_amounts",
+    }
 
     history = client.get(
         f"{settings.API_V1_STR}/system-runs/", headers=superuser_token_headers
@@ -73,7 +76,10 @@ def test_manual_only_task_requires_explicit_selection(
     assert steps[0]["task_name"] == "legacy_import"
     assert steps[0]["skip_reason"] == "not_configured"
     assert steps[-1]["task_name"] == "scheduled_reports"
-    assert all(step["task_name"] == "ensure_obligations" for step in steps[1:-1])
+    assert {step["task_name"] for step in steps[1:-1]} == {
+        "ensure_obligations",
+        "estimate_obligation_amounts",
+    }
 
 
 def test_disabled_tasks_cannot_be_started_manually(

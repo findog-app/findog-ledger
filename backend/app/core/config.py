@@ -105,6 +105,7 @@ class Settings(BaseSettings):
     LEGACY_IMPORT_LEDGER_ID: uuid.UUID | None = None
     SYSTEM_RUN_SCHEDULE: str = "5 0 * * *"
     SYSTEM_RUN_TIMEZONE: str = "Europe/Warsaw"
+    BUSINESS_CALENDAR_COUNTRY: str = "PL"
     SYSTEM_RUN_STALE_AFTER_MINUTES: int = 120
     SYSTEM_RUN_TIMEOUT_SECONDS: int = 3600
 
