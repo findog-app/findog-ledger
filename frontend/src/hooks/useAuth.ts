@@ -18,7 +18,8 @@ const isLoggedIn = () => {
 }
 
 const isCurrentUserSessionError = (error: unknown) =>
-  error instanceof ApiError && [400, 401, 403, 404].includes(error.status)
+  error instanceof ApiError &&
+  [400, 401, 403, 404].includes(error.response?.status ?? 0)
 
 const useAuth = () => {
   const navigate = useNavigate()
