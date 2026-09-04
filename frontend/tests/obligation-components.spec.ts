@@ -67,7 +67,7 @@ test("manages manual obligation components and keeps integration components read
   const fixture = await createObligationFixture()
   await page.goto(`/ledgers/${fixture.ledger.id}`)
 
-  await page.route("**/components", (route) =>
+  await page.route("**/components*", (route) =>
     route.fulfill({ status: 500, contentType: "application/json", body: "{}" }),
   )
   await page.getByText(fixture.categoryName, { exact: true }).click()
