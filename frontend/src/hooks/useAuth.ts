@@ -18,7 +18,8 @@ const isLoggedIn = () => {
 }
 
 const isCurrentUserSessionError = (error: unknown) =>
-  error instanceof ApiError && [400, 401, 403, 404].includes(error.status)
+  error instanceof ApiError &&
+  [400, 401, 403, 404].includes(error.response?.status ?? 0)
 
 const useAuth = () => {
   const navigate = useNavigate()
@@ -29,7 +30,7 @@ const useAuth = () => {
     Error
   >({
     queryKey: ["currentUser"],
-    queryFn: UsersService.readUserMe,
+    queryFn: () => UsersService.readUserMe(),
     enabled: isLoggedIn(),
     retry: (failureCount, error) =>
       !isCurrentUserSessionError(error) && failureCount < 3,
