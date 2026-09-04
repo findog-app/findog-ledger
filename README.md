@@ -78,7 +78,7 @@ obligation operations. This keeps the core application useful on its own while
 allowing automation to be added incrementally.
 
 The Python client is maintained separately in the
-[`findog-client-python`](https://github.com/findog-app/findog-client-python)
+[`oblidog-client-python`](https://github.com/oblidog/oblidog-client-python)
 repository and is generated from the Ledger OpenAPI specification.
 
 ## Screenshots
@@ -103,9 +103,9 @@ Create a deployment directory and run the installer. There is no need to clone
 the application source code.
 
 ```bash
-mkdir findog-ledger
-cd findog-ledger
-curl -fsSL https://raw.githubusercontent.com/findog-app/findog-ledger/main/scripts/install.sh | bash
+mkdir oblidog-ledger
+cd oblidog-ledger
+curl -fsSL https://raw.githubusercontent.com/oblidog/oblidog-ledger/main/scripts/install.sh | bash
 ```
 
 The installer downloads the production Compose file and environment template.
@@ -198,4 +198,4 @@ while building richer UX, external integrations, reporting, and automation on
 top of it.
 
 The project is developed in public under the
-[`findog-app`](https://github.com/findog-app) GitHub organisation.
+[`oblidog`](https://github.com/oblidog) GitHub organisation.
