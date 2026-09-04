@@ -1,3 +1,14 @@
+## v0.7.1 (2026-09-03)
+
+### Fix
+
+- 189-mark-error-lifecycle-semantics (#192)
+- **notifications**: use business calendar for daily reports (#191)
+
+### Refactor
+
+- **obligations**: estimate missing amounts from history (#194)
+
 ## v0.7.0 (2026-09-02)
 
 ### Feat
