@@ -101,7 +101,7 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
     queryFn: () =>
       AnalyticsService.readObligationPeriodTotals({
         ledgerId,
-        _from: periodValue(rangeStart),
+        from: periodValue(rangeStart),
         to: periodValue(selectedPeriod),
       }),
     queryKey: [
@@ -143,7 +143,7 @@ export function AnalyticsDashboard({ ledgerId }: { ledgerId: string }) {
       AnalyticsService.readCategoryAmountHistory({
         ledgerId,
         categoryId: selectedCategoryId!,
-        _from: periodValue(rangeStart),
+        from: periodValue(rangeStart),
         to: periodValue(selectedPeriod),
       }),
     queryKey: [

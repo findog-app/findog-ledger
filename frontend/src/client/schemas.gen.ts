@@ -11,7 +11,10 @@ export const ApiKeyCreateSchema = {
         scopes: {
             items: {
                 type: 'string',
-                enum: ['ledger:read', 'ledger:write']
+                enum: [
+                    'ledger:read',
+                    'ledger:write'
+                ]
             },
             type: 'array',
             minItems: 1,
@@ -32,7 +35,10 @@ export const ApiKeyCreateSchema = {
         }
     },
     type: 'object',
-    required: ['name', 'scopes'],
+    required: [
+        'name',
+        'scopes'
+    ],
     title: 'ApiKeyCreate'
 } as const;
 
@@ -54,7 +60,10 @@ export const ApiKeyCreatedSchema = {
         scopes: {
             items: {
                 type: 'string',
-                enum: ['ledger:read', 'ledger:write']
+                enum: [
+                    'ledger:read',
+                    'ledger:write'
+                ]
             },
             type: 'array',
             title: 'Scopes'
@@ -111,7 +120,18 @@ export const ApiKeyCreatedSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'name', 'key_prefix', 'scopes', 'created_at', 'last_used_at', 'expires_at', 'revoked_at', 'created_by_user_id', 'key'],
+    required: [
+        'id',
+        'name',
+        'key_prefix',
+        'scopes',
+        'created_at',
+        'last_used_at',
+        'expires_at',
+        'revoked_at',
+        'created_by_user_id',
+        'key'
+    ],
     title: 'ApiKeyCreated'
 } as const;
 
@@ -133,7 +153,10 @@ export const ApiKeyPublicSchema = {
         scopes: {
             items: {
                 type: 'string',
-                enum: ['ledger:read', 'ledger:write']
+                enum: [
+                    'ledger:read',
+                    'ledger:write'
+                ]
             },
             type: 'array',
             title: 'Scopes'
@@ -186,7 +209,17 @@ export const ApiKeyPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'name', 'key_prefix', 'scopes', 'created_at', 'last_used_at', 'expires_at', 'revoked_at', 'created_by_user_id'],
+    required: [
+        'id',
+        'name',
+        'key_prefix',
+        'scopes',
+        'created_at',
+        'last_used_at',
+        'expires_at',
+        'revoked_at',
+        'created_by_user_id'
+    ],
     title: 'ApiKeyPublic'
 } as const;
 
@@ -194,7 +227,7 @@ export const ApiKeysPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/ApiKeyPublic'
+                $ref: '#/components/schemas/ApiKeyPublic'
             },
             type: 'array',
             title: 'Data'
@@ -205,7 +238,10 @@ export const ApiKeysPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'ApiKeysPublic'
 } as const;
 
@@ -225,7 +261,10 @@ export const BillingPeriodInputSchema = {
         }
     },
     type: 'object',
-    required: ['year', 'month'],
+    required: [
+        'year',
+        'month'
+    ],
     title: 'BillingPeriodInput'
 } as const;
 
@@ -282,7 +321,10 @@ export const Body_login_login_access_tokenSchema = {
         }
     },
     type: 'object',
-    required: ['username', 'password'],
+    required: [
+        'username',
+        'password'
+    ],
     title: 'Body_login-login_access_token'
 } as const;
 
@@ -290,7 +332,7 @@ export const CategoriesPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/CategoryPublic'
+                $ref: '#/components/schemas/CategoryPublic'
             },
             type: 'array',
             title: 'Data'
@@ -301,18 +343,25 @@ export const CategoriesPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'CategoriesPublic'
 } as const;
 
 export const CategoryAmountHistoryPointPublicSchema = {
     properties: {
         period: {
-            '$ref': '#/components/schemas/ObligationPeriodPublic'
+            $ref: '#/components/schemas/ObligationPeriodPublic'
         },
         state: {
             type: 'string',
-            enum: ['missing', 'unknown', 'known'],
+            enum: [
+                'missing',
+                'unknown',
+                'known'
+            ],
             title: 'State'
         },
         current_amount: {
@@ -340,9 +389,14 @@ export const CategoryAmountHistoryPointPublicSchema = {
         }
     },
     type: 'object',
-    required: ['period', 'state', 'current_amount', 'currency'],
+    required: [
+        'period',
+        'state',
+        'current_amount',
+        'currency'
+    ],
     title: 'CategoryAmountHistoryPointPublic',
-    description: "A period's amount, keeping missing and unknown values distinct."
+    description: 'A period\'s amount, keeping missing and unknown values distinct.'
 } as const;
 
 export const CategoryAmountHistoryPublicSchema = {
@@ -354,14 +408,17 @@ export const CategoryAmountHistoryPublicSchema = {
         },
         points: {
             items: {
-                '$ref': '#/components/schemas/CategoryAmountHistoryPointPublic'
+                $ref: '#/components/schemas/CategoryAmountHistoryPointPublic'
             },
             type: 'array',
             title: 'Points'
         }
     },
     type: 'object',
-    required: ['category_id', 'points'],
+    required: [
+        'category_id',
+        'points'
+    ],
     title: 'CategoryAmountHistoryPublic'
 } as const;
 
@@ -397,7 +454,7 @@ export const CategoryCreateSchema = {
             title: 'Code'
         },
         data_source_policy: {
-            '$ref': '#/components/schemas/DataSourcePolicy',
+            $ref: '#/components/schemas/DataSourcePolicy',
             default: 'hybrid'
         },
         recurrence_interval: {
@@ -415,7 +472,7 @@ export const CategoryCreateSchema = {
         recurrence_unit: {
             anyOf: [
                 {
-                    '$ref': '#/components/schemas/RecurrenceUnit'
+                    $ref: '#/components/schemas/RecurrenceUnit'
                 },
                 {
                     type: 'null'
@@ -435,12 +492,16 @@ export const CategoryCreateSchema = {
             title: 'First Due Date'
         },
         currency: {
-            '$ref': '#/components/schemas/Currency',
+            $ref: '#/components/schemas/Currency',
             default: 'PLN'
         }
     },
     type: 'object',
-    required: ['category_group_id', 'name', 'code'],
+    required: [
+        'category_group_id',
+        'name',
+        'code'
+    ],
     title: 'CategoryCreate'
 } as const;
 
@@ -485,7 +546,10 @@ export const CategoryDataRecordCreateSchema = {
     },
     additionalProperties: false,
     type: 'object',
-    required: ['observed_at', 'data'],
+    required: [
+        'observed_at',
+        'data'
+    ],
     title: 'CategoryDataRecordCreate'
 } as const;
 
@@ -539,7 +603,15 @@ export const CategoryDataRecordPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'schema_version', 'observed_at', 'created_at', 'data', 'source', 'external_id'],
+    required: [
+        'id',
+        'schema_version',
+        'observed_at',
+        'created_at',
+        'data',
+        'source',
+        'external_id'
+    ],
     title: 'CategoryDataRecordPublic'
 } as const;
 
@@ -547,7 +619,7 @@ export const CategoryDataRecordsPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/CategoryDataRecordPublic'
+                $ref: '#/components/schemas/CategoryDataRecordPublic'
             },
             type: 'array',
             title: 'Data'
@@ -558,7 +630,10 @@ export const CategoryDataRecordsPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'CategoryDataRecordsPublic'
 } as const;
 
@@ -572,7 +647,9 @@ export const CategoryDataSchemaCreateSchema = {
     },
     additionalProperties: false,
     type: 'object',
-    required: ['schema'],
+    required: [
+        'schema'
+    ],
     title: 'CategoryDataSchemaCreate'
 } as const;
 
@@ -594,7 +671,12 @@ export const CategoryDataSchemaPublicSchema = {
         }
     },
     type: 'object',
-    required: ['version', 'schema', 'is_active', 'created_at']
+    required: [
+        'version',
+        'schema',
+        'is_active',
+        'created_at'
+    ]
 } as const;
 
 export const CategoryGroupCreateSchema = {
@@ -618,7 +700,9 @@ export const CategoryGroupCreateSchema = {
         }
     },
     type: 'object',
-    required: ['name'],
+    required: [
+        'name'
+    ],
     title: 'CategoryGroupCreate'
 } as const;
 
@@ -667,7 +751,14 @@ export const CategoryGroupPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'name', 'description', 'is_active', 'archived_at'],
+    required: [
+        'id',
+        'ledger_id',
+        'name',
+        'description',
+        'is_active',
+        'archived_at'
+    ],
     title: 'CategoryGroupPublic'
 } as const;
 
@@ -692,7 +783,9 @@ export const CategoryGroupUpdateSchema = {
         }
     },
     type: 'object',
-    required: ['name'],
+    required: [
+        'name'
+    ],
     title: 'CategoryGroupUpdate'
 } as const;
 
@@ -700,7 +793,7 @@ export const CategoryGroupsPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/CategoryGroupPublic'
+                $ref: '#/components/schemas/CategoryGroupPublic'
             },
             type: 'array',
             title: 'Data'
@@ -711,7 +804,10 @@ export const CategoryGroupsPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'CategoryGroupsPublic'
 } as const;
 
@@ -756,7 +852,7 @@ export const CategoryPublicSchema = {
             title: 'Code'
         },
         data_source_policy: {
-            '$ref': '#/components/schemas/DataSourcePolicy'
+            $ref: '#/components/schemas/DataSourcePolicy'
         },
         recurrence_interval: {
             anyOf: [
@@ -772,7 +868,7 @@ export const CategoryPublicSchema = {
         recurrence_unit: {
             anyOf: [
                 {
-                    '$ref': '#/components/schemas/RecurrenceUnit'
+                    $ref: '#/components/schemas/RecurrenceUnit'
                 },
                 {
                     type: 'null'
@@ -792,7 +888,7 @@ export const CategoryPublicSchema = {
             title: 'First Due Date'
         },
         currency: {
-            '$ref': '#/components/schemas/Currency'
+            $ref: '#/components/schemas/Currency'
         },
         archived_at: {
             anyOf: [
@@ -823,7 +919,23 @@ export const CategoryPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_group_id', 'name', 'description', 'is_active', 'code', 'data_source_policy', 'recurrence_interval', 'recurrence_unit', 'first_due_date', 'currency', 'archived_at', 'has_data_schema', 'active_data_schema_version'],
+    required: [
+        'id',
+        'ledger_id',
+        'category_group_id',
+        'name',
+        'description',
+        'is_active',
+        'code',
+        'data_source_policy',
+        'recurrence_interval',
+        'recurrence_unit',
+        'first_due_date',
+        'currency',
+        'archived_at',
+        'has_data_schema',
+        'active_data_schema_version'
+    ],
     title: 'CategoryPublic'
 } as const;
 
@@ -859,7 +971,7 @@ export const CategoryUpdateSchema = {
             title: 'Description'
         },
         data_source_policy: {
-            '$ref': '#/components/schemas/DataSourcePolicy'
+            $ref: '#/components/schemas/DataSourcePolicy'
         },
         recurrence_interval: {
             anyOf: [
@@ -876,7 +988,7 @@ export const CategoryUpdateSchema = {
         recurrence_unit: {
             anyOf: [
                 {
-                    '$ref': '#/components/schemas/RecurrenceUnit'
+                    $ref: '#/components/schemas/RecurrenceUnit'
                 },
                 {
                     type: 'null'
@@ -896,19 +1008,28 @@ export const CategoryUpdateSchema = {
             title: 'First Due Date'
         },
         currency: {
-            '$ref': '#/components/schemas/Currency',
+            $ref: '#/components/schemas/Currency',
             default: 'PLN'
         }
     },
     additionalProperties: false,
     type: 'object',
-    required: ['name', 'data_source_policy'],
+    required: [
+        'name',
+        'data_source_policy'
+    ],
     title: 'CategoryUpdate'
 } as const;
 
 export const CurrencySchema = {
     type: 'string',
-    enum: ['PLN', 'EUR', 'USD', 'GBP', 'CHF'],
+    enum: [
+        'PLN',
+        'EUR',
+        'USD',
+        'GBP',
+        'CHF'
+    ],
     title: 'Currency'
 } as const;
 
@@ -947,14 +1068,21 @@ export const CurrencyCashflowPublicSchema = {
         },
         daily: {
             items: {
-                '$ref': '#/components/schemas/DailyCashflowPublic'
+                $ref: '#/components/schemas/DailyCashflowPublic'
             },
             type: 'array',
             title: 'Daily'
         }
     },
     type: 'object',
-    required: ['currency', 'total_known_amount', 'scheduled_known_amount', 'unscheduled_known_amount', 'overdue_known_amount', 'daily'],
+    required: [
+        'currency',
+        'total_known_amount',
+        'scheduled_known_amount',
+        'unscheduled_known_amount',
+        'overdue_known_amount',
+        'daily'
+    ],
     title: 'CurrencyCashflowPublic',
     description: 'Amounts are grouped by currency and are never converted or combined.'
 } as const;
@@ -996,7 +1124,12 @@ export const CurrencyPaymentSummaryPublicSchema = {
         }
     },
     type: 'object',
-    required: ['currency', 'total_known_amount', 'paid_known_amount', 'paid_percentage'],
+    required: [
+        'currency',
+        'total_known_amount',
+        'paid_known_amount',
+        'paid_percentage'
+    ],
     title: 'CurrencyPaymentSummaryPublic',
     description: 'Amounts are grouped by currency and are never converted or combined.'
 } as const;
@@ -1021,14 +1154,23 @@ export const CurrencyPeriodTotalPublicSchema = {
         }
     },
     type: 'object',
-    required: ['currency', 'total_known_amount'],
+    required: [
+        'currency',
+        'total_known_amount'
+    ],
     title: 'CurrencyPeriodTotalPublic',
     description: 'Known amounts are grouped by currency and are never converted or combined.'
 } as const;
 
 export const CurrentValueSourceSchema = {
     type: 'string',
-    enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy'],
+    enum: [
+        'unknown',
+        'automatic',
+        'manual',
+        'integration',
+        'legacy'
+    ],
     title: 'CurrentValueSource'
 } as const;
 
@@ -1055,19 +1197,35 @@ export const DailyCashflowPublicSchema = {
         }
     },
     type: 'object',
-    required: ['due_date', 'amount', 'cumulative_amount', 'is_overdue'],
+    required: [
+        'due_date',
+        'amount',
+        'cumulative_amount',
+        'is_overdue'
+    ],
     title: 'DailyCashflowPublic'
 } as const;
 
 export const DataSourcePolicySchema = {
     type: 'string',
-    enum: ['manual', 'automatic', 'hybrid'],
+    enum: [
+        'manual',
+        'automatic',
+        'hybrid'
+    ],
     title: 'DataSourcePolicy'
 } as const;
 
 export const EffectiveValueSourceModeSchema = {
     type: 'string',
-    enum: ['unknown', 'automatic', 'manual', 'integration', 'legacy', 'mixed'],
+    enum: [
+        'unknown',
+        'automatic',
+        'manual',
+        'integration',
+        'legacy',
+        'mixed'
+    ],
     title: 'EffectiveValueSourceMode'
 } as const;
 
@@ -1086,7 +1244,10 @@ export const EnsuredObligationsPublicSchema = {
         }
     },
     type: 'object',
-    required: ['created_keys', 'created_count'],
+    required: [
+        'created_keys',
+        'created_count'
+    ],
     title: 'EnsuredObligationsPublic'
 } as const;
 
@@ -1094,7 +1255,7 @@ export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
             items: {
-                '$ref': '#/components/schemas/ValidationError'
+                $ref: '#/components/schemas/ValidationError'
             },
             type: 'array',
             title: 'Detail'
@@ -1106,7 +1267,11 @@ export const HTTPValidationErrorSchema = {
 
 export const LedgerAccessRoleSchema = {
     type: 'string',
-    enum: ['owner', 'editor', 'viewer'],
+    enum: [
+        'owner',
+        'editor',
+        'viewer'
+    ],
     title: 'LedgerAccessRole'
 } as const;
 
@@ -1131,7 +1296,9 @@ export const LedgerCreateSchema = {
         }
     },
     type: 'object',
-    required: ['name'],
+    required: [
+        'name'
+    ],
     title: 'LedgerCreate'
 } as const;
 
@@ -1164,7 +1331,7 @@ export const LedgerMemberPublicSchema = {
             title: 'Full Name'
         },
         role: {
-            '$ref': '#/components/schemas/LedgerAccessRole'
+            $ref: '#/components/schemas/LedgerAccessRole'
         },
         created_at: {
             type: 'string',
@@ -1173,18 +1340,27 @@ export const LedgerMemberPublicSchema = {
         }
     },
     type: 'object',
-    required: ['ledger_id', 'user_id', 'email', 'full_name', 'role', 'created_at'],
+    required: [
+        'ledger_id',
+        'user_id',
+        'email',
+        'full_name',
+        'role',
+        'created_at'
+    ],
     title: 'LedgerMemberPublic'
 } as const;
 
 export const LedgerMemberUpdateSchema = {
     properties: {
         role: {
-            '$ref': '#/components/schemas/LedgerAccessRole'
+            $ref: '#/components/schemas/LedgerAccessRole'
         }
     },
     type: 'object',
-    required: ['role'],
+    required: [
+        'role'
+    ],
     title: 'LedgerMemberUpdate'
 } as const;
 
@@ -1192,7 +1368,7 @@ export const LedgerMembersPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/LedgerMemberPublic'
+                $ref: '#/components/schemas/LedgerMemberPublic'
             },
             type: 'array',
             title: 'Data'
@@ -1203,7 +1379,10 @@ export const LedgerMembersPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'LedgerMembersPublic'
 } as const;
 
@@ -1246,7 +1425,14 @@ export const LedgerPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'owner_user_id', 'name', 'description', 'created_at', 'updated_at'],
+    required: [
+        'id',
+        'owner_user_id',
+        'name',
+        'description',
+        'created_at',
+        'updated_at'
+    ],
     title: 'LedgerPublic'
 } as const;
 
@@ -1277,11 +1463,13 @@ export const LedgerShareSchema = {
             title: 'Email'
         },
         role: {
-            '$ref': '#/components/schemas/LedgerAccessRole'
+            $ref: '#/components/schemas/LedgerAccessRole'
         }
     },
     type: 'object',
-    required: ['role'],
+    required: [
+        'role'
+    ],
     title: 'LedgerShare'
 } as const;
 
@@ -1306,7 +1494,9 @@ export const LedgerUpdateSchema = {
         }
     },
     type: 'object',
-    required: ['name'],
+    required: [
+        'name'
+    ],
     title: 'LedgerUpdate'
 } as const;
 
@@ -1314,7 +1504,7 @@ export const LedgersPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/LedgerPublic'
+                $ref: '#/components/schemas/LedgerPublic'
             },
             type: 'array',
             title: 'Data'
@@ -1325,7 +1515,10 @@ export const LedgersPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'LedgersPublic'
 } as const;
 
@@ -1342,7 +1535,7 @@ export const LegacyImportJobPublicSchema = {
             title: 'Ledger Id'
         },
         status: {
-            '$ref': '#/components/schemas/LegacyImportJobStatus'
+            $ref: '#/components/schemas/LegacyImportJobStatus'
         },
         processed_obligations: {
             type: 'integer',
@@ -1438,13 +1631,32 @@ export const LegacyImportJobPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'status', 'processed_obligations', 'total_obligations', 'created_category_groups', 'created_categories', 'replaced_categories', 'imported_obligations', 'error', 'created_at', 'started_at', 'finished_at'],
+    required: [
+        'id',
+        'ledger_id',
+        'status',
+        'processed_obligations',
+        'total_obligations',
+        'created_category_groups',
+        'created_categories',
+        'replaced_categories',
+        'imported_obligations',
+        'error',
+        'created_at',
+        'started_at',
+        'finished_at'
+    ],
     title: 'LegacyImportJobPublic'
 } as const;
 
 export const LegacyImportJobStatusSchema = {
     type: 'string',
-    enum: ['pending', 'running', 'succeeded', 'failed'],
+    enum: [
+        'pending',
+        'running',
+        'succeeded',
+        'failed'
+    ],
     title: 'LegacyImportJobStatus'
 } as const;
 
@@ -1456,7 +1668,9 @@ export const MessageSchema = {
         }
     },
     type: 'object',
-    required: ['message'],
+    required: [
+        'message'
+    ],
     title: 'Message'
 } as const;
 
@@ -1474,7 +1688,10 @@ export const NewPasswordSchema = {
         }
     },
     type: 'object',
-    required: ['token', 'new_password'],
+    required: [
+        'token',
+        'new_password'
+    ],
     title: 'NewPassword'
 } as const;
 
@@ -1548,7 +1765,10 @@ export const ObligationComponentCreateSchema = {
     },
     additionalProperties: false,
     type: 'object',
-    required: ['type', 'label'],
+    required: [
+        'type',
+        'label'
+    ],
     title: 'ObligationComponentCreate'
 } as const;
 
@@ -1630,7 +1850,18 @@ export const ObligationComponentPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'obligation_id', 'type', 'label', 'amount', 'source', 'external_id', 'metadata', 'created_at', 'updated_at'],
+    required: [
+        'id',
+        'obligation_id',
+        'type',
+        'label',
+        'amount',
+        'source',
+        'external_id',
+        'metadata',
+        'created_at',
+        'updated_at'
+    ],
     title: 'ObligationComponentPublic'
 } as const;
 
@@ -1791,7 +2022,10 @@ export const ObligationComponentUpsertSchema = {
     },
     additionalProperties: false,
     type: 'object',
-    required: ['type', 'label'],
+    required: [
+        'type',
+        'label'
+    ],
     title: 'ObligationComponentUpsert'
 } as const;
 
@@ -1799,7 +2033,7 @@ export const ObligationComponentsPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/ObligationComponentPublic'
+                $ref: '#/components/schemas/ObligationComponentPublic'
             },
             type: 'array',
             title: 'Data'
@@ -1810,7 +2044,10 @@ export const ObligationComponentsPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'ObligationComponentsPublic'
 } as const;
 
@@ -1822,7 +2059,7 @@ export const ObligationCreateSchema = {
             title: 'Category Code'
         },
         period: {
-            '$ref': '#/components/schemas/BillingPeriodInput'
+            $ref: '#/components/schemas/BillingPeriodInput'
         },
         data_ready: {
             type: 'boolean',
@@ -1882,7 +2119,10 @@ export const ObligationCreateSchema = {
         }
     },
     type: 'object',
-    required: ['category_code', 'period'],
+    required: [
+        'category_code',
+        'period'
+    ],
     title: 'ObligationCreate'
 } as const;
 
@@ -1937,7 +2177,14 @@ export const ObligationIntegrationUpdateSchema = {
 
 export const ObligationLifecycleSchema = {
     type: 'string',
-    enum: ['draft', 'collecting_data', 'ready', 'paid', 'canceled', 'error'],
+    enum: [
+        'draft',
+        'collecting_data',
+        'ready',
+        'paid',
+        'canceled',
+        'error'
+    ],
     title: 'ObligationLifecycle'
 } as const;
 
@@ -1951,7 +2198,9 @@ export const ObligationNoteAppendSchema = {
     },
     additionalProperties: false,
     type: 'object',
-    required: ['text'],
+    required: [
+        'text'
+    ],
     title: 'ObligationNoteAppend'
 } as const;
 
@@ -1971,14 +2220,17 @@ export const ObligationPeriodPublicSchema = {
         }
     },
     type: 'object',
-    required: ['year', 'month'],
+    required: [
+        'year',
+        'month'
+    ],
     title: 'ObligationPeriodPublic'
 } as const;
 
 export const ObligationPeriodTotalPublicSchema = {
     properties: {
         period: {
-            '$ref': '#/components/schemas/ObligationPeriodPublic'
+            $ref: '#/components/schemas/ObligationPeriodPublic'
         },
         total_obligation_count: {
             type: 'integer',
@@ -1994,14 +2246,20 @@ export const ObligationPeriodTotalPublicSchema = {
         },
         currency_summaries: {
             items: {
-                '$ref': '#/components/schemas/CurrencyPeriodTotalPublic'
+                $ref: '#/components/schemas/CurrencyPeriodTotalPublic'
             },
             type: 'array',
             title: 'Currency Summaries'
         }
     },
     type: 'object',
-    required: ['period', 'total_obligation_count', 'unknown_amount_count', 'is_complete', 'currency_summaries'],
+    required: [
+        'period',
+        'total_obligation_count',
+        'unknown_amount_count',
+        'is_complete',
+        'currency_summaries'
+    ],
     title: 'ObligationPeriodTotalPublic',
     description: 'One continuous chart point; unknown amounts are not represented as zero.'
 } as const;
@@ -2010,14 +2268,16 @@ export const ObligationPeriodTotalsPublicSchema = {
     properties: {
         points: {
             items: {
-                '$ref': '#/components/schemas/ObligationPeriodTotalPublic'
+                $ref: '#/components/schemas/ObligationPeriodTotalPublic'
             },
             type: 'array',
             title: 'Points'
         }
     },
     type: 'object',
-    required: ['points'],
+    required: [
+        'points'
+    ],
     title: 'ObligationPeriodTotalsPublic'
 } as const;
 
@@ -2062,13 +2322,13 @@ export const ObligationPublicSchema = {
             title: 'Notes'
         },
         lifecycle: {
-            '$ref': '#/components/schemas/ObligationLifecycle'
+            $ref: '#/components/schemas/ObligationLifecycle'
         },
         period: {
-            '$ref': '#/components/schemas/ObligationPeriodPublic'
+            $ref: '#/components/schemas/ObligationPeriodPublic'
         },
         effective_value_source: {
-            '$ref': '#/components/schemas/EffectiveValueSourceMode'
+            $ref: '#/components/schemas/EffectiveValueSourceMode'
         },
         current_amount: {
             anyOf: [
@@ -2083,10 +2343,10 @@ export const ObligationPublicSchema = {
             title: 'Current Amount'
         },
         amount_state: {
-            '$ref': '#/components/schemas/ValueState'
+            $ref: '#/components/schemas/ValueState'
         },
         amount_source: {
-            '$ref': '#/components/schemas/CurrentValueSource'
+            $ref: '#/components/schemas/CurrentValueSource'
         },
         issue_date: {
             anyOf: [
@@ -2101,10 +2361,10 @@ export const ObligationPublicSchema = {
             title: 'Issue Date'
         },
         issue_date_state: {
-            '$ref': '#/components/schemas/ValueState'
+            $ref: '#/components/schemas/ValueState'
         },
         issue_date_source: {
-            '$ref': '#/components/schemas/CurrentValueSource'
+            $ref: '#/components/schemas/CurrentValueSource'
         },
         due_date: {
             anyOf: [
@@ -2119,10 +2379,10 @@ export const ObligationPublicSchema = {
             title: 'Due Date'
         },
         due_date_state: {
-            '$ref': '#/components/schemas/ValueState'
+            $ref: '#/components/schemas/ValueState'
         },
         due_date_source: {
-            '$ref': '#/components/schemas/CurrentValueSource'
+            $ref: '#/components/schemas/CurrentValueSource'
         },
         currency: {
             anyOf: [
@@ -2159,7 +2419,31 @@ export const ObligationPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'ledger_id', 'category_id', 'category_code', 'key', 'name', 'notes', 'lifecycle', 'period', 'effective_value_source', 'current_amount', 'amount_state', 'amount_source', 'issue_date', 'issue_date_state', 'issue_date_source', 'due_date', 'due_date_state', 'due_date_source', 'currency', 'paid_at', 'created_at', 'updated_at'],
+    required: [
+        'id',
+        'ledger_id',
+        'category_id',
+        'category_code',
+        'key',
+        'name',
+        'notes',
+        'lifecycle',
+        'period',
+        'effective_value_source',
+        'current_amount',
+        'amount_state',
+        'amount_source',
+        'issue_date',
+        'issue_date_state',
+        'issue_date_source',
+        'due_date',
+        'due_date_state',
+        'due_date_source',
+        'currency',
+        'paid_at',
+        'created_at',
+        'updated_at'
+    ],
     title: 'ObligationPublic'
 } as const;
 
@@ -2226,7 +2510,7 @@ export const ObligationsPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/ObligationPublic'
+                $ref: '#/components/schemas/ObligationPublic'
             },
             type: 'array',
             title: 'Data'
@@ -2237,14 +2521,17 @@ export const ObligationsPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'ObligationsPublic'
 } as const;
 
 export const PeriodCashflowPublicSchema = {
     properties: {
         period: {
-            '$ref': '#/components/schemas/ObligationPeriodPublic'
+            $ref: '#/components/schemas/ObligationPeriodPublic'
         },
         as_of_date: {
             type: 'string',
@@ -2265,21 +2552,28 @@ export const PeriodCashflowPublicSchema = {
         },
         currency_summaries: {
             items: {
-                '$ref': '#/components/schemas/CurrencyCashflowPublic'
+                $ref: '#/components/schemas/CurrencyCashflowPublic'
             },
             type: 'array',
             title: 'Currency Summaries'
         }
     },
     type: 'object',
-    required: ['period', 'as_of_date', 'unknown_amount_count', 'without_due_date_count', 'is_complete', 'currency_summaries'],
+    required: [
+        'period',
+        'as_of_date',
+        'unknown_amount_count',
+        'without_due_date_count',
+        'is_complete',
+        'currency_summaries'
+    ],
     title: 'PeriodCashflowPublic'
 } as const;
 
 export const PeriodPaymentSummaryPublicSchema = {
     properties: {
         period: {
-            '$ref': '#/components/schemas/ObligationPeriodPublic'
+            $ref: '#/components/schemas/ObligationPeriodPublic'
         },
         total_obligation_count: {
             type: 'integer',
@@ -2311,20 +2605,31 @@ export const PeriodPaymentSummaryPublicSchema = {
         },
         amount_summaries: {
             items: {
-                '$ref': '#/components/schemas/CurrencyPaymentSummaryPublic'
+                $ref: '#/components/schemas/CurrencyPaymentSummaryPublic'
             },
             type: 'array',
             title: 'Amount Summaries'
         }
     },
     type: 'object',
-    required: ['period', 'total_obligation_count', 'paid_obligation_count', 'paid_percentage', 'unknown_amount_count', 'is_complete', 'amount_summaries'],
+    required: [
+        'period',
+        'total_obligation_count',
+        'paid_obligation_count',
+        'paid_percentage',
+        'unknown_amount_count',
+        'is_complete',
+        'amount_summaries'
+    ],
     title: 'PeriodPaymentSummaryPublic'
 } as const;
 
 export const RecurrenceUnitSchema = {
     type: 'string',
-    enum: ['month', 'year'],
+    enum: [
+        'month',
+        'year'
+    ],
     title: 'RecurrenceUnit'
 } as const;
 
@@ -2336,10 +2641,10 @@ export const SystemRunPublicSchema = {
             title: 'Id'
         },
         status: {
-            '$ref': '#/components/schemas/SystemRunStatus'
+            $ref: '#/components/schemas/SystemRunStatus'
         },
         trigger: {
-            '$ref': '#/components/schemas/SystemRunTrigger'
+            $ref: '#/components/schemas/SystemRunTrigger'
         },
         effective_at: {
             type: 'string',
@@ -2397,20 +2702,38 @@ export const SystemRunPublicSchema = {
         },
         steps: {
             items: {
-                '$ref': '#/components/schemas/SystemRunStepPublic'
+                $ref: '#/components/schemas/SystemRunStepPublic'
             },
             type: 'array',
             title: 'Steps'
         }
     },
     type: 'object',
-    required: ['id', 'status', 'trigger', 'effective_at', 'timezone', 'business_date', 'summary', 'error', 'started_at', 'finished_at'],
+    required: [
+        'id',
+        'status',
+        'trigger',
+        'effective_at',
+        'timezone',
+        'business_date',
+        'summary',
+        'error',
+        'started_at',
+        'finished_at'
+    ],
     title: 'SystemRunPublic'
 } as const;
 
 export const SystemRunSkipReasonSchema = {
     type: 'string',
-    enum: ['disabled', 'manual_only', 'not_due', 'not_configured', 'no_eligible_targets', 'prerequisite_failed'],
+    enum: [
+        'disabled',
+        'manual_only',
+        'not_due',
+        'not_configured',
+        'no_eligible_targets',
+        'prerequisite_failed'
+    ],
     title: 'SystemRunSkipReason'
 } as const;
 
@@ -2431,7 +2754,12 @@ export const SystemRunStartSchema = {
 
 export const SystemRunStatusSchema = {
     type: 'string',
-    enum: ['running', 'success', 'partial_failure', 'failure'],
+    enum: [
+        'running',
+        'success',
+        'partial_failure',
+        'failure'
+    ],
     title: 'SystemRunStatus'
 } as const;
 
@@ -2459,12 +2787,12 @@ export const SystemRunStepPublicSchema = {
             title: 'Ledger Id'
         },
         status: {
-            '$ref': '#/components/schemas/SystemRunStepStatus'
+            $ref: '#/components/schemas/SystemRunStepStatus'
         },
         skip_reason: {
             anyOf: [
                 {
-                    '$ref': '#/components/schemas/SystemRunSkipReason'
+                    $ref: '#/components/schemas/SystemRunSkipReason'
                 },
                 {
                     type: 'null'
@@ -2513,13 +2841,27 @@ export const SystemRunStepPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'task_name', 'ledger_id', 'status', 'skip_reason', 'error', 'summary', 'started_at', 'finished_at'],
+    required: [
+        'id',
+        'task_name',
+        'ledger_id',
+        'status',
+        'skip_reason',
+        'error',
+        'summary',
+        'started_at',
+        'finished_at'
+    ],
     title: 'SystemRunStepPublic'
 } as const;
 
 export const SystemRunStepStatusSchema = {
     type: 'string',
-    enum: ['succeeded', 'failed', 'skipped'],
+    enum: [
+        'succeeded',
+        'failed',
+        'skipped'
+    ],
     title: 'SystemRunStepStatus'
 } as const;
 
@@ -2530,17 +2872,23 @@ export const SystemRunTaskPublicSchema = {
             title: 'Name'
         },
         mode: {
-            '$ref': '#/components/schemas/TaskRunMode'
+            $ref: '#/components/schemas/TaskRunMode'
         }
     },
     type: 'object',
-    required: ['name', 'mode'],
+    required: [
+        'name',
+        'mode'
+    ],
     title: 'SystemRunTaskPublic'
 } as const;
 
 export const SystemRunTriggerSchema = {
     type: 'string',
-    enum: ['scheduled', 'manual'],
+    enum: [
+        'scheduled',
+        'manual'
+    ],
     title: 'SystemRunTrigger'
 } as const;
 
@@ -2548,7 +2896,7 @@ export const SystemRunsPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/SystemRunPublic'
+                $ref: '#/components/schemas/SystemRunPublic'
             },
             type: 'array',
             title: 'Data'
@@ -2559,13 +2907,20 @@ export const SystemRunsPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'SystemRunsPublic'
 } as const;
 
 export const TaskRunModeSchema = {
     type: 'string',
-    enum: ['disabled', 'manual_only', 'scheduled'],
+    enum: [
+        'disabled',
+        'manual_only',
+        'scheduled'
+    ],
     title: 'TaskRunMode'
 } as const;
 
@@ -2582,7 +2937,9 @@ export const TokenSchema = {
         }
     },
     type: 'object',
-    required: ['access_token'],
+    required: [
+        'access_token'
+    ],
     title: 'Token'
 } as const;
 
@@ -2602,7 +2959,10 @@ export const UpdatePasswordSchema = {
         }
     },
     type: 'object',
-    required: ['current_password', 'new_password'],
+    required: [
+        'current_password',
+        'new_password'
+    ],
     title: 'UpdatePassword'
 } as const;
 
@@ -2644,7 +3004,10 @@ export const UserCreateSchema = {
         }
     },
     type: 'object',
-    required: ['email', 'password'],
+    required: [
+        'email',
+        'password'
+    ],
     title: 'UserCreate'
 } as const;
 
@@ -2690,7 +3053,11 @@ export const UserPublicSchema = {
         }
     },
     type: 'object',
-    required: ['email', 'id', 'created_at'],
+    required: [
+        'email',
+        'id',
+        'created_at'
+    ],
     title: 'UserPublic'
 } as const;
 
@@ -2797,7 +3164,7 @@ export const UsersPublicSchema = {
     properties: {
         data: {
             items: {
-                '$ref': '#/components/schemas/UserPublic'
+                $ref: '#/components/schemas/UserPublic'
             },
             type: 'array',
             title: 'Data'
@@ -2808,7 +3175,10 @@ export const UsersPublicSchema = {
         }
     },
     type: 'object',
-    required: ['data', 'count'],
+    required: [
+        'data',
+        'count'
+    ],
     title: 'UsersPublic'
 } as const;
 
@@ -2845,12 +3215,21 @@ export const ValidationErrorSchema = {
         }
     },
     type: 'object',
-    required: ['loc', 'msg', 'type'],
+    required: [
+        'loc',
+        'msg',
+        'type'
+    ],
     title: 'ValidationError'
 } as const;
 
 export const ValueStateSchema = {
     type: 'string',
-    enum: ['unknown', 'estimated', 'confirmed', 'overridden'],
+    enum: [
+        'unknown',
+        'estimated',
+        'confirmed',
+        'overridden'
+    ],
     title: 'ValueState'
 } as const;

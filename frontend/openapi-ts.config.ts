@@ -5,24 +5,23 @@ export default defineConfig({
   output: "./src/client",
 
   plugins: [
-    "legacy/axios",
+    "@hey-api/client-axios",
     {
       name: "@hey-api/sdk",
-      // NOTE: this doesn't allow tree-shaking
-      asClass: true,
-      operationId: true,
-      classNameBuilder: "{{name}}Service",
-      methodNameBuilder: (operation) => {
-        // @ts-expect-error
-        let name: string = operation.name
-        // @ts-expect-error
-        const service: string = operation.service
-
-        if (service && name.toLowerCase().startsWith(service.toLowerCase())) {
-          name = name.slice(service.length)
-        }
-
-        return name.charAt(0).toLowerCase() + name.slice(1)
+      client: "@hey-api/client-axios",
+      operations: {
+        strategy: "byTags",
+        containerName: "{{name}}Service",
+        methods: "static",
+        nesting: "operationId",
+        methodName: (name) => {
+          const [, ...parts] = name.split(/[-_./]/)
+          return parts
+            .map((part, index) =>
+              index === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1),
+            )
+            .join("")
+        },
       },
     },
     {

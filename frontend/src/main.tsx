@@ -7,7 +7,7 @@ import {
 import { createRouter, RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
-import { ApiError, OpenAPI } from "./client"
+import { ApiError, client } from "./client"
 import { ThemeProvider } from "./components/theme-provider"
 import { Toaster } from "./components/ui/sonner"
 import "./index.css"
@@ -20,15 +20,15 @@ if (!apiUrl) {
   throw new Error("VITE_API_URL must be set in the runtime configuration")
 }
 
-OpenAPI.BASE = apiUrl
-OpenAPI.TOKEN = async () => {
-  return localStorage.getItem("access_token") || ""
-}
+client.setConfig({
+  auth: () => localStorage.getItem("access_token") || undefined,
+  baseURL: apiUrl,
+})
 
 const handleApiError = (error: Error) => {
   if (!(error instanceof ApiError)) return
 
-  const invalidSession = [401, 403].includes(error.status)
+  const invalidSession = [401, 403].includes(error.response?.status ?? 0)
 
   if (invalidSession) {
     localStorage.removeItem("access_token")
