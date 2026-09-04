@@ -30,7 +30,7 @@ const useAuth = () => {
     Error
   >({
     queryKey: ["currentUser"],
-    queryFn: UsersService.readUserMe,
+    queryFn: () => UsersService.readUserMe(),
     enabled: isLoggedIn(),
     retry: (failureCount, error) =>
       !isCurrentUserSessionError(error) && failureCount < 3,

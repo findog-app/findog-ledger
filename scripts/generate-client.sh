@@ -16,12 +16,6 @@ OPENAPI_INPUT="$openapi_tmp" bash ./scripts/bun.sh run --filter frontend generat
 # The generator may leave whitespace on otherwise empty lines. Normalize its
 # output so a no-op regeneration does not make a commit hook fail.
 find frontend/src/client -type f -name '*.ts' -exec perl -pi -e 's/[ \t]+$//' {} +
-# openapi-ts 0.99 emits an unused callback key under TypeScript's
-# noUnusedLocals setting. Keep generation deterministic until upstream stops
-# emitting it.
-if [[ -f frontend/src/client/core/bodySerializer.ts ]]; then
-  perl -pi -e 's/\(key, value\) =>/(_key, value) =>/' frontend/src/client/core/bodySerializer.ts
-fi
 cat >> frontend/src/client/index.ts <<'EOF'
 export { AxiosError as ApiError } from 'axios';
 export type { BodyLoginLoginAccessToken as Body_login_login_access_token } from './types.gen';

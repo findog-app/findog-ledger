@@ -1213,7 +1213,7 @@ function CategoryHistoryDialog({
       AnalyticsService.readCategoryAmountHistory({
         ledgerId,
         categoryId: category.id,
-        _from: range.from,
+        from: range.from,
         to: range.to,
       }),
     queryKey: ["analytics", "category-history", ledgerId, category.id, range],

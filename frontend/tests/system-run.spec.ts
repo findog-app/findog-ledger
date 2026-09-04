@@ -1,17 +1,19 @@
 import { expect, test } from "@playwright/test"
 
-import { LedgersService, LoginService, OpenAPI } from "../src/client"
+import { client, LedgersService, LoginService } from "../src/client"
 import { firstSuperuser, firstSuperuserPassword } from "./config.ts"
 
 async function createLedgerFixture() {
-  OpenAPI.BASE = process.env.VITE_API_URL ?? "http://localhost:8000"
+  client.setConfig({
+    baseURL: process.env.VITE_API_URL ?? "http://localhost:8000",
+  })
   const token = await LoginService.loginAccessToken({
     formData: {
       username: firstSuperuser,
       password: firstSuperuserPassword,
     },
   })
-  OpenAPI.TOKEN = token.access_token
+  client.setConfig({ auth: token.access_token })
   return LedgersService.createLedger({
     requestBody: { name: `System Run ${Date.now()}` },
   })

@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test"
 
 import {
   CategoriesService,
+  client,
   type LedgerPublic,
   LedgersService,
   LoginService,
   ObligationsService,
-  OpenAPI,
 } from "../src/client"
 import { firstSuperuser, firstSuperuserPassword } from "./config.ts"
 import { createUser } from "./utils/privateApi"
@@ -14,14 +14,16 @@ import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser } from "./utils/user"
 
 async function authenticateApi() {
-  OpenAPI.BASE = process.env.VITE_API_URL ?? "http://localhost:8000"
+  client.setConfig({
+    baseURL: process.env.VITE_API_URL ?? "http://localhost:8000",
+  })
   const token = await LoginService.loginAccessToken({
     formData: {
       username: firstSuperuser,
       password: firstSuperuserPassword,
     },
   })
-  OpenAPI.TOKEN = token.access_token
+  client.setConfig({ auth: token.access_token })
 }
 
 async function createObligationFixture(): Promise<{
