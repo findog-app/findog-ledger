@@ -3,7 +3,7 @@
 # externally managed database configured in .env.
 services:
   prestart:
-    image: ghcr.io/findog-app/findog-ledger-backend:${TAG?Set TAG in .env}
+    image: ghcr.io/oblidog/oblidog-ledger-backend:${TAG?Set TAG in .env}
     restart: "no"
     command: bash scripts/prestart.sh
     env_file:
@@ -12,7 +12,7 @@ services:
       - firefly_net
 
   backend:
-    image: ghcr.io/findog-app/findog-ledger-backend:${TAG?Set TAG in .env}
+    image: ghcr.io/oblidog/oblidog-ledger-backend:${TAG?Set TAG in .env}
     restart: always
     depends_on:
       prestart:
@@ -33,7 +33,7 @@ services:
           - findog-ledger-backend
 
   scheduler:
-    image: ghcr.io/findog-app/findog-ledger-backend:${TAG?Set TAG in .env}
+    image: ghcr.io/oblidog/oblidog-ledger-backend:${TAG?Set TAG in .env}
     restart: always
     depends_on:
       prestart:
@@ -56,7 +56,7 @@ services:
       - firefly_net
 
   frontend:
-    image: ghcr.io/findog-app/findog-ledger-frontend:${TAG?Set TAG in .env}
+    image: ghcr.io/oblidog/oblidog-ledger-frontend:${TAG?Set TAG in .env}
     restart: always
     env_file:
       - .env
