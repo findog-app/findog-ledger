@@ -33,6 +33,15 @@ type ResponseBody<Function> =
   > extends { data: infer Body }
     ? NonNullable<Body>
     : never
+type LegacyBody<Data> = Data extends { body?: infer Body }
+  ? [NonNullable<Body>] extends [never]
+    ? object
+    : Data extends { body: infer RequiredBody }
+      ?
+          | { requestBody: RequiredBody; formData?: never }
+          | { requestBody?: never; formData: RequiredBody }
+      : { requestBody?: Body; formData?: Body }
+  : object
 type LegacyOptions<Data> = (Data extends { path?: infer Path }
   ? [NonNullable<Path>] extends [never]
     ? object
@@ -43,11 +52,31 @@ type LegacyOptions<Data> = (Data extends { path?: infer Path }
       ? object
       : CamelKeys<NonNullable<Query>>
     : object) &
-  (Data extends { body?: infer Body }
-    ? [NonNullable<Body>] extends [never]
-      ? object
-      : { requestBody?: Body; formData?: Body }
-    : object)
+  LegacyBody<Data>
+type HasRequiredProperties<Value> = [NonNullable<Value>] extends [never]
+  ? false
+  : NonNullable<Value> extends object
+    ? object extends NonNullable<Value>
+      ? false
+      : true
+    : false
+type HasRequiredPath<Data> = Data extends { path?: infer Path }
+  ? HasRequiredProperties<Path>
+  : false
+type HasRequiredQuery<Data> = Data extends { query?: infer Query }
+  ? HasRequiredProperties<Query>
+  : false
+type RequiresOptions<Data> = Data extends { body: unknown }
+  ? true
+  : HasRequiredPath<Data> extends true
+    ? true
+    : HasRequiredQuery<Data> extends true
+      ? true
+      : false
+type RequestArguments<Data> =
+  RequiresOptions<Data> extends true
+    ? [options: LegacyOptions<Data>]
+    : [options?: LegacyOptions<Data>]
 
 const snakeCase = (key: string) =>
   key
@@ -57,7 +86,7 @@ const snakeCase = (key: string) =>
 const request =
   <Function>(function_: Function) =>
   async (
-    options?: LegacyOptions<RequestData<Function>>,
+    ...[options]: RequestArguments<RequestData<Function>>
   ): Promise<ResponseBody<Function>> => {
     const legacyOptions = options as
       | (LegacyOptions<RequestData<Function>> & {
