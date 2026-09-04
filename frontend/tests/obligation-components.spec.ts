@@ -74,7 +74,7 @@ test("manages manual obligation components and keeps integration components read
   await expect(page.getByText("Unable to load components.")).toBeVisible({
     timeout: 15_000,
   })
-  await page.unroute("**/components")
+  await page.unroute("**/components*")
   await page.getByRole("button", { name: "Try again" }).click()
   await expect(page.getByText("No components yet.")).toBeVisible()
 
