@@ -1,7 +1,7 @@
-import { LoginService, OpenAPI, UsersService } from "../../src/client"
+import { client, LoginService, UsersService } from "../../src/client"
 import { firstSuperuser, firstSuperuserPassword } from "../config"
 
-OpenAPI.BASE = `${process.env.VITE_API_URL}`
+client.setConfig({ baseURL: `${process.env.VITE_API_URL}` })
 
 export const createUser = async ({
   email,
@@ -17,7 +17,7 @@ export const createUser = async ({
     },
   })
 
-  OpenAPI.TOKEN = token.access_token
+  client.setConfig({ auth: token.access_token })
 
   return await UsersService.createUser({
     requestBody: {

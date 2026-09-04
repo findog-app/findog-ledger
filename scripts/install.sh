@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="https://raw.githubusercontent.com/findog-app/findog-ledger/main"
+BASE_URL="https://raw.githubusercontent.com/oblidog/oblidog-ledger/main"
 
 curl -fsSL "$BASE_URL/compose.production.yml" -o compose.yml
 
@@ -14,7 +14,7 @@ fi
 
 echo
 printf '%s\n' \
-  "Findog Ledger deployment files are ready." \
+  "Oblidog Ledger deployment files are ready." \
   "" \
   "Next steps:" \
   "  1. Edit .env" \

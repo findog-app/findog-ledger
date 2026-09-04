@@ -146,7 +146,7 @@ jobs:
 
           GH_TOKEN="$CLIENT_REPO_TOKEN" gh api \
             --method POST \
-            repos/findog-app/findog-client-python/dispatches \
+            repos/oblidog/oblidog-client-python/dispatches \
             --input - <<EOF
           {
             "event_type": "ledger-release",
