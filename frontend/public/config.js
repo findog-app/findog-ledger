@@ -1,1 +1,1 @@
-window.__FINDOG_LEDGER_CONFIG__ = {}
+window.__OBLIDOG_CONFIG__ = {}

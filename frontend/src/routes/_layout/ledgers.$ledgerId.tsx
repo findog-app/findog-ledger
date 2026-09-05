@@ -17,7 +17,7 @@ import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/ledgers/$ledgerId")({
   component: LedgerDetails,
-  head: () => ({ meta: [{ title: "Ledger - Findog Ledger" }] }),
+  head: () => ({ meta: [{ title: "Ledger - Oblidog" }] }),
 })
 
 function LedgerDetails() {

@@ -1,17 +1,17 @@
-# Findog Ledger
+# Oblidog Ledger
 
 <p align="center">
-  <img src="frontend/public/assets/images/findog-logo.svg" alt="Findog Ledger" width="280" />
+  <img src="frontend/public/assets/images/oblidog-logo.svg" alt="Oblidog Ledger" width="280" />
 </p>
 
 <p align="center"><strong>A calm, self-hosted home for recurring payments and obligations.</strong></p>
 
-> **Early development:** Findog Ledger is actively evolving. The core ledger,
+> **Early development:** Oblidog Ledger is actively evolving. The core ledger,
 > category, obligation, and access-control workflows are usable, while
 > integrations, automation, analytics, and parts of the product experience are
 > still being shaped.
 
-Findog Ledger is a self-hosted application for keeping recurring household or
+Oblidog Ledger is a self-hosted application for keeping recurring household or
 small-team obligations under control. It is deliberately not another banking
 or budgeting dashboard: the central object is an **obligation** — something
 that needs to be known, prepared, paid, and eventually closed.
@@ -69,7 +69,7 @@ other integration-provided values.
 
 ## Automation and integrations
 
-Findog Ledger is designed so integrations can live outside the main
+Oblidog Ledger is designed so integrations can live outside the main
 application. A mail processor, provider-specific scraper, or scheduled job can
 use the API instead of being coupled to the backend.
 
@@ -94,8 +94,9 @@ and an existing reverse proxy network named `firefly_net`.
 
 Before starting, make sure your server has Docker Compose, access to PostgreSQL,
 and a reverse proxy that can route your chosen frontend and API hostnames to
-the `findog-ledger-frontend` and `findog-ledger-backend` aliases on that
-network.
+the legacy `findog-ledger-frontend` and `findog-ledger-backend` aliases on
+that network. These aliases are deliberately retained for compatibility with
+existing reverse-proxy configuration; they are not product branding.
 
 ### Install
 
@@ -192,10 +193,17 @@ version back.
 
 ## Project status
 
-Findog Ledger is currently an early-stage project rather than a finished
+Oblidog Ledger is currently an early-stage project rather than a finished
 consumer product. The direction is to keep the core ledger small and predictable
 while building richer UX, external integrations, reporting, and automation on
 top of it.
 
 The project is developed in public under the
 [`oblidog`](https://github.com/oblidog) GitHub organisation.
+
+## Branding and compatibility
+
+Oblidog is the current product name. The legacy `findog-legacy-adapter` and
+its repository remain in use only to import historical data. PostgreSQL names,
+Docker volumes, deployed network aliases, and secrets also retain their legacy
+identifiers until a separately coordinated infrastructure migration.

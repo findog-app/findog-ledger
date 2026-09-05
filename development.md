@@ -1,4 +1,4 @@
-# Findog Ledger - Development
+# Oblidog Ledger - Development
 
 ## Current Assumptions
 

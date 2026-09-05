@@ -2,10 +2,10 @@ import { Link } from "@tanstack/react-router"
 
 import { useTheme } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
-import icon from "/assets/images/findog-icon.svg"
-import iconLight from "/assets/images/findog-icon-light.svg"
-import logo from "/assets/images/findog-logo.svg"
-import logoLight from "/assets/images/findog-logo-light.svg"
+import icon from "/assets/images/oblidog-icon.svg"
+import iconLight from "/assets/images/oblidog-icon-light.svg"
+import logo from "/assets/images/oblidog-logo.svg"
+import logoLight from "/assets/images/oblidog-logo-light.svg"
 
 interface LogoProps {
   variant?: "full" | "icon" | "responsive"
@@ -29,7 +29,7 @@ export function Logo({
       <>
         <img
           src={fullLogo}
-          alt="Findog"
+          alt="Oblidog"
           className={cn(
             "h-6 w-auto group-data-[collapsible=icon]:hidden",
             className,
@@ -37,7 +37,7 @@ export function Logo({
         />
         <img
           src={iconLogo}
-          alt="Findog"
+          alt="Oblidog"
           className={cn(
             "size-5 hidden group-data-[collapsible=icon]:block",
             className,
@@ -47,7 +47,7 @@ export function Logo({
     ) : (
       <img
         src={variant === "full" ? fullLogo : iconLogo}
-        alt="Findog"
+        alt="Oblidog"
         className={cn(variant === "full" ? "h-6 w-auto" : "size-5", className)}
       />
     )

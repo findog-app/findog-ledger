@@ -11,7 +11,7 @@ openapi-python-client generate \
   --overwrite \
   --fail-on-warning
 
-client_dir="$output_dir/client/findog_integration_api_client"
+client_dir="$output_dir/client/oblidog_integration_api_client"
 
 test -f "$client_dir/models/category_data_record_public.py"
 test -f "$client_dir/models/category_data_records_public.py"
