@@ -1,12 +1,14 @@
 SHELL := /bin/bash
 
-.PHONY: help cmt dev-b dev-f pre test cov lint fmt hooks refresh
+.PHONY: help cmt dev-b dev-f e2e e2e-down pre test cov lint fmt hooks refresh
 
 help:
 	@echo "Available targets:"
 	@echo "  make cmt    - run commitizen commit flow"
 	@echo "  make dev-b  - start backend with fastapi dev"
 	@echo "  make dev-f  - start frontend dev server"
+	@echo "  make e2e    - run Playwright in an isolated Docker Compose project"
+	@echo "  make e2e-down - remove the isolated e2e project and its test database"
 	@echo "  make pre    - run pre-commit hooks on all files"
 	@echo "  make test   - run backend tests"
 	@echo "  make cov    - run backend coverage report"
@@ -24,6 +26,13 @@ dev-b:
 
 dev-f:
 	bun run --filter frontend dev
+
+e2e:
+	docker compose -p findog-e2e -f compose.e2e.yml up --build --detach --wait backend mailcatcher
+	docker compose -p findog-e2e -f compose.e2e.yml run --rm playwright
+
+e2e-down:
+	docker compose -p findog-e2e -f compose.e2e.yml down -v --remove-orphans
 
 pre:
 	cd backend && uv run pre-commit run --all-files
