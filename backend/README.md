@@ -1,4 +1,12 @@
-# Findog Ledger - Backend
+# Oblidog Ledger - Backend
+
+## Branding and compatibility
+
+Public backend configuration, generated emails, and full OpenAPI metadata use
+the Oblidog name. Oblidog Ledger is retained for technical repository and
+integration API naming. Existing database names, Docker volumes and network
+aliases, legacy-import packages, and persisted data identifiers are retained
+for deployment and data compatibility; they are not public branding.
 
 ## Requirements
 
