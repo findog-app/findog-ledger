@@ -1,3 +1,9 @@
+## v0.7.4 (2026-09-05)
+
+### Fix
+
+- potential fix for code scanning alert no. 24: use of a broken or weak cryptographic hashing algorithm on sensitive data (#221)
+
 ## v0.7.3 (2026-09-05)
 
 ### Fix
