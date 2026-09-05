@@ -1,5 +1,5 @@
 name: Bug report
-description: Report reproducible incorrect behaviour in Findog Ledger.
+description: Report reproducible incorrect behaviour in Oblidog Ledger.
 title: "bug: "
 labels: [bug]
 body:
