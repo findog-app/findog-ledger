@@ -20,7 +20,7 @@ env:
   DOMAIN: localhost
   FRONTEND_HOST: http://localhost:5173
   ENVIRONMENT: local
-  STACK_NAME: findog-ledger-ci
+  STACK_NAME: oblidog-ledger-ci
   BACKEND_CORS_ORIGINS: http://localhost,http://localhost:5173
   SECRET_KEY: ci-secret-key-not-for-production
   FIRST_SUPERUSER: admin@example.com
@@ -30,8 +30,8 @@ env:
   POSTGRES_DB: findog
   POSTGRES_USER: findog
   POSTGRES_PASSWORD: ci-postgres-password
-  DOCKER_IMAGE_BACKEND: findog-ledger-backend
-  DOCKER_IMAGE_FRONTEND: findog-ledger-frontend
+  DOCKER_IMAGE_BACKEND: oblidog-ledger-backend
+  DOCKER_IMAGE_FRONTEND: oblidog-ledger-frontend
 
 jobs:
   changes:

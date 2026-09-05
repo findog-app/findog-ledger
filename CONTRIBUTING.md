@@ -1,6 +1,6 @@
-# Contributing to Findog Ledger
+# Contributing to Oblidog Ledger
 
-Findog Ledger is a private, multi-user payment-obligation application. Before
+Oblidog Ledger is a private, multi-user payment-obligation application. Before
 starting substantial work, open an issue or align the scope with a maintainer.
 
 ## Development setup
