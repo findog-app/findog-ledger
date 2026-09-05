@@ -1,0 +1,96 @@
+services:
+  db:
+    image: postgres:18
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d findog_e2e"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    environment:
+      POSTGRES_DB: findog_e2e
+      POSTGRES_PASSWORD: e2e-postgres-password
+      POSTGRES_USER: e2e
+    volumes:
+      - e2e-db-data:/var/lib/postgresql/data/pgdata
+    networks:
+      - e2e
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    networks:
+      - e2e
+
+  prestart:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: bash scripts/prestart.sh
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: &backend-environment
+      BACKEND_CORS_ORIGINS: http://localhost:5173
+      DOMAIN: localhost
+      EMAILS_FROM_EMAIL: noreply@example.com
+      ENVIRONMENT: local
+      FIRST_SUPERUSER: admin@example.com
+      FIRST_SUPERUSER_PASSWORD: e2e-admin-password
+      FRONTEND_HOST: http://localhost:5173
+      POSTGRES_DB: findog_e2e
+      POSTGRES_PASSWORD: e2e-postgres-password
+      POSTGRES_PORT: 5432
+      POSTGRES_SERVER: db
+      POSTGRES_USER: e2e
+      PROJECT_NAME: Oblidog
+      SECRET_KEY: e2e-secret-key-not-for-production
+      SMTP_HOST: mailcatcher
+      SMTP_PORT: 1025
+      SMTP_TLS: "false"
+    networks:
+      - e2e
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      prestart:
+        condition: service_completed_successfully
+    environment: *backend-environment
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - e2e
+
+  playwright:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.playwright
+    command: bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --reporter=html
+    depends_on:
+      backend:
+        condition: service_healthy
+      mailcatcher:
+        condition: service_started
+    environment:
+      CI: "true"
+      FIRST_SUPERUSER: admin@example.com
+      FIRST_SUPERUSER_PASSWORD: e2e-admin-password
+      MAILCATCHER_HOST: http://mailcatcher:1080
+      PLAYWRIGHT_HTML_HOST: 0.0.0.0
+      VITE_API_URL: http://backend:8000
+    networks:
+      - e2e
+    shm_size: 1gb
+    volumes:
+      - ./frontend/blob-report:/app/frontend/blob-report
+      - ./frontend/test-results:/app/frontend/test-results
+
+volumes:
+  e2e-db-data:
+
+networks:
+  e2e:

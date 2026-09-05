@@ -468,7 +468,7 @@ function CashflowChart({
   period: Period
 }) {
   return (
-    <Card className="gap-4 py-5">
+    <Card className="min-w-0 gap-4 py-5">
       <CardHeader>
         <CardTitle>Payment schedule</CardTitle>
         <CardDescription>
@@ -476,7 +476,7 @@ function CashflowChart({
           currency is shown separately.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="min-w-0 space-y-4">
         {isLoading ? (
           <Skeleton className="h-72 w-full" />
         ) : isError || !data ? (
@@ -496,8 +496,8 @@ function CashflowChart({
                 <div
                   className={
                     data.currency_summaries.length === 1
-                      ? "xl:col-span-2"
-                      : undefined
+                      ? "min-w-0 xl:col-span-2"
+                      : "min-w-0"
                   }
                   key={summary.currency}
                 >
@@ -567,7 +567,7 @@ function CashflowCurrencyChart({
   const labelEvery = Math.max(1, Math.ceil(summary.daily.length / 5))
 
   return (
-    <section>
+    <section className="min-w-0">
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <h3 className="font-semibold">{summary.currency ?? "No currency"}</h3>
         <strong>
@@ -607,7 +607,10 @@ function CashflowCurrencyChart({
           No scheduled payments in this period.
         </p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
+        <div
+          className="mt-4 w-full min-w-0 max-w-full overflow-x-auto pb-2"
+          data-testid="payment-schedule-chart"
+        >
           <svg
             aria-label={`Scheduled payments for ${summary.currency ?? "no currency"}`}
             className="h-56 min-w-150 w-full"

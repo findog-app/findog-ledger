@@ -52,28 +52,18 @@ Notice that every time the backend OpenAPI schema changes, you should regenerate
 
 ## End-to-End Testing with Playwright
 
-The frontend includes initial end-to-end tests using Playwright. To run the tests, you need to have the Docker Compose stack running. Start the stack with the following command:
+The frontend includes end-to-end tests using Playwright. Run them in the dedicated, isolated Compose project:
 
 ```bash
-docker compose up -d --wait backend
+make e2e
 ```
 
-Then, you can run the tests with the following command:
+This project has its own Docker network and PostgreSQL volume, and does not publish the API port on the host. It can therefore run while `make dev-b` is serving the manual test environment.
+
+To remove the isolated stack and its test data:
 
 ```bash
-bun run --filter frontend test
-```
-
-You can also run your tests in UI mode to see the browser and interact with it running:
-
-```bash
-bun run --filter frontend test:ui
-```
-
-To stop and remove the Docker Compose stack and clean the data created in tests, use the following command:
-
-```bash
-docker compose down -v
+make e2e-down
 ```
 
 To update the tests, navigate to the tests directory and modify the existing test files or add new ones as needed.
