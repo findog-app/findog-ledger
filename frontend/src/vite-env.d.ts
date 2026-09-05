@@ -5,7 +5,7 @@ interface ImportMetaEnv {
 }
 
 interface Window {
-  __FINDOG_LEDGER_CONFIG__?: {
+  __OBLIDOG_CONFIG__?: {
     VITE_API_URL?: string
   }
 }
