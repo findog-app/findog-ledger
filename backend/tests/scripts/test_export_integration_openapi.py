@@ -12,5 +12,10 @@ def test_export_openapi_uses_distinct_data_model_names(tmp_path: Path) -> None:
     spec = json.loads(output_path.read_text())
     schemas = spec["components"]["schemas"]
 
+    assert spec["info"] == {
+        "title": "Oblidog Integration API",
+        "description": "Integration API for Oblidog Ledger.",
+        "version": "1.0.0",
+    }
     assert "title" not in schemas["CategoryDataRecordCreate"]["properties"]["data"]
     assert "title" not in schemas["CategoryDataRecordPublic"]["properties"]["data"]

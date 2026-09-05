@@ -21,7 +21,8 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 def build_integration_app() -> FastAPI:
     app = FastAPI(
-        title="Findog Integration API",
+        title="Oblidog Integration API",
+        description="Integration API for Oblidog Ledger.",
         version="1.0.0",
         generate_unique_id_function=custom_generate_unique_id,
     )
