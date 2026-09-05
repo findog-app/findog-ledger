@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="295.263"
+   height="63.977001"
+   viewBox="0 0 295.263 63.977"
+   version="1.1"
+   id="svg3"
+   role="img"
+   aria-label="Oblidog logo"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs id="defs3" />
+  <title id="title1">Oblidog logo</title>
+  <g transform="matrix(0.43,0,0,0.43,1,1)" id="g3">
+    <path fill="#ffffff" fill-rule="evenodd" d="m 72,3 65,24 v 40 c 0,36 -25,61 -65,74 C 32,128 7,103 7,67 V 27 Z M 33.500207,96.556684 25.364766,86.780953 39.311241,62.884728 53.25771,37.902315 64.879771,14.006092 70.6908,47.678041 89.286102,53.109003 q 9.297645,2.172381 11.622048,10.861917 l 26.73076,7.603345 q -3.48662,17.37907 -17.43312,22.810048 -5.811,2.172371 -17.433072,2.172371 -11.622061,1.086186 -16.270885,9.775706 -3.486621,7.60338 -2.324412,18.46528 l -10.459857,3.25857 Q 49.771092,119.36672 33.500207,96.556684 Z" id="path1" style="stroke-width:1.12356" />
+    <path fill="#ffffff" d="m 77.664039,62.884728 q 9.297647,0 16.270884,4.344769 -5.81103,6.517151 -11.622059,6.517151 -3.486621,-4.344767 -4.648825,-10.86192 z" id="path3" style="stroke-width:1.12356" />
+  </g>
+  <text x="64.829132" y="49.469734" fill="#ffffff" font-family="Arial, sans-serif" font-size="68px" font-weight="700" letter-spacing="-0.95689" id="text3" style="font-size:63.7927px;stroke-width:0.95689"><tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:63.7927px;font-family:Arial, sans-serif;stroke-width:0.95689" id="tspan3">Obli</tspan>dog</text>
+  <metadata id="metadata4">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:title>Oblidog logo</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

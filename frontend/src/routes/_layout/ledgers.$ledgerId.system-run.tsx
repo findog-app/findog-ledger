@@ -36,7 +36,7 @@ import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/ledgers/$ledgerId/system-run")({
   component: SystemRun,
-  head: () => ({ meta: [{ title: "System Run - Findog Ledger" }] }),
+  head: () => ({ meta: [{ title: "System Run - Oblidog" }] }),
 })
 
 function formatDateTime(value: string) {

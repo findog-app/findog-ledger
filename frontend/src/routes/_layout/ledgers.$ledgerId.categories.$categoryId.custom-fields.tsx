@@ -17,7 +17,7 @@ export const Route = createFileRoute(
   "/_layout/ledgers/$ledgerId/categories/$categoryId/custom-fields",
 )({
   component: CategoryCustomFields,
-  head: () => ({ meta: [{ title: "Custom fields - Findog Ledger" }] }),
+  head: () => ({ meta: [{ title: "Custom fields - Oblidog" }] }),
 })
 
 function CategoryCustomFields() {

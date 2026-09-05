@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export const Route = createFileRoute("/_layout/ledgers/$ledgerId/categories")({
   component: LedgerCategories,
-  head: () => ({ meta: [{ title: "Categories - Findog Ledger" }] }),
+  head: () => ({ meta: [{ title: "Categories - Oblidog" }] }),
 })
 
 function LedgerCategories() {
