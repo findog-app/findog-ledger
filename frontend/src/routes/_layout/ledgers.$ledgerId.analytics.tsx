@@ -4,7 +4,7 @@ import { AnalyticsDashboard } from "@/components/Analytics/AnalyticsDashboard"
 
 export const Route = createFileRoute("/_layout/ledgers/$ledgerId/analytics")({
   component: LedgerAnalytics,
-  head: () => ({ meta: [{ title: "Analytics - Findog Ledger" }] }),
+  head: () => ({ meta: [{ title: "Analytics - Oblidog" }] }),
 })
 
 function LedgerAnalytics() {

@@ -60,7 +60,7 @@ export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
       {
-        title: "Reset Password - Findog Ledger",
+        title: "Reset Password - Oblidog",
       },
     ],
   }),

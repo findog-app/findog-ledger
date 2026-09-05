@@ -37,7 +37,7 @@ import { handleError } from "@/utils"
 
 export const Route = createFileRoute("/_layout/ledgers/$ledgerId/settings")({
   component: LedgerSettings,
-  head: () => ({ meta: [{ title: "Ledger Settings - Findog Ledger" }] }),
+  head: () => ({ meta: [{ title: "Ledger Settings - Oblidog" }] }),
 })
 
 function LedgerSettings() {

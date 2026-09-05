@@ -44,7 +44,7 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       {
-        title: "Log In - Findog Ledger",
+        title: "Log In - Oblidog",
       },
     ],
   }),

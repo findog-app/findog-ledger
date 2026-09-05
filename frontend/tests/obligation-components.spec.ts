@@ -160,7 +160,7 @@ test("keeps primary and secondary navigation available on mobile", async ({
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`/ledgers/${fixture.ledger.id}`)
 
-  await expect(page.getByRole("img", { name: "Findog" })).toBeVisible()
+  await expect(page.getByRole("img", { name: "Oblidog" })).toBeVisible()
   await expect(
     page.locator("header").getByText(fixture.ledger.name, { exact: true }),
   ).toBeVisible()

@@ -1,6 +1,6 @@
-# Findog Ledger - Frontend
+# Oblidog - Frontend
 
-React/Vite frontend for Findog Ledger. It uses Bun; run the following commands from the repository root.
+React/Vite frontend for Oblidog. It uses Bun; run the following commands from the repository root.
 
 ## Requirements
 
