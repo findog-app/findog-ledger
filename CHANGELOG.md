@@ -1,3 +1,9 @@
+## v0.7.2 (2026-09-05)
+
+### Refactor
+
+- **branding**: update backend and OpenAPI identity (#214)
+
 ## v0.7.1 (2026-09-03)
 
 ### Fix
