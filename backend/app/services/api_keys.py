@@ -14,11 +14,12 @@ def generate_api_key() -> str:
     return f"{API_KEY_PREFIX}{secrets.token_urlsafe(32)}"
 
 
-def _api_key_salt(raw_key: str) -> bytes:
-    """Derive a deterministic per-key salt from the key prefix and server secret."""
-    prefix = key_prefix(raw_key)
+def _api_key_salt() -> bytes:
+    """Derive a deterministic application salt from the server secret."""
     return hmac.new(
-        str(settings.SECRET_KEY).encode(), prefix.encode(), hashlib.sha256
+        str(settings.SECRET_KEY).encode(),
+        b"api-key-pbkdf2-salt-v1",
+        hashlib.sha256,
     ).digest()[:API_KEY_SALT_LENGTH]
 
 
@@ -27,7 +28,7 @@ def hash_api_key(raw_key: str) -> str:
     return hashlib.pbkdf2_hmac(
         "sha256",
         raw_key.encode(),
-        _api_key_salt(raw_key),
+        _api_key_salt(),
         API_KEY_PBKDF2_ITERATIONS,
     ).hex()
 
