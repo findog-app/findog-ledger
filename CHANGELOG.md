@@ -1,3 +1,9 @@
+## v0.7.5 (2026-09-05)
+
+### Fix
+
+- **analytics**: contain payment schedule chart on mobile (#225)
+
 ## v0.7.4 (2026-09-05)
 
 ### Fix
