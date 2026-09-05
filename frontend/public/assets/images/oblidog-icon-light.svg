@@ -1,9 +1,33 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 144 144" version="1.1">
-  <title>Oblidog icon</title>
-  <path
-    fill="#ffffff"
-    fill-rule="evenodd"
-    d="M72 3 L137 27 V67 C137 103 112 128 72 141 C32 128 7 103 7 67 V27 Z M40 103 L33 94 L45 72 L57 49 L67 27 L72 58 L88 63 Q96 65 98 73 L121 80 Q118 96 106 101 Q101 103 91 103 Q81 104 77 112 Q74 119 75 129 L66 132 Q54 124 40 103 Z"
-  />
+<svg
+   width="500"
+   height="500"
+   viewBox="0 0 144 144"
+   version="1.1"
+   id="svg3"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs id="defs3">
+    <mask id="dog-cutout" maskUnits="userSpaceOnUse" x="0" y="0" width="144" height="144">
+      <path fill="#ffffff" d="M72 3 L137 27 V67 C137 103 112 128 72 141 C32 128 7 103 7 67 V27 Z" />
+      <g transform="matrix(1.1658652,0,0,1.1658652,-12.288807,-22.239091)">
+        <path fill="#000000" d="M 40,103 33,94 45,72 57,49 67,27 l 5,31 16,5 q 8,2 10,10 l 23,7 q -3,16 -15,21 -5,2 -15,2 -10,1 -14,9 -3,7 -2,17 l -9,3 Q 54,124 40,103 Z" />
+      </g>
+    </mask>
+  </defs>
+  <title id="title1">Oblidog icon</title>
+  <path fill="#ffffff" d="M72 3 L137 27 V67 C137 103 112 128 72 141 C32 128 7 103 7 67 V27 Z" id="path1" mask="url(#dog-cutout)" />
+  <g id="g4" transform="matrix(1.1658652,0,0,1.1658652,-12.288807,-22.239091)">
+    <path fill="#ffffff" d="m 78,72 q 8,0 14,4 -5,6 -10,6 -3,-4 -4,-10 z" id="path3" />
+  </g>
+  <metadata id="metadata4">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:title>Oblidog icon</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
 </svg>
